@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "derailment"
+version = "0.1.0"
+description = "A harness for inducing and measuring psychopathology-like cognitive distortions in LLMs"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Derailment contributors" }]
+keywords = [
+    "llm",
+    "psychopathology",
+    "cognitive-bias",
+    "chaos-engineering",
+    "standardized-patient",
+    "evaluation",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+plot = ["matplotlib>=3.7"]
+
+[project.scripts]
+derail = "derailment.cli:main"
+derailment = "derailment.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+derailment = ["py.typed"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "ISC004",  # adjacent-string wrapping inside lists is intentional formatting
+    "DTZ",     # report headers intentionally use the local date
+    "RUF002",  # typographic quotes in docstrings are intentional
+    "RUF005",  # `msgs + [x]` reads better than unpacking here
+    "RUF012",  # class-level defaults are plain strings/ints
+    "SIM905",  # static-string splitting is clearer than split argument lists
+    "PLW1510", # returncode handled explicitly after subprocess.run
+    "UP022",   # contextlib.redirect_output is 3.13+; requires-python is 3.10
+]

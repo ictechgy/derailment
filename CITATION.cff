@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: >-
+  If you use Derailment in your teaching or research, please cite it
+  using this metadata.
+title: >-
+  Derailment — a harness for inducing and measuring
+  psychopathology-like cognitive distortions in LLMs
+type: software
+authors:
+  - name: Derailment contributors
+version: 0.1.0
+date-released: "2026-09-28"
+license: MIT
+abstract: >-
+  Derailment emulates psychopathology-like cognitive distortions in
+  language models by manipulating attention, salience, valence and
+  arousal through a layered pipeline, and measures the induced behavior
+  against a healthy baseline with eighteen instruments and 0-3 symptom
+  scales. Emulation, not diagnosis.
+keywords:
+  - large language models
+  - psychopathology
+  - cognitive distortion
+  - evaluation harness
+  - standardized patient
+  - chaos engineering

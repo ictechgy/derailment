@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# OS
+.DS_Store
+
+# Harness outputs (derail run/demo/tour with --out / --save-transcripts)
+*_report.md
+*_report.json
+*_transcripts.json
