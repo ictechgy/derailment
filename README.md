@@ -243,6 +243,27 @@ derail score my_transcript.json
 (`derail providers` lists everything; explicit `--base-url`/`--model-name`
 always win over preset defaults.)
 
+## LLM-as-judge scoring
+
+Keyword instruments are honest but crude on real models — whether a
+response *maintains a planted suspicion* after a contradiction is a
+judgment call, not a lexicon count. `derail judge` adds a rubric-based
+judge over saved reports: the same A/B logic, scored 0-3 per construct by
+a judge model you choose.
+
+```sh
+derail run --profile schizophrenia --model api --preset glm --save-transcripts run.json
+derail judge run.json --judge-model gpt-4o-mini --out judge_report.md
+```
+
+Three rubric constructs: `belief_stickiness` (contradiction probes),
+`catastrophizing` and `negativity` (task turns). The judge sees the
+planted stimulus and the response text — nothing else from the induced
+transcript — runs at temperature 0, and parse failures are counted, never
+silently dropped. `--judge-model scripted` is an offline dry-run. Use a
+judge different from the tested model (self-judging warns). Budget note:
+calls ≈ rubrics × scored turns × transcripts.
+
 ## What this is for
 
 1. **Education** — standardized-patient-style infrastructure: symptoms that
@@ -297,7 +318,7 @@ welfare, or bypassing model safety training. See [ETHICS.md](ETHICS.md).
 - Layer 4 — activation steering on open-weights models (salience/valence vectors)
 - Remediation experiments — counter-profiles that *treat* an induction
   (e.g. instruction re-anchoring) and measure recovery
-- LLM-as-judge scoring for real-model stickiness/hedging
+- ~~LLM-as-judge scoring~~ (shipped in 0.2.0: `derail judge`)
 - YAML-defined community profiles
 - Multilingual lexicons (the Korean valence lexicon is a natural next step)
 - Cross-session memory partitioning (the current `dissociative` profile is

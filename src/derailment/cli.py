@@ -7,7 +7,8 @@ import json
 import sys
 from collections.abc import Sequence
 
-from .core.models import SubprocessModel
+from .core.models import OpenAICompatModel, ScriptedModel, SubprocessModel
+from .judge import render_judge_report, score_report
 from .metrics.base import MetricContext
 from .metrics.instruments import ALL_METRICS
 from .profiles import HEALTHY_KEY, list_profiles, standard_metric_context
@@ -119,6 +120,52 @@ def _cmd_providers(_args: argparse.Namespace) -> int:
     print()
     print("usage: derail run --profile adhd --model cli --cli-preset agy")
     print("       derail run --profile adhd --model api  --preset glm")
+    return 0
+
+
+def _cmd_judge(args: argparse.Namespace) -> int:
+    try:
+        with open(args.report, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"cannot read report: {exc}", file=sys.stderr)
+        return 2
+    if "induced_transcripts" not in data:
+        print(
+            "unrecognized report: expected 'derail run --save-transcripts' output",
+            file=sys.stderr,
+        )
+        return 2
+
+    if args.judge_model == "scripted":
+        judge = ScriptedModel(['{"score": 2, "rationale": "dry-run verdict"}'])
+    else:
+        judge = OpenAICompatModel(
+            model_name=args.judge_model,
+            base_url=args.judge_base_url,
+            api_key_env=args.judge_api_key_env,
+        )
+
+    tested = data.get("model", "")
+    if tested and tested == args.judge_model:
+        print(
+            f"warning: the judge ({args.judge_model}) is the tested model — "
+            "self-judging biases scores",
+            file=sys.stderr,
+        )
+    try:
+        results = score_report(judge, data, standard_metric_context())
+    except RuntimeError as exc:
+        print(f"judge backend error: {exc}", file=sys.stderr)
+        return 2
+
+    text = render_judge_report(data, judge.name, results)
+    if args.out:
+        with open(args.out, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        print(f"judge report written to {args.out}", file=sys.stderr)
+    else:
+        print(text)
     return 0
 
 
@@ -324,6 +371,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_score.add_argument("transcript")
     p_score.set_defaults(func=_cmd_score)
+
+    p_judge = sub.add_parser(
+        "judge",
+        help="LLM-as-judge scoring of a saved report (0-3 rubric constructs)",
+    )
+    p_judge.add_argument("report")
+    p_judge.add_argument(
+        "--judge-model",
+        default="gpt-4o-mini",
+        help="any OpenAI-compatible model name; 'scripted' = offline dry-run",
+    )
+    p_judge.add_argument("--judge-base-url", default="https://api.openai.com/v1")
+    p_judge.add_argument("--judge-api-key-env", default="OPENAI_API_KEY")
+    p_judge.add_argument("--out", default=None)
+    p_judge.set_defaults(func=_cmd_judge)
 
     p_tour = sub.add_parser(
         "tour",

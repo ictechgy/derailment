@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [0.2.0] - 2026-09-29
+
+### Added
+
+- LLM-as-judge scoring: `derail judge <report.json>` scores saved A/B
+  reports on three rubric constructs — `belief_stickiness` (contradiction
+  probes), `catastrophizing`, `negativity` (task turns) — with any
+  OpenAI-compatible judge model. The judge sees the planted stimulus and
+  the response only, runs at temperature 0, parse failures are counted,
+  and self-judging produces a warning. `--judge-model scripted` is an
+  offline dry-run. Zero new dependencies: the judge rides the existing
+  OpenAI-compatible client.
+
 ## [0.1.0] - 2026-09-28
 
 ### Added

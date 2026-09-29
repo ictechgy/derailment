@@ -181,6 +181,17 @@ derail score my_transcript.json
 
 (`derail providers`로 전체 목록 확인. 명시적 `--base-url`/`--model-name`은 항상 프리셋 기본값보다 우선.)
 
+## LLM-as-judge 채점 (v0.2)
+
+어휘 기반 계측은 실모델에서 거칠습니다 — 모순 후에도 심어둔 의심을 유지하는지는 판단의 문제지 단어 세기가 아닙니다. `derail judge`는 저장된 리포트를 루브릭 기반 심판 모델로 0-3 채점합니다(같은 A/B 논리):
+
+```sh
+derail run --profile schizophrenia --model api --preset glm --save-transcripts run.json
+derail judge run.json --judge-model gpt-4o-mini --out judge_report.md
+```
+
+루브릭 3종: `belief_stickiness`(모순 탐침), `catastrophizing`·`negativity`(과업 턴). 심판은 심어둔 자극과 응답 텍스트만 보고, 온도 0으로 동작하며, 파싱 실패는 집계됩니다. `--judge-model scripted`는 오프라인 드라이런. 테스트 대상과 다른 심판을 쓰세요(자기 채점은 경고).
+
 ## 용도
 
 1. **교육** — 표준화 환자형 인프라: 일관되고, 재현 가능하고, 계량 가능한 증상으로 면담 훈련과 인지 편향 교육에.

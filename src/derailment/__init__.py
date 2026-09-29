@@ -20,21 +20,25 @@ from .core.types import (
     TurnResult,
     TurnSpec,
 )
+from .judge import RUBRICS, JudgeVerdict, RubricResult, score_report
 from .profiles import HEALTHY_KEY, Profile, get_profile, list_profiles, standard_script
 from .report import run_experiment
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "HEALTHY_KEY",
+    "RUBRICS",
     "BaseLayer",
     "ChatModel",
+    "JudgeVerdict",
     "Layer",
     "LayerEvent",
     "Message",
     "OpenAICompatModel",
     "Profile",
     "PseudoModel",
+    "RubricResult",
     "SamplingParams",
     "ScriptedModel",
     "Session",
@@ -47,5 +51,6 @@ __all__ = [
     "get_profile",
     "list_profiles",
     "run_experiment",
+    "score_report",
     "standard_script",
 ]
