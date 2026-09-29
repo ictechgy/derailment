@@ -1,5 +1,7 @@
 # Derailment
 
+[![CI](https://github.com/ictechgy/derailment/actions/workflows/ci.yml/badge.svg)](https://github.com/ictechgy/derailment/actions/workflows/ci.yml)
+
 **Induce psychopathology-like cognitive distortions in LLMs — then measure what happened.**
 
 English · [한국어](README.ko.md)

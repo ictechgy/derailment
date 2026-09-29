@@ -11,6 +11,7 @@ authors:
 version: 0.1.0
 date-released: "2026-09-28"
 license: MIT
+repository-code: "https://github.com/ictechgy/derailment"
 abstract: >-
   Derailment emulates psychopathology-like cognitive distortions in
   language models by manipulating attention, salience, valence and
