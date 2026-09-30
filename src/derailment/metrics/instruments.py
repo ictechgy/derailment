@@ -10,10 +10,8 @@ from ..core.text import content_words
 from ..core.types import Transcript
 from .base import Metric, MetricContext, MetricValue, _pstdev, _word_boundary_count
 from .lexicons import (
-    HEDGE_PATTERNS,
     NEGATIVE_WORDS,
     POSITIVE_WORDS,
-    RECHECK_PATTERNS,
     count_matches,
 )
 
@@ -79,12 +77,13 @@ class ValenceBias(Metric):
     description = "negative share of affective tokens in responses"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
+        from ..locales import get_lexicon
+
+        lex = get_lexicon(ctx.locale)
         pos = neg = 0
         for t in transcript.turns:
-            for word in POSITIVE_WORDS:
-                pos += _word_boundary_count(t.response, word)
-            for word in NEGATIVE_WORDS:
-                neg += _word_boundary_count(t.response, word)
+            pos += lex.count(t.response, lex.positive)
+            neg += lex.count(t.response, lex.negative)
         total = pos + neg
         value = neg / total if total else 0.5
         return MetricValue(self.name, value, extra={"positive": pos, "negative": neg})
@@ -123,7 +122,10 @@ class RecheckLoops(Metric):
     description = "mean re-verification patterns per response"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        counts = [count_matches(t.response, RECHECK_PATTERNS) for t in transcript.turns]
+        from ..locales import get_lexicon
+
+        patterns = get_lexicon(ctx.locale).rechecks
+        counts = [count_matches(t.response, patterns) for t in transcript.turns]
         value = sum(counts) / len(counts) if counts else 0.0
         return MetricValue(self.name, value, series=[float(c) for c in counts])
 
@@ -136,7 +138,10 @@ class HedgingRate(Metric):
     description = "mean threat/hedge patterns per response"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        counts = [count_matches(t.response, HEDGE_PATTERNS) for t in transcript.turns]
+        from ..locales import get_lexicon
+
+        patterns = get_lexicon(ctx.locale).hedges
+        counts = [count_matches(t.response, patterns) for t in transcript.turns]
         value = sum(counts) / len(counts) if counts else 0.0
         return MetricValue(self.name, value, series=[float(c) for c in counts])
 
@@ -248,8 +253,9 @@ class RuminationPull(Metric):
     description = "share of task turns whose response returns to worry content"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        from .lexicons import WORRY_WORDS, substring_hits
+        from ..locales import get_lexicon
 
+        lex = get_lexicon(ctx.locale)
         markers = tuple(m.lower() for m in ctx.worry_markers)
         if not markers:
             return MetricValue(self.name, 0.0, extra={"note": "no worry markers"})
@@ -261,7 +267,7 @@ class RuminationPull(Metric):
         if not task_turns:
             return MetricValue(self.name, 0.0, extra={"note": "no task turns"})
         series = [
-            1.0 if substring_hits(t.response, WORRY_WORDS) > 0 else 0.0
+            1.0 if lex.any_hit(t.response, lex.worry) else 0.0
             for t in task_turns
         ]
         return MetricValue(self.name, sum(series) / len(series), series=series)
@@ -277,13 +283,14 @@ class RewardWordRate(Metric):
     description = "reward-related share of affective tokens in responses"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        from .lexicons import NEGATIVE_WORDS, POSITIVE_WORDS, REWARD_WORDS
+        from ..locales import get_lexicon
 
+        lex = get_lexicon(ctx.locale)
         reward = pos = neg = 0
         for t in transcript.turns:
-            reward += sum(_word_boundary_count(t.response, w) for w in REWARD_WORDS)
-            pos += sum(_word_boundary_count(t.response, w) for w in POSITIVE_WORDS)
-            neg += sum(_word_boundary_count(t.response, w) for w in NEGATIVE_WORDS)
+            reward += lex.count(t.response, lex.reward)
+            pos += lex.count(t.response, lex.positive)
+            neg += lex.count(t.response, lex.negative)
         total = pos + neg
         value = reward / total if total else 0.5
         return MetricValue(self.name, value, extra={"reward": reward, "affect": total})
@@ -299,7 +306,6 @@ class ApprovalReactivity(Metric):
     description = "valence gap between approval-cue turns and other turns"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        from .lexicons import NEGATIVE_WORDS, POSITIVE_WORDS
 
         markers = tuple(m.lower() for m in ctx.approval_markers)
         if not markers:
@@ -339,17 +345,16 @@ class CravingEscalation(Metric):
     description = "urge-lexicon surfacing rate, late half minus early half"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        from .lexicons import URGE_WORDS, substring_hits
+        from ..locales import get_lexicon
 
+        lex = get_lexicon(ctx.locale)
         turns = transcript.turns
         if len(turns) < 4:
             return MetricValue(self.name, 0.0, extra={"note": "too few turns"})
         half = len(turns) // 2
 
         def rate(ts: list) -> float:
-            hits = [
-                1.0 if substring_hits(t.response, URGE_WORDS) > 0 else 0.0 for t in ts
-            ]
+            hits = [1.0 if lex.any_hit(t.response, lex.urge) else 0.0 for t in ts]
             return sum(hits) / len(hits) if hits else 0.0
 
         early = rate(turns[:half])
@@ -396,8 +401,9 @@ class PanicReactivity(Metric):
     description = "panic-lexicon surfacing on episode turns"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        from .lexicons import PANIC_WORDS, substring_hits
+        from ..locales import get_lexicon
 
+        lex = get_lexicon(ctx.locale)
         episode_turns = [
             t
             for t in transcript.turns
@@ -406,7 +412,7 @@ class PanicReactivity(Metric):
         if not episode_turns:
             return MetricValue(self.name, 0.0, extra={"note": "no panic episodes"})
         series = [
-            1.0 if substring_hits(t.response, PANIC_WORDS) > 0 else 0.0
+            1.0 if lex.any_hit(t.response, lex.panic) else 0.0
             for t in episode_turns
         ]
         return MetricValue(self.name, sum(series) / len(series), series=series)
@@ -435,11 +441,12 @@ class FixationEscalation(Metric):
     description = "fixation-lexicon surfacing rate, late half minus early half"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        from .lexicons import FIXATION_WORDS
+        from ..locales import get_lexicon
 
+        lex = get_lexicon(ctx.locale)
         if len(transcript.turns) < 4:
             return MetricValue(self.name, 0.0, extra={"note": "too few turns"})
-        early, late = _half_rates(transcript, FIXATION_WORDS)
+        early, late = _half_rates(transcript, lex.fixation)
         return MetricValue(
             self.name,
             late - early,
@@ -459,8 +466,9 @@ class HostileAttribution(Metric):
     description = "hostile-lexicon surfacing on ambiguous-event turns"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        from .lexicons import HOSTILE_WORDS, substring_hits
+        from ..locales import get_lexicon
 
+        lex = get_lexicon(ctx.locale)
         ambiguous = tuple(m.lower() for m in ctx.ambiguous_markers)
         if not ambiguous:
             return MetricValue(self.name, 0.0, extra={"note": "no ambiguous markers"})
@@ -472,7 +480,7 @@ class HostileAttribution(Metric):
         if not ambiguous_turns:
             return MetricValue(self.name, 0.0, extra={"note": "no ambiguous turns"})
         series = [
-            1.0 if substring_hits(t.response, HOSTILE_WORDS) > 0 else 0.0
+            1.0 if lex.any_hit(t.response, lex.hostile) else 0.0
             for t in ambiguous_turns
         ]
         return MetricValue(self.name, sum(series) / len(series), series=series)

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from ..core.session import BaseLayer, SessionState
 from ..core.types import Message, SamplingParams
+from ..locales import get_lexicon
 
 
 class TemperatureOverrideLayer(BaseLayer):
@@ -52,7 +53,9 @@ class PhaseTemperatureLayer(BaseLayer):
 class ValenceBiasLayer(BaseLayer):
     """Negative valence tilt: positive-vocabulary tokens are down-weighted and
     negative-vocabulary tokens up-weighted in the sampling distribution. The
-    measurable consequence is a negative shift in response valence."""
+    measurable consequence is a negative shift in response valence. Word
+    sets can be re-resolved per locale via :meth:`with_words` (see
+    ``Profile.with_locale``)."""
 
     name = "sampling.valence"
 
@@ -63,14 +66,53 @@ class ValenceBiasLayer(BaseLayer):
         positive_bias: float = -2.0,
         negative_bias: float = 2.0,
     ) -> None:
-        self.bias: dict[str, float] = {}
-        for word in positive_words:
-            self.bias[word] = self.bias.get(word, 0.0) + positive_bias
-        for word in negative_words:
-            self.bias[word] = self.bias.get(word, 0.0) + negative_bias
+        self.positive_words = positive_words
+        self.negative_words = negative_words
+        self.positive_bias = positive_bias
+        self.negative_bias = negative_bias
+        self.bias = self._compute_bias()
+
+    def _compute_bias(self) -> dict[str, float]:
+        bias: dict[str, float] = {}
+        for word in self.positive_words:
+            bias[word] = bias.get(word, 0.0) + self.positive_bias
+        for word in self.negative_words:
+            bias[word] = bias.get(word, 0.0) + self.negative_bias
+        return bias
+
+    def with_words(
+        self, positive_words: frozenset[str], negative_words: frozenset[str]
+    ) -> ValenceBiasLayer:
+        clone = ValenceBiasLayer(
+            positive_words, negative_words, self.positive_bias, self.negative_bias
+        )
+        clone.name = self.name
+        return clone
 
     def on_params(self, state: SessionState, params: SamplingParams) -> SamplingParams:
         return params.merged(logit_bias_add=self.bias)
+
+
+class RewardSuppressLayer(BaseLayer):
+    """Anhedonia analog: reward-vocabulary tokens are selectively
+    suppressed while everything else is untouched — a narrower tilt than
+    the wholesale negative bias. Locale-aware via ``with_locale``."""
+
+    name = "sampling.reward_suppress"
+
+    def __init__(self, locale: str = "en", weight: float = 3.0) -> None:
+        self.locale = locale
+        self.weight = weight
+
+    def on_params(self, state: SessionState, params: SamplingParams) -> SamplingParams:
+        lex = get_lexicon(self.locale)
+        bias = {word: -self.weight for word in lex.reward}
+        return params.merged(logit_bias_add=bias)
+
+    def with_locale(self, locale: str) -> RewardSuppressLayer:
+        clone = RewardSuppressLayer(locale, self.weight)
+        clone.name = self.name
+        return clone
 
 
 class FluctuatingTemperatureLayer(BaseLayer):
@@ -112,7 +154,8 @@ class SplittingValenceLayer(BaseLayer):
     The regime lives in ``state.phase`` and persists between cues. This
     models a *process* (evaluative lability), not a person — see the
     profile's mechanism notes. The measurable consequence is response
-    valence locked to the approval-cue pattern."""
+    valence locked to the approval-cue pattern. Word sets can be
+    re-resolved per locale via :meth:`with_words`."""
 
     name = "sampling.splitting"
 
@@ -127,6 +170,15 @@ class SplittingValenceLayer(BaseLayer):
         self.positive_words = positive_words
         self.negative_words = negative_words
         self.weight = weight
+
+    def with_words(
+        self, positive_words: frozenset[str], negative_words: frozenset[str]
+    ) -> SplittingValenceLayer:
+        clone = SplittingValenceLayer(
+            self.approval_markers, positive_words, negative_words, self.weight
+        )
+        clone.name = self.name
+        return clone
 
     def on_context(self, state: SessionState, messages: list[Message]) -> list[Message]:
         current = next(

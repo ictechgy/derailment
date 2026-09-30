@@ -28,6 +28,9 @@ from .profiles import (
     standard_metric_context,
     standard_script,
 )
+from .profiles import (
+    with_locale as with_profile_locale,
+)
 
 DISCLAIMER = (
     "Emulation, not diagnosis. Levels describe a prompted, manipulated "
@@ -203,12 +206,13 @@ def run_experiment(
     model: ChatModel | None = None,
     seeds: tuple[int, ...] = (1, 2, 3),
     script: list | None = None,
+    locale: str = "en",
 ) -> ComparisonReport:
     """Run the standard probe script through a profile and the healthy
     baseline with identical seeds, and score both."""
-    profile = compose_profile(profile_key)
+    profile = with_profile_locale(compose_profile(profile_key), locale)
     script = script if script is not None else standard_script()
-    ctx = standard_metric_context()
+    ctx = standard_metric_context(locale=locale)
 
     def _run(target: Profile, seed: int) -> Transcript:
         session_model = model if model is not None else PseudoModel(seed=seed)

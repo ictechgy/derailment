@@ -3,6 +3,27 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [0.7.0] - 2026-09-30
+
+### Added
+
+- Multilingual locale support (`--locale en|ko|zh|ja` on run/chat/web/
+  tui/score): affect, reward, worry, urge, illness, panic, fixation and
+  hostile lexicons plus hedge/recheck patterns for Korean, Chinese and
+  Japanese. Lexical instruments (valence, hedging, recheck, craving,
+  panic, fixation, hostile attribution, reward rate, rumination pull)
+  and the valence/reward/splitting sampling layers re-resolve per
+  locale.
+- Honest limitations, documented: the offline PseudoModel speaks English
+  only, so locale effects on real models are measured with real models;
+  CJK lexicons use heuristic stem/substring matching (no word
+  boundaries, no negation handling) and are not validated instruments.
+
+### Changed
+
+- anhedonia now uses the locale-aware RewardSuppressLayer instead of a
+  frozen English reward-word list.
+
 ## [0.6.0] - 2026-09-30
 
 ### Added

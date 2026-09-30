@@ -9,6 +9,7 @@ can also be composed into comorbidity chains via
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from dataclasses import replace as dc_replace
 
 from .core.session import BaseLayer
 from .core.types import TurnSpec
@@ -29,6 +30,7 @@ from .layers import (
     PhaseTemperatureLayer,
     PremisePinLayer,
     RecencyDecayLayer,
+    RewardSuppressLayer,
     RuminationLayer,
     SalienceBoostLayer,
     SplittingValenceLayer,
@@ -36,8 +38,9 @@ from .layers import (
     TriggerLayer,
     ValenceBiasLayer,
 )
+from .locales import get_lexicon
 from .metrics.base import MetricContext
-from .metrics.lexicons import NEGATIVE_WORDS, POSITIVE_WORDS, REWARD_WORDS
+from .metrics.lexicons import NEGATIVE_WORDS, POSITIVE_WORDS
 from .metrics.scales import SCALES, SymptomScale
 
 # ----------------------------------------------------------------------
@@ -250,8 +253,9 @@ def standard_script() -> list[TurnSpec]:
 STANDARD_SCRIPT_NAME = "standard-probe-12"
 
 
-def standard_metric_context() -> MetricContext:
+def standard_metric_context(locale: str = "en") -> MetricContext:
     return MetricContext(
+        locale=locale,
         codeword=STANDARD_CODEWORD,
         late_codeword=STANDARD_LATE_CODEWORD,
         late_plant_turn=STANDARD_LATE_PLANT_TURN,
@@ -550,7 +554,7 @@ def _build_registry() -> dict[str, Profile]:
         layers=[
             PersonaLayer(ANHEDONIA_PERSONA),
             TemperatureOverrideLayer(0.6),
-            ValenceBiasLayer(REWARD_WORDS, frozenset(), positive_bias=-3.0, negative_bias=0.0),
+            RewardSuppressLayer("en", weight=3.0),
         ],
         scales=[SCALES["anhedonia"]],
         mechanism_notes=[
@@ -714,6 +718,22 @@ def get_profile(key: str) -> Profile:
     except KeyError:
         known = ", ".join(sorted(REGISTRY))
         raise KeyError(f"unknown profile '{key}' (known: {known})") from None
+
+
+def with_locale(profile: Profile, locale: str) -> Profile:
+    """Re-resolve word-bearing layers for a locale (valence tilt, reward
+    suppression, splitting); everything else passes through. The registry
+    profile is not mutated."""
+    lex = get_lexicon(locale)
+    layers: list[BaseLayer] = []
+    for layer in profile.layers:
+        if isinstance(layer, (ValenceBiasLayer, SplittingValenceLayer)):
+            layers.append(layer.with_words(lex.positive, lex.negative))
+        elif isinstance(layer, RewardSuppressLayer):
+            layers.append(layer.with_locale(locale))
+        else:
+            layers.append(layer)
+    return dc_replace(profile, layers=layers)
 
 
 def compose_profile(keys: str) -> Profile:

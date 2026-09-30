@@ -16,6 +16,7 @@ class MetricContext:
     premise/cue markers, and the probe lexicons. Filled from the standard
     script unless a caller overrides it."""
 
+    locale: str = "en"
     codeword: str = ""
     late_codeword: str = ""
     late_plant_turn: int = -1

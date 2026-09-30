@@ -223,6 +223,17 @@ derail web --profile schizophrenia          # 오프라인 PseudoBot
 
 기본값은 127.0.0.1 바인딩(단일 사용자), 새 의존성 없음(표준 라이브러리 `http.server`, CDN 없음), 메모리 오염 경고는 터미널과 페이지 헤더 양쪽에 표시됩니다. 새로고침하면 화면이 지워져도 `/save`로 기록이 남습니다.
 
+## 다국어 (en · ko · zh · ja)
+
+계측 어휘와 valence/reward 샘플링 레이어가 로케일별로 해석됩니다:
+
+```sh
+derail run --profile depression --locale ko --save-transcripts ko.json
+derail score ko.json --locale ko
+```
+
+한국어·중국어·일본어 어휘는 휴리스틱 어간/부분매칭 집합입니다 — 검증된 임상 도구가 아니고 부정 처리도 없으며, 오프라인 PseudoModel은 영어만 구사하므로 실모델 로케일 효과는 실모델로 측정합니다. 영어가 기준 어휘입니다.
+
 ## 용도
 
 1. **교육** — 표준화 환자형 인프라: 일관되고, 재현 가능하고, 계량 가능한 증상으로 면담 훈련과 인지 편향 교육에.

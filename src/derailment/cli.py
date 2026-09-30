@@ -24,6 +24,9 @@ from .profiles import (
     list_profiles,
     standard_metric_context,
 )
+from .profiles import (
+    with_locale as with_profile_locale,
+)
 from .providers import API_PRESETS, CLI_AGENTS, resolve_api_model, resolve_cli_command
 from .report import LEVEL_WORDS, run_experiment
 
@@ -191,7 +194,7 @@ CHAT_MEMORY_WARNING = (
 
 def _cmd_chat(args: argparse.Namespace) -> int:
     try:
-        profile = compose_profile(args.profile)
+        profile = with_profile_locale(compose_profile(args.profile), args.locale)
     except KeyError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -205,7 +208,7 @@ def _cmd_chat(args: argparse.Namespace) -> int:
 
     print(
         f"derail chat — profile '{profile.key}' ({profile.title}) · "
-        f"backend: {backend} · seed {args.seed}"
+        f"backend: {backend} · seed {args.seed} · locale {args.locale}"
     )
     print(f"  {profile.description}")
     print(f"> ⚠️ {DISCLAIMER}")
@@ -232,6 +235,7 @@ def _cmd_chat(args: argparse.Namespace) -> int:
             seed=args.seed,
             turns=turns,
             script_name="interactive",
+            meta={"locale": args.locale},
         )
         with open(out_path, "w", encoding="utf-8") as fh:
             fh.write(transcript.to_json())
@@ -298,7 +302,7 @@ def _cmd_web(args: argparse.Namespace) -> int:
     from .webui import serve
 
     try:
-        profile = compose_profile(args.profile)
+        profile = with_profile_locale(compose_profile(args.profile), args.locale)
     except KeyError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -357,7 +361,7 @@ def _cmd_tui(args: argparse.Namespace) -> int:
         print("  pip install 'derailment[tui]'", file=sys.stderr)
         return 2
     try:
-        profile = compose_profile(args.profile)
+        profile = with_profile_locale(compose_profile(args.profile), args.locale)
     except KeyError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -456,7 +460,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
     try:
-        report = run_experiment(args.profile, model=model, seeds=tuple(args.seeds))
+        report = run_experiment(
+            args.profile, model=model, seeds=tuple(args.seeds), locale=args.locale
+        )
     except KeyError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -491,7 +497,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
 def _cmd_score(args: argparse.Namespace) -> int:
     with open(args.transcript, encoding="utf-8") as fh:
         data = json.load(fh)
-    ctx: MetricContext = standard_metric_context()
+    ctx: MetricContext = standard_metric_context(locale=args.locale)
     if "induced_transcripts" in data:
         from .core.types import Transcript
 
@@ -551,6 +557,12 @@ def _add_model_args(parser: argparse.ArgumentParser) -> None:
         "via stdin (or substituted at {prompt} with --cli-arg-prompt)",
     )
     parser.add_argument("--cli-name", default=None)
+    parser.add_argument(
+        "--locale",
+        default="en",
+        choices=["en", "ko", "zh", "ja"],
+        help="lexicon locale for measurement and valence/reward layers",
+    )
     parser.add_argument(
         "--cli-arg-prompt",
         action="store_true",
@@ -639,6 +651,12 @@ def build_parser() -> argparse.ArgumentParser:
         "score", help="re-score a saved transcript or report JSON"
     )
     p_score.add_argument("transcript")
+    p_score.add_argument(
+        "--locale",
+        default="en",
+        choices=["en", "ko", "zh", "ja"],
+        help="lexicon locale for rescoring",
+    )
     p_score.set_defaults(func=_cmd_score)
 
     p_judge = sub.add_parser(
