@@ -3,6 +3,22 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [0.3.0] - 2026-09-30
+
+### Added
+
+- Interactive chat: `derail chat --profile depression` opens a REPL where
+  every user turn flows through the full layer chain — the model's memory,
+  beliefs and sampling are manipulated live while you talk. Sessions save
+  as transcripts (`/save`, `--save-transcripts`) that feed straight into
+  `derail score`, and `--verbose` prints the induction dose per turn.
+  Freeform chat makes the memory-contamination warning more important than
+  ever — chat mode prints it prominently and defaults to the offline
+  PseudoBot.
+- `Session.start()`/`Session.send()` — incremental turns for embedders;
+  `Session.run()` is now a thin loop over `send()` and is byte-for-byte
+  deterministic-identical (regression-tested).
+
 ## [0.2.0] - 2026-09-29
 
 ### Added

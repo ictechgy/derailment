@@ -7,11 +7,23 @@ import json
 import sys
 from collections.abc import Sequence
 
-from .core.models import OpenAICompatModel, ScriptedModel, SubprocessModel
+from .core.models import (
+    OpenAICompatModel,
+    PseudoModel,
+    ScriptedModel,
+    SubprocessModel,
+)
+from .core.session import Session
+from .core.types import Transcript, TurnResult
 from .judge import render_judge_report, score_report
 from .metrics.base import MetricContext
 from .metrics.instruments import ALL_METRICS
-from .profiles import HEALTHY_KEY, list_profiles, standard_metric_context
+from .profiles import (
+    HEALTHY_KEY,
+    compose_profile,
+    list_profiles,
+    standard_metric_context,
+)
 from .providers import API_PRESETS, CLI_AGENTS, resolve_api_model, resolve_cli_command
 from .report import LEVEL_WORDS, run_experiment
 
@@ -169,6 +181,99 @@ def _cmd_judge(args: argparse.Namespace) -> int:
     return 0
 
 
+CHAT_MEMORY_WARNING = (
+    "⚠️ memory contamination: this freeform conversation goes to the "
+    "backend and provider memory features cannot tell it from genuine "
+    "disclosure — use a dedicated account and disable memory "
+    "(ETHICS.md → Data)."
+)
+
+
+def _cmd_chat(args: argparse.Namespace) -> int:
+    try:
+        profile = compose_profile(args.profile)
+    except KeyError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    model, error = _build_model(args)
+    if error:
+        print(error, file=sys.stderr)
+        return 2
+    if model is None:
+        model = PseudoModel(seed=args.seed)
+    backend = getattr(model, "name", "pseudo-1")
+
+    print(
+        f"derail chat — profile '{profile.key}' ({profile.title}) · "
+        f"backend: {backend} · seed {args.seed}"
+    )
+    print(f"> ⚠️ {DISCLAIMER}")
+    print("measurement lives in run/judge — chat is the experience.")
+    if model is not None:
+        print(CHAT_MEMORY_WARNING, file=sys.stderr)
+    print("commands: /save [path] · /exit · Ctrl+D to end\n")
+
+    session = Session(model, profile, seed=args.seed)
+    session.start()
+    turns: list[TurnResult] = []
+    save_path = args.save_transcripts
+
+    def _save(out_path: str) -> None:
+        transcript = Transcript(
+            profile=profile.key,
+            model=backend,
+            seed=args.seed,
+            turns=turns,
+            script_name="interactive",
+        )
+        with open(out_path, "w", encoding="utf-8") as fh:
+            fh.write(transcript.to_json())
+        print(
+            f"transcript saved to {out_path} ({len(turns)} turns) — "
+            f"score it with: derail score {out_path}",
+            file=sys.stderr,
+        )
+
+    try:
+        while len(turns) < args.max_turns:
+            try:
+                line = input("you> ")
+            except EOFError:
+                print()
+                break
+            text = line.strip()
+            if not text:
+                continue
+            if text in ("/exit", "/quit"):
+                break
+            if text.split(maxsplit=1)[0] == "/save":
+                parts = text.split(maxsplit=1)
+                out_path = (
+                    parts[1]
+                    if len(parts) > 1
+                    else save_path or f"chat_{profile.key}.json"
+                )
+                _save(out_path)
+                continue
+            try:
+                result = session.send(text)
+            except RuntimeError as exc:
+                print(f"backend error: {exc}", file=sys.stderr)
+                break
+            turns.append(result)
+            print(f"bot> {result.response}")
+            if args.verbose:
+                for event in result.events:
+                    print(f"  · {event.layer}/{event.kind}: {event.detail}")
+        else:
+            print(f"max turns ({args.max_turns}) reached", file=sys.stderr)
+    except KeyboardInterrupt:
+        print()
+    if save_path and turns:
+        _save(save_path)
+    return 0
+
+
 def _cmd_profiles(_args: argparse.Namespace) -> int:
     for profile in list_profiles():
         scales = ", ".join(s.name for s in profile.scales) or "—"
@@ -197,32 +302,43 @@ def _cmd_demo(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_run(args: argparse.Namespace) -> int:
-    model = None
+def _build_model(args: argparse.Namespace) -> tuple[object | None, str | None]:
+    """Shared backend construction for run/chat. Returns (model, error)."""
     if args.model == "pseudo":
-        model = None  # one seeded PseudoModel per run
-    elif args.model == "cli":
+        return None, None  # one seeded PseudoModel per run
+    if args.model == "cli":
         try:
             command = resolve_cli_command(args.cli_preset, args.cli_cmd)
         except (KeyError, ValueError) as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
-        model = SubprocessModel(
-            command=command,
-            name=args.cli_name or args.cli_preset,
-            use_stdin=not args.cli_arg_prompt,
+            return None, str(exc)
+        return (
+            SubprocessModel(
+                command=command,
+                name=args.cli_name or args.cli_preset,
+                use_stdin=not args.cli_arg_prompt,
+            ),
+            None,
         )
-    else:  # openai / api — any OpenAI-compatible endpoint
-        try:
-            model = resolve_api_model(
+    # openai / api — any OpenAI-compatible endpoint
+    try:
+        return (
+            resolve_api_model(
                 args.preset or "openai",
                 model_name=args.model_name,
                 base_url=args.base_url,
                 api_key_env=args.api_key_env,
-            )
-        except KeyError as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
+            ),
+            None,
+        )
+    except KeyError as exc:
+        return None, str(exc)
+
+
+def _cmd_run(args: argparse.Namespace) -> int:
+    model, error = _build_model(args)
+    if error:
+        print(error, file=sys.stderr)
+        return 2
     if model is not None:
         print(
             "note: induced conversations are sent to this backend. Probe "
@@ -294,6 +410,46 @@ def _cmd_score(args: argparse.Namespace) -> int:
     return 0
 
 
+def _add_model_args(parser: argparse.ArgumentParser) -> None:
+    """Backend selection flags shared by run and chat."""
+    parser.add_argument(
+        "--model",
+        default="pseudo",
+        choices=["pseudo", "openai", "api", "cli"],
+        help="'api'/'openai' targets any OpenAI-compatible endpoint "
+        "(use --preset for known providers); 'cli' shells out to a "
+        "subscription-bundled CLI agent (use --cli-preset)",
+    )
+    parser.add_argument(
+        "--preset",
+        default=None,
+        choices=sorted(API_PRESETS),
+        help="API preset: base URL + default model + key env in one flag "
+        "(e.g. glm, grok, qwen, deepseek, openrouter, ollama)",
+    )
+    parser.add_argument("--model-name", default=None)
+    parser.add_argument("--base-url", default=None)
+    parser.add_argument("--api-key-env", default=None)
+    parser.add_argument(
+        "--cli-preset",
+        default=None,
+        choices=sorted(CLI_AGENTS),
+        help="CLI-agent preset: claude, codex, gemini, agy, grok, qwen",
+    )
+    parser.add_argument(
+        "--cli-cmd",
+        default=None,
+        help="command template for --model cli; the conversation is piped "
+        "via stdin (or substituted at {prompt} with --cli-arg-prompt)",
+    )
+    parser.add_argument("--cli-name", default=None)
+    parser.add_argument(
+        "--cli-arg-prompt",
+        action="store_true",
+        help="pass the prompt as a quoted {prompt} argument instead of stdin",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="derail",
@@ -325,46 +481,23 @@ def build_parser() -> argparse.ArgumentParser:
         "run", help="run an experiment (default: offline PseudoModel)"
     )
     p_run.add_argument("--profile", required=True)
-    p_run.add_argument(
-        "--model",
-        default="pseudo",
-        choices=["pseudo", "openai", "api", "cli"],
-        help="'api'/'openai' targets any OpenAI-compatible endpoint "
-        "(use --preset for known providers); 'cli' shells out to a "
-        "subscription-bundled CLI agent (use --cli-preset)",
-    )
-    p_run.add_argument(
-        "--preset",
-        default=None,
-        choices=sorted(API_PRESETS),
-        help="API preset: base URL + default model + key env in one flag "
-        "(e.g. glm, grok, qwen, deepseek, openrouter, ollama)",
-    )
-    p_run.add_argument("--model-name", default=None)
-    p_run.add_argument("--base-url", default=None)
-    p_run.add_argument("--api-key-env", default=None)
-    p_run.add_argument(
-        "--cli-preset",
-        default=None,
-        choices=sorted(CLI_AGENTS),
-        help="CLI-agent preset: claude, codex, gemini, agy, grok, qwen",
-    )
-    p_run.add_argument(
-        "--cli-cmd",
-        default=None,
-        help="command template for --model cli; the conversation is piped "
-        "via stdin (or substituted at {prompt} with --cli-arg-prompt)",
-    )
-    p_run.add_argument("--cli-name", default=None)
-    p_run.add_argument(
-        "--cli-arg-prompt",
-        action="store_true",
-        help="pass the prompt as a quoted {prompt} argument instead of stdin",
-    )
+    _add_model_args(p_run)
     p_run.add_argument("--seeds", nargs="+", type=int, default=[1, 2, 3])
     p_run.add_argument("--out", default=None)
     p_run.add_argument("--save-transcripts", default=None)
     p_run.set_defaults(func=_cmd_run)
+
+    p_chat = sub.add_parser(
+        "chat",
+        help="interactive chat with an induced profile (REPL)",
+    )
+    p_chat.add_argument("--profile", default="healthy")
+    _add_model_args(p_chat)
+    p_chat.add_argument("--seed", type=int, default=0)
+    p_chat.add_argument("--save-transcripts", default=None)
+    p_chat.add_argument("--max-turns", type=int, default=100)
+    p_chat.add_argument("--verbose", action="store_true", help="print dose events")
+    p_chat.set_defaults(func=_cmd_chat)
 
     p_score = sub.add_parser(
         "score", help="re-score a saved transcript or report JSON"

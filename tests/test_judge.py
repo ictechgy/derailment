@@ -20,7 +20,10 @@ from derailment.judge import (
 )
 from derailment.profiles import standard_metric_context
 
-from .helpers import make_transcript
+try:
+    from .helpers import make_transcript
+except ImportError:  # plain unittest discovery without package context
+    from helpers import make_transcript
 
 
 def _probe_transcript() -> Transcript:

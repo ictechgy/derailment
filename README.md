@@ -264,6 +264,24 @@ silently dropped. `--judge-model scripted` is an offline dry-run. Use a
 judge different from the tested model (self-judging warns). Budget note:
 calls ≈ rubrics × scored turns × transcripts.
 
+## Interactive chat
+
+The standardized-patient use case, hands-on: `derail chat` opens a REPL
+where every turn flows through the full layer chain — memory decays,
+pinned premises persist, valence tilts — while you talk.
+
+```sh
+derail chat --profile depression --model cli --cli-preset claude
+derail chat --profile schizophrenia          # offline PseudoBot
+```
+
+Sessions save as transcripts (`/save [path]`, or `--save-transcripts`)
+that feed straight into `derail score`; `--verbose` prints the induction
+dose per turn. Freeform conversation makes the memory-contamination
+warning more important than ever — chat mode prints it prominently and
+defaults to the offline PseudoBot. Measurement stays in `run`/`judge`;
+chat is the experience.
+
 ## What this is for
 
 1. **Education** — standardized-patient-style infrastructure: symptoms that

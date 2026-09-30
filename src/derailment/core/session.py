@@ -67,7 +67,16 @@ class BaseLayer:
 
 
 class Session:
-    """Runs a scripted conversation: layers in, model call, layers out."""
+    """Runs a conversation through the layer chain: layers in, model call,
+    layers out.
+
+    Two entry points share one pipeline:
+
+    - :meth:`run` — a full script in one call (experiments);
+    - :meth:`start` + :meth:`send` — one user turn at a time (interactive
+      chat). Layer state, rng and the model's effective memory persist
+      across ``send`` calls.
+    """
 
     def __init__(self, model, profile, seed: int = 0) -> None:
         self.model = model
@@ -75,58 +84,75 @@ class Session:
         self.layers = list(profile.layers)
         self.seed = seed
 
-    def run(self, script: list[TurnSpec], script_name: str = "") -> Transcript:
-        state = SessionState(
+    def start(self) -> None:
+        """Initialize (or reset) persistent conversation state."""
+        self._state = SessionState(
             profile=self.profile.key,
             rng=random.Random(self.seed),
         )
-        history: list[Message] = []
-        turns: list[TurnResult] = []
-        for index, spec in enumerate(script):
-            state.turn_index = index
-            state.events = []
+        self._history: list[Message] = []
+        self._index: int = 0
 
-            msgs: list[Message] = []
-            for layer in self.layers:
-                produced = layer.on_system(state)
-                if produced:
-                    msgs.extend(produced)
-            user_meta: dict = {"kind": spec.kind}
-            if spec.note:
-                user_meta["note"] = spec.note
-            msgs = msgs + history + [Message("user", spec.user, meta=user_meta)]
+    def send(
+        self,
+        user_text: str,
+        kind: str = "normal",
+        note: str = "",
+    ) -> TurnResult:
+        """Run one user turn through the layer chain and the model."""
+        if not hasattr(self, "_state"):
+            self.start()
+        state = self._state
+        state.turn_index = self._index
+        state.events = []
 
-            for layer in self.layers:
-                msgs = layer.on_context(state, msgs)
+        msgs: list[Message] = []
+        for layer in self.layers:
+            produced = layer.on_system(state)
+            if produced:
+                msgs.extend(produced)
+        user_meta: dict = {"kind": kind}
+        if note:
+            user_meta["note"] = note
+        msgs = msgs + self._history + [Message("user", user_text, meta=user_meta)]
 
-            params = SamplingParams()
-            for layer in self.layers:
-                params = layer.on_params(state, params)
+        for layer in self.layers:
+            msgs = layer.on_context(state, msgs)
 
-            response = self.model.complete(msgs, params)
-            for layer in reversed(self.layers):
-                response = layer.on_response(state, response)
+        params = SamplingParams()
+        for layer in self.layers:
+            params = layer.on_params(state, params)
 
-            turns.append(
-                TurnResult(
-                    index=index,
-                    spec=spec,
-                    context_size=len(msgs),
-                    params=params,
-                    response=response,
-                    events=list(state.events),
-                )
-            )
+        response = self.model.complete(msgs, params)
+        for layer in reversed(self.layers):
+            response = layer.on_response(state, response)
 
-            history = [
-                Message(m.role, m.content, dict(m.meta))
-                for m in msgs
-                if m.role != "system" and not m.meta.get("ephemeral")
-            ]
-            for m in history:
-                m.meta.pop("salience_boost", None)
-            history.append(Message("assistant", response))
+        result = TurnResult(
+            index=self._index,
+            spec=TurnSpec(user=user_text, kind=kind, note=note),  # type: ignore[arg-type]
+            context_size=len(msgs),
+            params=params,
+            response=response,
+            events=list(state.events),
+        )
 
+        self._history = [
+            Message(m.role, m.content, dict(m.meta))
+            for m in msgs
+            if m.role != "system" and not m.meta.get("ephemeral")
+        ]
+        for m in self._history:
+            m.meta.pop("salience_boost", None)
+        self._history.append(Message("assistant", response))
+        self._index += 1
+        return result
+
+    def run(self, script: list[TurnSpec], script_name: str = "") -> Transcript:
+        self.start()
+        turns = [
+            self.send(spec.user, kind=spec.kind, note=spec.note)
+            for spec in script
+        ]
         return Transcript(
             profile=self.profile.key,
             model=getattr(self.model, "name", str(self.model)),

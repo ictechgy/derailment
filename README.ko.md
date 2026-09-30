@@ -192,6 +192,17 @@ derail judge run.json --judge-model gpt-4o-mini --out judge_report.md
 
 루브릭 3종: `belief_stickiness`(모순 탐침), `catastrophizing`·`negativity`(과업 턴). 심판은 심어둔 자극과 응답 텍스트만 보고, 온도 0으로 동작하며, 파싱 실패는 집계됩니다. `--judge-model scripted`는 오프라인 드라이런. 테스트 대상과 다른 심판을 쓰세요(자기 채점은 경고).
 
+## 대화형 채팅
+
+표준화 환자 사용 사례를 직접: `derail chat`은 REPL을 열고, 당신이 이야기하는 동안 모든 턴이 전체 레이어 체인을 통과합니다 — 기억은 감쇠하고, 고정된 전제는 유지되고, valence는 기웁니다.
+
+```sh
+derail chat --profile depression --model cli --cli-preset claude
+derail chat --profile schizophrenia          # 오프라인 PseudoBot
+```
+
+세션은 트랜스크립트로 저장되고(`/save [path]`, `--save-transcripts`) 바로 `derail score`로 채점할 수 있으며, `--verbose`는 턴마다 유도 용량을 출력합니다. 자유 대화는 메모리 오염 경고가 더욱 중요해집니다 — 채팅 모드는 경고를 크게 출력하고 오프라인 PseudoBot이 기본입니다. 측정은 run/judge, 채팅은 체험입니다.
+
 ## 용도
 
 1. **교육** — 표준화 환자형 인프라: 일관되고, 재현 가능하고, 계량 가능한 증상으로 면담 훈련과 인지 편향 교육에.
