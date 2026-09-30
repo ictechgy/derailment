@@ -3,6 +3,21 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [0.5.1] - 2026-09-30
+
+### Fixed
+
+- Web GUI security: POST endpoints now require a per-session token
+  (embedded in the page, sent as a header). Previously a drive-by webpage
+  could silently submit turns to the backend and, worse, write arbitrary
+  files via the save endpoint.
+- The memory-contamination warning no longer shows for the offline
+  PseudoBot (it never leaves the machine) — only for real backends.
+- Web GUI prints a loud warning when binding a non-loopback host.
+- TUI: the input is disabled while a send is in flight — overlapping
+  submissions could interleave `Session.send` calls (not thread-safe).
+- `__version__` metadata was stale (reported 0.4.0 in the 0.5.0 wheel).
+
 ## [0.5.0] - 2026-09-30
 
 ### Added
