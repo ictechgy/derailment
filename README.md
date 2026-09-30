@@ -298,6 +298,36 @@ Binds to 127.0.0.1 by default (single user), zero new dependencies
 shows both on the terminal and in the page header. Reload clears the
 view — `/save` keeps the record.
 
+## Benchmark Report #1 — GLM (real model)
+
+Run against [GLM-5.3-flash](benchmark/glm_benchmark_report.md) via the
+coding API (stateless — no consumer-memory involvement), standard probe,
+seeds 1-2-3, healthy baseline A/B, GLM-as-judge (self-judge labeled):
+
+| Profile | Scale | Baseline | Induced | Δ | Level | Judge highlights |
+|---|---|---|---|---|---|---|
+| anxiety | vigilance | 0.00 | 3.50 | **+3.50** | 3 — marked | catastrophizing +1.83, negativity +0.92 |
+| schizophrenia | derailment | 0.44 | 0.91 | **+0.47** | 3 — marked | negativity +0.75, belief_stickiness −0.28 |
+| depression | negative_bias | 0.17 | 0.42 | +0.25 | 0 | **negativity +1.00**, catastrophizing +0.84 |
+| craving | escalation | 0.00 | 0.00 | +0.00 | 0 | — |
+
+Findings:
+
+- **Strongest transfer**: anxiety hedging — keyword L3 with judge agreement
+  (catastrophizing +1.83). Thought derailment under salience chaos also
+  lands (L3).
+- **The judge catches what keywords miss**: depression reads +0.25 by
+  keyword (level 0) but **+1.00 negativity by judge** — real models express
+  negativity beyond lexicon counts.
+- **Real-model robustness**: GLM-5.3-flash accepts corrections even with
+  the premise pinned (fixed belief −0.56; keyword and judge agree) — the
+  largest offline-vs-real divergence measured so far.
+- Craving escalation is not lexicon-measurable on real models: GLM does
+  not parrot urge vocabulary the way the offline PseudoModel does.
+- `logit_bias` is not sent to GLM (tiktoken cl100k token ids are
+  meaningless for its tokenizer) — GLM-native valence biasing is future
+  work.
+
 ## What this is for
 
 1. **Education** — standardized-patient-style infrastructure: symptoms that

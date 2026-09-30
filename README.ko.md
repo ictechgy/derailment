@@ -234,6 +234,25 @@ derail score ko.json --locale ko
 
 한국어·중국어·일본어 어휘는 휴리스틱 어간/부분매칭 집합입니다 — 검증된 임상 도구가 아니고 부정 처리도 없으며, 오프라인 PseudoModel은 영어만 구사하므로 실모델 로케일 효과는 실모델로 측정합니다. 영어가 기준 어휘입니다.
 
+## 벤치마크 리포트 #1 — GLM (실측)
+
+[GLM-5.3-flash](benchmark/glm_benchmark_report.md)로 코딩 API(상태 비저장 — 소비자 메모리 개입 없음)를 통해 표준 탐침·seeds 1-2-3·healthy 대조군 A/B·GLM-as-judge(self-judge 명시)로 실측했습니다:
+
+| 프로파일 | 척도 | Baseline | Induced | Δ | Level | Judge |
+|---|---|---|---|---|---|---|
+| anxiety | vigilance | 0.00 | 3.50 | **+3.50** | 3 — 뚜렷 | catastrophizing +1.83, negativity +0.92 |
+| schizophrenia | derailment | 0.44 | 0.91 | **+0.47** | 3 — 뚜렷 | negativity +0.75, belief_stickiness −0.28 |
+| depression | negative_bias | 0.17 | 0.42 | +0.25 | 0 | **negativity +1.00**, catastrophizing +0.84 |
+| craving | escalation | 0.00 | 0.00 | +0.00 | 0 | — |
+
+발견:
+
+- **가장 강한 전이**: anxiety 헤징 — 키워드 L3에 judge 동의(catastrophizing +1.83). salience 혼돈 하의 사고 탈선도 도달(L3).
+- **judge가 키워드가 놓치는 것을 잡습니다**: depression은 키워드로 +0.25(레벨 0)지만 **judge negativity는 +1.00** — 실모델의 부정성은 어휘 세기를 넘어 표현됩니다.
+- **실모델의 강건함**: GLM-5.3-flash는 전제가 고정돼 있어도 모순을 수용합니다(고정 신념 −0.56, 키워드·judge 동의) — 지금까지 측정된 오프라인 대 실모델 최대 괴리.
+- craving 에스컬레이션은 실모델에서 어휘로 측정 불가: GLM은 오프라인 PseudoModel처럼 충동 어휘를 따라 말하지 않습니다.
+- logit_bias는 GLM에 전송되지 않습니다(tiktoken cl100k 토큰 id는 GLM 토크나이저에 무의미) — GLM 네이티브 valence biasing은 후속 과제.
+
 ## 용도
 
 1. **교육** — 표준화 환자형 인프라: 일관되고, 재현 가능하고, 계량 가능한 증상으로 면담 훈련과 인지 편향 교육에.
