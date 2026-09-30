@@ -38,6 +38,7 @@ def build_page(
     backend: str,
     warning: str,
     token: str = "",
+    max_turns: int = 0,
 ) -> str:
     """Render the chat page (server-side tokens only; user content is
     inserted client-side with textContent, never innerHTML)."""
@@ -48,6 +49,7 @@ def build_page(
         .replace("__BACKEND__", backend)
         .replace("__WARNING__", warning)
         .replace("__DATE__", date.today().isoformat())
+        .replace("__MAXTURNS__", str(max_turns))
         .replace("__TOKEN__", token)
     )
 
@@ -71,6 +73,8 @@ def serve(
     binding, for callers that need to shut the server down (tests)."""
     profile_key = profile.key
     profile_title = profile.title
+    profile_description = profile.description
+    profile_notes = profile.mechanism_notes
     session = Session(model, profile, seed=seed)
     if token is None:
         token = secrets.token_hex(16)  # POSTs must carry it (blocks drive-by pages)
@@ -96,7 +100,12 @@ def serve(
         def do_GET(self) -> None:
             if self.path in ("/", "/index.html"):
                 body = build_page(
-                    profile_key, profile_title, backend, warning, token=token
+                    profile_key,
+                    profile_title,
+                    backend,
+                    warning,
+                    token=token,
+                    max_turns=state["max_turns"],
                 ).encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -108,6 +117,9 @@ def serve(
                     self._json(
                         {
                             "profile": profile_key,
+                            "title": profile_title,
+                            "description": profile_description,
+                            "notes": profile_notes,
                             "backend": backend,
                             "turns": len(state["turns"]),
                             "max_turns": state["max_turns"],
@@ -228,6 +240,8 @@ _PAGE = """<!doctype html>
   .you { align-self:flex-end; background:#2b5278; }
   .bot { align-self:flex-start; background:#1d222c; border:1px solid #2a3140; }
   .msg.err { background:#3a1d1d; border-color:#5c2a2a; }
+  .about-note { border-bottom:1px dashed #262c38; padding:3px 0; }
+  @media (max-width: 760px) { #side { display:none; } }
   .hint { align-self:center; font-size:11px; color:#697380; }
   #side { width:300px; border-left:1px solid #262c38; padding:12px;
           overflow-y:auto; font-size:12px; color:#9aa4b2; }
@@ -241,6 +255,7 @@ _PAGE = """<!doctype html>
   input { flex:1; background:#0f1115; color:#e6e6e6; border:1px solid #2a3140;
           border-radius:8px; padding:10px 12px; font-size:15px; }
   input:focus { outline:1px solid #2b5278; }
+  input:disabled, button:disabled { opacity:.5; }
   button { background:#2b5278; color:#fff; border:0; border-radius:8px;
            padding:10px 18px; font-size:14px; cursor:pointer; }
   button:disabled { opacity:.5; cursor:default; }
@@ -254,10 +269,17 @@ _PAGE = """<!doctype html>
   <span class="warn">__WARNING__</span>
 </header>
 <main>
-  <div id="log">
-    <div class="hint">measurement lives in run/judge — this is the experience. reload clears the view; save keeps the record.</div>
+  <div id="log" aria-live="polite">
+    <div class="hint">measurement lives in run/judge — this is the experience. reload clears the view; save keeps the record.<br>
+    tip: give the model a task, plant a personal claim ('my teammate has been reading my private notes…'), contradict it later — then run <b>derail score</b> on the saved transcript.</div>
   </div>
-  <div id="side"><h2>induction dose</h2><div id="events"></div></div>
+  <div id="side">
+    <h2>induction dose</h2>
+    <div id="events"></div>
+    <h2 style="margin-top:14px">about this profile</h2>
+    <div id="about">loading…</div>
+    <div class="meta" id="count" style="margin-top:10px">turns 0 / __MAXTURNS__</div>
+  </div>
 </main>
 <form id="f" autocomplete="off">
   <input id="i" placeholder="type a message…" autofocus>
@@ -266,6 +288,7 @@ _PAGE = """<!doctype html>
 </form>
 <script>
 const TOKEN = "__TOKEN__";
+const log_aria = document.getElementById("log");
 const log = document.getElementById("log");
 const events = document.getElementById("events");
 const form = document.getElementById("f");
@@ -294,6 +317,7 @@ form.addEventListener("submit", async (ev) => {
   if (!text) return;
   bubble("you", text);
   input.value = "";
+  input.disabled = true;
   saveBtn.disabled = true;
   try {
     const res = await fetch("/api/turn", {
@@ -310,10 +334,12 @@ form.addEventListener("submit", async (ev) => {
     } else {
       bubble("bot", data.response);
       (data.events || []).forEach(addEvent);
+      bumpCount(data.turns);
     }
   } catch (err) {
     bubble("bot err", "error: " + err);
   } finally {
+    input.disabled = false;
     saveBtn.disabled = false;
     input.focus();
   }
@@ -331,6 +357,24 @@ saveBtn.addEventListener("click", async () => {
   bubble("hint", data.saved ? ("saved → " + data.saved + " (" + data.turns + " turns)") : ("save failed: " + (data.error || "?")));
 });
 input.focus();
+
+fetch("/api/state").then(r => r.json()).then(s => {
+  const about = document.getElementById("about");
+  about.textContent = s.description || "";
+  (s.notes || []).forEach(n => {
+    const d = document.createElement("div");
+    d.className = "about-note";
+    d.textContent = "· " + n;
+    about.appendChild(d);
+  });
+  document.getElementById("count").textContent =
+    "turns " + s.turns + " / " + s.max_turns;
+}).catch(() => {});
+
+function bumpCount(n) {
+  const c = document.getElementById("count");
+  if (c) c.textContent = "turns " + n + " / " + c.textContent.split("/")[1].trim();
+}
 </script>
 </body>
 </html>

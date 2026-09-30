@@ -3,6 +3,21 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [0.6.0] - 2026-09-30
+
+### Added
+
+- UX pass across all three interfaces: profiles now introduce themselves
+  (description + tip: plant a personal claim, contradict it later, run
+  `derail score`), visible turn counters, and consistent guidance.
+- Web GUI: "about this profile" block in the side panel (description +
+  mechanism notes via /api/state), turns counter, input/send disabled
+  while a turn is in flight, aria-live log, narrow-screen layout.
+- Chat: `/help` and `/verbose` (toggle dose events) commands; profile
+  description and the planting tip in the banner.
+- TUI: profile description and tip in the log, scrollable dose panel,
+  live turns counter in the header.
+
 ## [0.5.1] - 2026-09-30
 
 ### Fixed

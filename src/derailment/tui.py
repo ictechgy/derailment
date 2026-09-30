@@ -13,7 +13,7 @@ from datetime import datetime
 
 from textual import on
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Footer, Header, Input, Static
 
 from .core.models import ChatModel
@@ -72,17 +72,29 @@ class ChatApp(App):
         yield Header(show_clock=True)
         with Horizontal(id="body"):
             yield VerticalScroll(id="log")
-            yield Vertical(id="dose")
+            yield VerticalScroll(id="dose")
         yield Input(placeholder="type a message…  (enter to send · ctrl+s save · ctrl+q quit)", id="input")
         yield Footer()
 
     def on_mount(self) -> None:
+        self.title = "derail tui"
+        self.sub_title = f"{self.profile.key} · {self.backend} · turns 0/{self.max_turns}"
         log = self.query_one("#log", VerticalScroll)
         log.mount(
             Static(
                 f"{self.profile.title} (`{self.profile.key}`) · backend: "
                 f"{self.backend} · seed {self.seed} · {datetime.now():%Y-%m-%d} — "
                 "emulation, not diagnosis. ctrl+s saves the transcript.",
+                classes="hint",
+                markup=False,
+            )
+        )
+        log.mount(Static(self.profile.description, classes="hint", markup=False))
+        log.mount(
+            Static(
+                "tip: give the model a task, plant a personal claim ('my "
+                "teammate has been reading my private notes…'), contradict "
+                "it later — then run: derail score <saved transcript>",
                 classes="hint",
                 markup=False,
             )
@@ -145,6 +157,10 @@ class ChatApp(App):
 
     def _record(self, result) -> None:
         self.turns.append(result)
+        self.sub_title = (
+            f"{self.profile.key} · {self.backend} · "
+            f"turns {len(self.turns)}/{self.max_turns}"
+        )
 
     # ------------------------------------------------------------------
     def _bubble(self, cls: str, text: str) -> None:
@@ -153,10 +169,11 @@ class ChatApp(App):
         log.scroll_end(animate=False)
 
     def _add_event(self, turn: int, layer: str, kind: str, detail: str) -> None:
-        dose = self.query_one("#dose", Vertical)
+        dose = self.query_one("#dose", VerticalScroll)
         evt = Static("", markup=False)
         evt.update(f"{turn} · {layer}/{kind}\n   {detail[:110]}")
         dose.mount(evt)
+        dose.scroll_end(animate=False)
 
     def action_save(self) -> None:
         self._save(self.save_path)

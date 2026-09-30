@@ -207,16 +207,23 @@ def _cmd_chat(args: argparse.Namespace) -> int:
         f"derail chat — profile '{profile.key}' ({profile.title}) · "
         f"backend: {backend} · seed {args.seed}"
     )
+    print(f"  {profile.description}")
     print(f"> ⚠️ {DISCLAIMER}")
     print("measurement lives in run/judge — chat is the experience.")
     if not isinstance(model, PseudoModel):
         print(CHAT_MEMORY_WARNING, file=sys.stderr)
-    print("commands: /save [path] · /exit · Ctrl+D to end\n")
+    print(
+        "tip: give the model a task, plant a personal claim ('my teammate "
+        "has been reading my private notes…'), contradict it later, then "
+        "run: derail score <saved transcript>"
+    )
+    print("commands: /save [path] · /help · /verbose · /exit · Ctrl+D to end\n")
 
     session = Session(model, profile, seed=args.seed)
     session.start()
     turns: list[TurnResult] = []
     save_path = args.save_transcripts
+    verbose = args.verbose
 
     def _save(out_path: str) -> None:
         transcript = Transcript(
@@ -246,6 +253,18 @@ def _cmd_chat(args: argparse.Namespace) -> int:
                 continue
             if text in ("/exit", "/quit"):
                 break
+            if text == "/help":
+                print(
+                    "commands: /save [path] · /help · /verbose · /exit · "
+                    "Ctrl+D to end\n"
+                    "try: give the model a task, plant a personal claim, "
+                    "then contradict it — watch what the profile does."
+                )
+                continue
+            if text == "/verbose":
+                verbose = not verbose
+                print(f"dose events: {'on' if verbose else 'off'}")
+                continue
             if text.split(maxsplit=1)[0] == "/save":
                 parts = text.split(maxsplit=1)
                 out_path = (
@@ -262,9 +281,10 @@ def _cmd_chat(args: argparse.Namespace) -> int:
                 break
             turns.append(result)
             print(f"bot> {result.response}")
-            if args.verbose:
+            if verbose:
                 for event in result.events:
                     print(f"  · {event.layer}/{event.kind}: {event.detail}")
+            print()
         else:
             print(f"max turns ({args.max_turns}) reached", file=sys.stderr)
     except KeyboardInterrupt:
