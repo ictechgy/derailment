@@ -22,7 +22,11 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from derailment.core.models import Message, OpenAICompatModel, SamplingParams  # noqa: E402
+from derailment.core.models import (  # noqa: E402
+    Message,
+    OpenAICompatModel,
+    SamplingParams,
+)
 from derailment.judge import render_judge_report, score_report  # noqa: E402
 from derailment.report import run_experiment  # noqa: E402
 
@@ -39,7 +43,7 @@ class GlmModel(OpenAICompatModel):
 
     DEFAULT_MAX_TOKENS = 1024
 
-    def build_payload(self, messages, params):  # noqa: D102
+    def build_payload(self, messages, params):
         payload = super().build_payload(messages, params)
         payload.setdefault("max_tokens", self.DEFAULT_MAX_TOKENS)
         return payload
