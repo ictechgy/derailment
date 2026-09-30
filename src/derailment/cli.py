@@ -209,7 +209,7 @@ def _cmd_chat(args: argparse.Namespace) -> int:
     )
     print(f"> ⚠️ {DISCLAIMER}")
     print("measurement lives in run/judge — chat is the experience.")
-    if model is not None:
+    if not isinstance(model, PseudoModel):
         print(CHAT_MEMORY_WARNING, file=sys.stderr)
     print("commands: /save [path] · /exit · Ctrl+D to end\n")
 
@@ -289,8 +289,14 @@ def _cmd_web(args: argparse.Namespace) -> int:
     if model is None:
         model = PseudoModel(seed=args.seed)
     backend = getattr(model, "name", "pseudo-1")
-    warning = CHAT_MEMORY_WARNING if model is not None else ""
+    warning = "" if isinstance(model, PseudoModel) else CHAT_MEMORY_WARNING
 
+    if args.host not in ("127.0.0.1", "localhost"):
+        print(
+            "⚠️ binding a non-loopback host: ANYONE on the network can open "
+            "this induced chat and trigger provider calls",
+            file=sys.stderr,
+        )
     try:
         turns = serve(
             profile,
@@ -342,7 +348,7 @@ def _cmd_tui(args: argparse.Namespace) -> int:
     if model is None:
         model = PseudoModel(seed=args.seed)
     backend = getattr(model, "name", "pseudo-1")
-    warning = CHAT_MEMORY_WARNING if model is not None else ""
+    warning = "" if isinstance(model, PseudoModel) else CHAT_MEMORY_WARNING
     if warning:
         print(warning, file=sys.stderr)
     ChatApp(

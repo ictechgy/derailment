@@ -15,6 +15,7 @@ experience.
 from __future__ import annotations
 
 import json
+import secrets
 import threading
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -31,7 +32,13 @@ DISCLAIMER = (
 MAX_BODY = 1 << 20  # 1 MiB request cap
 
 
-def build_page(profile_key: str, profile_title: str, backend: str, warning: str) -> str:
+def build_page(
+    profile_key: str,
+    profile_title: str,
+    backend: str,
+    warning: str,
+    token: str = "",
+) -> str:
     """Render the chat page (server-side tokens only; user content is
     inserted client-side with textContent, never innerHTML)."""
     page = _PAGE
@@ -41,6 +48,7 @@ def build_page(profile_key: str, profile_title: str, backend: str, warning: str)
         .replace("__BACKEND__", backend)
         .replace("__WARNING__", warning)
         .replace("__DATE__", date.today().isoformat())
+        .replace("__TOKEN__", token)
     )
 
 
@@ -55,6 +63,7 @@ def serve(
     max_turns: int = 500,
     save_path: str | None = None,
     handle: dict | None = None,
+    token: str | None = None,
 ) -> list:
     """Start the local web server (blocking). Returns the accumulated
     turns when the server stops, so the caller can persist them.
@@ -63,6 +72,8 @@ def serve(
     profile_key = profile.key
     profile_title = profile.title
     session = Session(model, profile, seed=seed)
+    if token is None:
+        token = secrets.token_hex(16)  # POSTs must carry it (blocks drive-by pages)
     state = {
         "lock": threading.Lock(),
         "turns": [],
@@ -84,7 +95,9 @@ def serve(
 
         def do_GET(self) -> None:
             if self.path in ("/", "/index.html"):
-                body = build_page(profile_key, profile_title, backend, warning).encode("utf-8")
+                body = build_page(
+                    profile_key, profile_title, backend, warning, token=token
+                ).encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))
@@ -104,6 +117,9 @@ def serve(
                 self._json({"error": "not found"}, 404)
 
         def do_POST(self) -> None:
+            if self.headers.get("X-Derailment-Session") != token:
+                self._json({"error": "missing or bad session token"}, 401)
+                return
             length = int(self.headers.get("Content-Length", 0) or 0)
             if length > MAX_BODY:
                 self._json({"error": "body too large"}, 413)
@@ -249,6 +265,7 @@ _PAGE = """<!doctype html>
   <button type="button" id="save">save</button>
 </form>
 <script>
+const TOKEN = "__TOKEN__";
 const log = document.getElementById("log");
 const events = document.getElementById("events");
 const form = document.getElementById("f");
@@ -281,7 +298,10 @@ form.addEventListener("submit", async (ev) => {
   try {
     const res = await fetch("/api/turn", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Derailment-Session": TOKEN,
+      },
       body: JSON.stringify({ message: text }),
     });
     const data = await res.json();
@@ -301,7 +321,10 @@ form.addEventListener("submit", async (ev) => {
 saveBtn.addEventListener("click", async () => {
   const res = await fetch("/api/save", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Derailment-Session": TOKEN,
+    },
     body: "{}",
   });
   const data = await res.json();

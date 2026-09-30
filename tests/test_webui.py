@@ -43,6 +43,7 @@ class TestServerRoundTrip(unittest.TestCase):
 
         server_thread_error: list[Exception] = []
 
+        token = "test-token-123"
         handle: dict = {}
 
         def run_server() -> None:
@@ -57,6 +58,7 @@ class TestServerRoundTrip(unittest.TestCase):
                     seed=1,
                     max_turns=10,
                     handle=handle,
+                    token=token,
                 )
             except Exception as exc:  # pragma: no cover - surface thread errors
                 server_thread_error.append(exc)
@@ -80,12 +82,32 @@ class TestServerRoundTrip(unittest.TestCase):
                 time.sleep(0.05)
         self.assertEqual(page, "ok")
         self.assertIn("derail web", body or "")
+        self.assertIn(token, body or "")  # token embedded for the JS client
 
         # a turn through the layer chain
+        # POST without the session token is rejected (blocks drive-by pages)
+        req = urllib.request.Request(
+            f"{base}/api/turn",
+            data=json.dumps({"message": "hi"}).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                status = resp.status
+        except urllib.error.HTTPError as exc:
+            status = exc.code
+            data = json.loads(exc.read().decode("utf-8"))
+        self.assertEqual(status, 401)
+        self.assertIn("token", data["error"])
+
         req = urllib.request.Request(
             f"{base}/api/turn",
             data=json.dumps({"message": "hello there"}).encode(),
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "X-Derailment-Session": token,
+            },
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
@@ -116,7 +138,10 @@ class TestServerRoundTrip(unittest.TestCase):
             req = urllib.request.Request(
                 f"{base}/api/save",
                 data=json.dumps({"path": path}).encode(),
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Derailment-Session": token,
+                },
                 method="POST",
             )
             with urllib.request.urlopen(req, timeout=5) as resp:

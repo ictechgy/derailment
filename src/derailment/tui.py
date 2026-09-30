@@ -117,19 +117,31 @@ class ChatApp(App):
         if self.turn_count >= self.max_turns:
             self._bubble("hint", f"max turns ({self.max_turns}) reached")
             return
-        self.run_worker(lambda: self._work(text), thread=True, exclusive=False)
+        # serialize sends: Session is not thread-safe, and disabling the
+        # input gives visible feedback while the backend thinks
+        event.input.disabled = True
+        self.run_worker(lambda: self._work(text), thread=True, exclusive=True)
 
     def _work(self, text: str) -> None:
         try:
             result = self.session.send(text)
         except RuntimeError as exc:
             self.call_from_thread(self._bubble, "bot", f"error: {exc}")
+            self.call_from_thread(self._resume_input)
             return
         self.turn_count += 1
         self.call_from_thread(self._record, result)
         self.call_from_thread(self._bubble, "bot", result.response)
         for event in result.events:
-            self.call_from_thread(self._add_event, event.turn, event.layer, event.kind, event.detail)
+            self.call_from_thread(
+                self._add_event, event.turn, event.layer, event.kind, event.detail
+            )
+        self.call_from_thread(self._resume_input)
+
+    def _resume_input(self) -> None:
+        inp = self.query_one("#input", Input)
+        inp.disabled = False
+        inp.focus()
 
     def _record(self, result) -> None:
         self.turns.append(result)
