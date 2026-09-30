@@ -21,3 +21,7 @@ venv/
 *_report.md
 *_report.json
 *_transcripts.json
+
+# Benchmark: keep the runner, ignore all outputs and the key file
+benchmark/*
+!benchmark/run_glm_benchmark.py
