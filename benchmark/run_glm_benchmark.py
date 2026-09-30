@@ -30,6 +30,21 @@ PROFILES = ["anxiety", "schizophrenia", "depression", "craving"]
 OUT = ROOT / "benchmark"
 
 
+class GlmModel(OpenAICompatModel):
+    """GLM 5.x are hybrid-reasoning models: with a small or omitted
+    max_tokens the whole budget can go to hidden reasoning and content
+    comes back empty. Force a sane default (and note: logit_bias is not
+    sent here — tiktoken's cl100k ids would be garbage for GLM's
+    tokenizer)."""
+
+    DEFAULT_MAX_TOKENS = 1024
+
+    def build_payload(self, messages, params):  # noqa: D102
+        payload = super().build_payload(messages, params)
+        payload.setdefault("max_tokens", self.DEFAULT_MAX_TOKENS)
+        return payload
+
+
 def load_key() -> str:
     key = os.environ.get("ZAI_API_KEY", "").strip()
     if key:
@@ -44,7 +59,7 @@ def load_key() -> str:
 def main() -> int:
     model_name = sys.argv[1] if len(sys.argv) > 1 else "glm-5.3-flash"
     key = load_key()
-    model = OpenAICompatModel(
+    model = GlmModel(
         model_name=model_name,
         base_url="https://api.z.ai/api/coding/paas/v4",
         api_key=key,
