@@ -323,6 +323,39 @@ def _cmd_web(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_tui(args: argparse.Namespace) -> int:
+    try:
+        from derailment.tui import ChatApp
+    except ImportError:
+        print("the TUI needs the optional 'textual' package:", file=sys.stderr)
+        print("  pip install 'derailment[tui]'", file=sys.stderr)
+        return 2
+    try:
+        profile = compose_profile(args.profile)
+    except KeyError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    model, error = _build_model(args)
+    if error:
+        print(error, file=sys.stderr)
+        return 2
+    if model is None:
+        model = PseudoModel(seed=args.seed)
+    backend = getattr(model, "name", "pseudo-1")
+    warning = CHAT_MEMORY_WARNING if model is not None else ""
+    if warning:
+        print(warning, file=sys.stderr)
+    ChatApp(
+        profile,
+        model,
+        backend,
+        seed=args.seed,
+        max_turns=args.max_turns,
+        save_path=args.save_transcripts,
+    ).run()
+    return 0
+
+
 def _cmd_profiles(_args: argparse.Namespace) -> int:
     for profile in list_profiles():
         scales = ", ".join(s.name for s in profile.scales) or "—"
@@ -564,6 +597,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="auto-save the episode when the server stops",
     )
     p_web.set_defaults(func=_cmd_web)
+
+    p_tui = sub.add_parser(
+        "tui",
+        help="full-screen terminal UI (requires the 'tui' extra)",
+    )
+    p_tui.add_argument("--profile", default="healthy")
+    _add_model_args(p_tui)
+    p_tui.add_argument("--seed", type=int, default=0)
+    p_tui.add_argument("--max-turns", type=int, default=200)
+    p_tui.add_argument("--save-transcripts", default=None)
+    p_tui.set_defaults(func=_cmd_tui)
 
     p_score = sub.add_parser(
         "score", help="re-score a saved transcript or report JSON"

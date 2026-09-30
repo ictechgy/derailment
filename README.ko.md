@@ -203,6 +203,15 @@ derail chat --profile schizophrenia          # 오프라인 PseudoBot
 
 세션은 트랜스크립트로 저장되고(`/save [path]`, `--save-transcripts`) 바로 `derail score`로 채점할 수 있으며, `--verbose`는 턴마다 유도 용량을 출력합니다. 자유 대화는 메모리 오염 경고가 더욱 중요해집니다 — 채팅 모드는 경고를 크게 출력하고 오프라인 PseudoBot이 기본입니다. 측정은 run/judge, 채팅은 체험입니다.
 
+## 터미널 TUI
+
+Claude Code식 공간을 터미널 그대로: `derail tui`는 풀스크린 textual 앱으로 유도된 채팅을 실행합니다 — 메시지 로그, 실시간 "induction dose" 패널, ctrl+s 저장. 선택적 extra가 필요(제로 의존성 코어는 유지):
+
+```sh
+pip install 'derailment[tui]'
+derail tui --profile schizophrenia --model cli --cli-preset claude
+```
+
 ## 웹 GUI
 
 같은 유도 대화를 브라우저에서: `derail web`은 로컬 전용 채팅 페이지를 서빙합니다 — 채팅 버블, 턴마다 레이어 이벤트를 흐르는 "induction dose" 사이드 패널, `derail score`로 넘길 트랜스크립트 저장 버튼.

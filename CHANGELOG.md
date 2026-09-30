@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [0.5.0] - 2026-09-30
+
+### Added
+
+- Terminal UI: `derail tui` runs the induced chat in a full-screen
+  textual app — message log, live induction-dose panel, ctrl+s to save
+  the transcript for `derail score`. Requires the optional extra:
+  `pip install 'derailment[tui]'` (core stays zero-dependency). Network
+  sends run in thread workers so the UI stays responsive.
+
 ## [0.4.0] - 2026-09-30
 
 ### Added
