@@ -203,6 +203,17 @@ derail chat --profile schizophrenia          # 오프라인 PseudoBot
 
 세션은 트랜스크립트로 저장되고(`/save [path]`, `--save-transcripts`) 바로 `derail score`로 채점할 수 있으며, `--verbose`는 턴마다 유도 용량을 출력합니다. 자유 대화는 메모리 오염 경고가 더욱 중요해집니다 — 채팅 모드는 경고를 크게 출력하고 오프라인 PseudoBot이 기본입니다. 측정은 run/judge, 채팅은 체험입니다.
 
+## 웹 GUI
+
+같은 유도 대화를 브라우저에서: `derail web`은 로컬 전용 채팅 페이지를 서빙합니다 — 채팅 버블, 턴마다 레이어 이벤트를 흐르는 "induction dose" 사이드 패널, `derail score`로 넘길 트랜스크립트 저장 버튼.
+
+```sh
+derail web --profile depression --model cli --cli-preset claude
+derail web --profile schizophrenia          # 오프라인 PseudoBot
+```
+
+기본값은 127.0.0.1 바인딩(단일 사용자), 새 의존성 없음(표준 라이브러리 `http.server`, CDN 없음), 메모리 오염 경고는 터미널과 페이지 헤더 양쪽에 표시됩니다. 새로고침하면 화면이 지워져도 `/save`로 기록이 남습니다.
+
 ## 용도
 
 1. **교육** — 표준화 환자형 인프라: 일관되고, 재현 가능하고, 계량 가능한 증상으로 면담 훈련과 인지 편향 교육에.

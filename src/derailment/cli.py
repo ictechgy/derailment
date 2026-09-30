@@ -274,6 +274,55 @@ def _cmd_chat(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_web(args: argparse.Namespace) -> int:
+    from .webui import serve
+
+    try:
+        profile = compose_profile(args.profile)
+    except KeyError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    model, error = _build_model(args)
+    if error:
+        print(error, file=sys.stderr)
+        return 2
+    if model is None:
+        model = PseudoModel(seed=args.seed)
+    backend = getattr(model, "name", "pseudo-1")
+    warning = CHAT_MEMORY_WARNING if model is not None else ""
+
+    try:
+        turns = serve(
+            profile,
+            model,
+            backend,
+            warning,
+            host=args.host,
+            port=args.port,
+            seed=args.seed,
+            max_turns=args.max_turns,
+            save_path=args.save_transcripts,
+        )
+    except OSError as exc:
+        print(f"cannot bind {args.host}:{args.port}: {exc}", file=sys.stderr)
+        return 2
+    if args.save_transcripts and turns:
+        transcript = Transcript(
+            profile=profile.key,
+            model=backend,
+            seed=args.seed,
+            turns=turns,
+            script_name="interactive",
+        )
+        with open(args.save_transcripts, "w", encoding="utf-8") as fh:
+            fh.write(transcript.to_json())
+        print(
+            f"transcript saved to {args.save_transcripts} ({len(turns)} turns)",
+            file=sys.stderr,
+        )
+    return 0
+
+
 def _cmd_profiles(_args: argparse.Namespace) -> int:
     for profile in list_profiles():
         scales = ", ".join(s.name for s in profile.scales) or "—"
@@ -498,6 +547,23 @@ def build_parser() -> argparse.ArgumentParser:
     p_chat.add_argument("--max-turns", type=int, default=100)
     p_chat.add_argument("--verbose", action="store_true", help="print dose events")
     p_chat.set_defaults(func=_cmd_chat)
+
+    p_web = sub.add_parser(
+        "web",
+        help="local web GUI for an induced profile (localhost only)",
+    )
+    p_web.add_argument("--profile", default="healthy")
+    _add_model_args(p_web)
+    p_web.add_argument("--seed", type=int, default=0)
+    p_web.add_argument("--host", default="127.0.0.1")
+    p_web.add_argument("--port", type=int, default=8765)
+    p_web.add_argument("--max-turns", type=int, default=500)
+    p_web.add_argument(
+        "--save-transcripts",
+        default=None,
+        help="auto-save the episode when the server stops",
+    )
+    p_web.set_defaults(func=_cmd_web)
 
     p_score = sub.add_parser(
         "score", help="re-score a saved transcript or report JSON"

@@ -282,6 +282,22 @@ warning more important than ever — chat mode prints it prominently and
 defaults to the offline PseudoBot. Measurement stays in `run`/`judge`;
 chat is the experience.
 
+## Web GUI
+
+The same induced conversation in a browser: `derail web` serves a
+local-only chat page with chat bubbles, an "induction dose" side panel
+streaming layer events per turn, and a save button for `derail score`.
+
+```sh
+derail web --profile depression --model cli --cli-preset claude
+derail web --profile schizophrenia          # offline PseudoBot
+```
+
+Binds to 127.0.0.1 by default (single user), zero new dependencies
+(stdlib `http.server`, no CDN), and the memory-contamination warning
+shows both on the terminal and in the page header. Reload clears the
+view — `/save` keeps the record.
+
 ## What this is for
 
 1. **Education** — standardized-patient-style infrastructure: symptoms that

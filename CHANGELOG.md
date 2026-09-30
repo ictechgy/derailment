@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [0.4.0] - 2026-09-30
+
+### Added
+
+- Local web GUI: `derail web --profile depression` serves a single-user,
+  localhost-only chat page (vanilla HTML/JS embedded in the package — no
+  CDN, works offline) driving the same layer chain as `derail chat`.
+  Dark-themed chat bubbles, an "induction dose" side panel streaming the
+  layer events per turn, and a save button writing the transcript for
+  `derail score`. Binds to 127.0.0.1 by default; the
+  memory-contamination warning shows both on the terminal and in the
+  page header. Zero new dependencies (stdlib `http.server`).
+
 ## [0.3.0] - 2026-09-30
 
 ### Added
