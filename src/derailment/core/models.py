@@ -37,6 +37,9 @@ class ChatModel(Protocol):
     def complete(self, messages: list[Message], params: SamplingParams) -> str: ...
 
 
+MAX_RESPONSE_BYTES = 16 * 1024 * 1024  # 16 MiB response cap
+
+
 class OpenAICompatModel:
     """Talks to any OpenAI-compatible ``/chat/completions`` endpoint using only
     the standard library. Word-level ``logit_bias`` entries are encoded to token
@@ -98,26 +101,56 @@ class OpenAICompatModel:
         return payload
 
     def complete(self, messages: list[Message], params: SamplingParams) -> str:
+        if (
+            self.api_key
+            and self.base_url.startswith("http://")
+            and "//localhost" not in self.base_url
+            and "//127.0.0.1" not in self.base_url
+        ):
+            raise RuntimeError(
+                "refusing to send the API key over plain HTTP to a "
+                "non-loopback host; use an https:// base URL"
+            )
         payload = self.build_payload(messages, params)
         req = urllib.request.Request(
             f"{self.base_url}/chat/completions",
             data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.api_key}",
-            },
+            headers=(
+                {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {self.api_key}",
+                }
+                if self.api_key
+                else {"Content-Type": "application/json"}
+            ),
             method="POST",
         )
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+                raw = resp.read(MAX_RESPONSE_BYTES + 1)
+            if len(raw) > MAX_RESPONSE_BYTES:
+                raise RuntimeError("provider response exceeded the size limit")
+            try:
+                data = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError) as exc:
+                raise RuntimeError(
+                    "provider response was not valid UTF-8 JSON"
+                ) from exc
         except urllib.error.HTTPError as exc:  # pragma: no cover - requires network
             raise RuntimeError(
                 f"provider returned HTTP {exc.code} for {self.base_url}"
             ) from exc
         except OSError as exc:  # URLError and raw socket failures (offline, denied)
             raise RuntimeError(f"cannot reach {self.base_url}: {exc}") from exc
-        return data["choices"][0]["message"]["content"]
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError(
+                "provider response did not match the chat schema"
+            ) from exc
+        if not isinstance(content, str):
+            raise RuntimeError("provider response content is not text")
+        return content
 
 
 class SubprocessModel:
@@ -199,13 +232,15 @@ class SubprocessModel:
                     timeout=self.timeout,
                 )
         except subprocess.TimeoutExpired as exc:
+            first_word = self.command.split()[0] if self.command.split() else "cli"
             raise RuntimeError(
-                f"CLI agent timed out after {self.timeout}s: {self.command}"
+                f"CLI agent '{first_word}' timed out after {self.timeout}s"
             ) from exc
         if result.returncode != 0:
+            first_word = self.command.split()[0] if self.command.split() else "cli"
             raise RuntimeError(
-                f"CLI agent failed (exit {result.returncode}): "
-                f"{result.stderr.decode('utf-8', 'replace')[:400]}"
+                f"CLI agent '{first_word}' failed (exit {result.returncode}); "
+                "stderr suppressed — run the command manually to debug"
             )
         return result.stdout.decode("utf-8", "replace").strip()
 

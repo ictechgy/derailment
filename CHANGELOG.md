@@ -3,6 +3,26 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [0.7.1] - 2026-10-01
+
+### Fixed
+
+Security hardening from an external review round:
+- Ollama preset no longer inherits `OPENAI_API_KEY` as a fallback, and no
+  `Authorization` header is sent when no key is configured (previously a
+  local listener could receive the OpenAI key).
+- Web GUI: non-loopback binding is refused unless `--allow-remote` is
+  passed explicitly; in remote mode POSTs additionally require a PIN
+  printed only on the operator's terminal (a GET alone never grants
+  write access); client-supplied save paths must be bare filenames and
+  never overwrite existing files (exclusive create, 409); operator
+  `--save-transcripts` paths are trusted as before.
+- CLI-agent backends: failure and timeout errors no longer embed raw
+  stderr or full command lines (secrets/paths stay out of logs).
+- API backend: credentialed non-loopback plain-HTTP endpoints are
+  refused (use https); responses are size-capped (16 MiB) and schema
+  issues / non-JSON bodies become clean runtime errors.
+
 ## [0.7.0] - 2026-09-30
 
 ### Added

@@ -315,12 +315,16 @@ def _cmd_web(args: argparse.Namespace) -> int:
     backend = getattr(model, "name", "pseudo-1")
     warning = "" if isinstance(model, PseudoModel) else CHAT_MEMORY_WARNING
 
-    if args.host not in ("127.0.0.1", "localhost"):
+    if args.host not in ("127.0.0.1", "localhost") and not getattr(
+        args, "allow_remote", False
+    ):
         print(
-            "⚠️ binding a non-loopback host: ANYONE on the network can open "
-            "this induced chat and trigger provider calls",
+            "refusing non-loopback binding: anyone on the network could "
+            "open this induced chat, trigger provider calls and use the "
+            "save API. Pass --allow-remote explicitly if that is intended.",
             file=sys.stderr,
         )
+        return 2
     try:
         turns = serve(
             profile,
@@ -332,6 +336,7 @@ def _cmd_web(args: argparse.Namespace) -> int:
             seed=args.seed,
             max_turns=args.max_turns,
             save_path=args.save_transcripts,
+            remote=args.host not in ("127.0.0.1", "localhost"),
         )
     except OSError as exc:
         print(f"cannot bind {args.host}:{args.port}: {exc}", file=sys.stderr)
@@ -627,6 +632,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_model_args(p_web)
     p_web.add_argument("--seed", type=int, default=0)
     p_web.add_argument("--host", default="127.0.0.1")
+    p_web.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help="permit a non-loopback --host (network-exposed; understand the risks first)",
+    )
     p_web.add_argument("--port", type=int, default=8765)
     p_web.add_argument("--max-turns", type=int, default=500)
     p_web.add_argument(

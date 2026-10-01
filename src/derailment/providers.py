@@ -131,7 +131,7 @@ def resolve_api_model(
     return OpenAICompatModel(
         model_name=model_name or p.default_model,
         base_url=base_url or p.base_url,
-        api_key_env=api_key_env or (p.api_key_env or "OPENAI_API_KEY"),
+        api_key_env=api_key_env or p.api_key_env,  # empty stays empty: no key
     )
 
 

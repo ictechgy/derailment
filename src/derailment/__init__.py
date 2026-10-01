@@ -24,7 +24,7 @@ from .judge import RUBRICS, JudgeVerdict, RubricResult, score_report
 from .profiles import HEALTHY_KEY, Profile, get_profile, list_profiles, standard_script
 from .report import run_experiment
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 __all__ = [
     "HEALTHY_KEY",

@@ -7,6 +7,7 @@ those tests are skipped. HTML/parse logic is always tested.
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import unittest
@@ -130,26 +131,86 @@ class TestServerRoundTrip(unittest.TestCase):
             data = json.loads(exc.read().decode("utf-8"))
         self.assertIn("error", data)
 
-        # save endpoint writes a transcript
+        # save endpoint writes a transcript — bare filenames only (the
+        # server refuses absolute paths and traversal), so chdir to tmp
+        import os
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            path = f"{tmp}/chat.json"
+            prev_cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                req = urllib.request.Request(
+                    f"{base}/api/save",
+                    data=json.dumps({"path": "chat.json"}).encode(),
+                    headers={
+                        "Content-Type": "application/json",
+                        "X-Derailment-Session": token,
+                    },
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                self.assertEqual(data["saved"], "chat.json")
+                with open("chat.json", encoding="utf-8") as fh:
+                    saved = json.load(fh)
+                self.assertEqual(saved["turns"][0]["spec"]["user"], "hello there")
+            finally:
+                os.chdir(prev_cwd)
+
+        import tempfile as _tf
+
+        with _tf.TemporaryDirectory() as tmp2:
+            prev2 = os.getcwd()
+            os.chdir(tmp2)
+            try:
+                req = urllib.request.Request(
+                    f"{base}/api/save",
+                    data=json.dumps({"path": "again.json"}).encode(),
+                    headers={
+                        "Content-Type": "application/json",
+                        "X-Derailment-Session": token,
+                    },
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                self.assertEqual(data["saved"], "again.json")
+                req2 = urllib.request.Request(
+                    f"{base}/api/save",
+                    data=json.dumps({"path": "again.json"}).encode(),
+                    headers={
+                        "Content-Type": "application/json",
+                        "X-Derailment-Session": token,
+                    },
+                    method="POST",
+                )
+                try:
+                    with urllib.request.urlopen(req2, timeout=5) as resp:
+                        status = resp.status
+                except urllib.error.HTTPError as exc:
+                    status = exc.code
+                self.assertEqual(status, 409)
+            finally:
+                os.chdir(prev2)
+
+        # absolute paths and traversal are rejected
+        for bad in ("/etc/pwned.json", "../escape.json", "a/b.json"):
             req = urllib.request.Request(
                 f"{base}/api/save",
-                data=json.dumps({"path": path}).encode(),
+                data=json.dumps({"path": bad}).encode(),
                 headers={
                     "Content-Type": "application/json",
                     "X-Derailment-Session": token,
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-            self.assertEqual(data["saved"], path)
-            with open(path, encoding="utf-8") as fh:
-                saved = json.load(fh)
-            self.assertEqual(saved["turns"][0]["spec"]["user"], "hello there")
+            try:
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    status = resp.status
+            except urllib.error.HTTPError as exc:
+                status = exc.code
+            self.assertEqual(status, 400, bad)
 
         # 404 for unknown paths
         try:
@@ -162,6 +223,95 @@ class TestServerRoundTrip(unittest.TestCase):
         handle["server"].shutdown()
         thread.join(timeout=5)
         self.assertFalse(thread.is_alive())
+
+
+class TestRemotePin(unittest.TestCase):
+    """In remote mode the page/token are reachable by anyone; POSTs must
+    also carry a PIN that only the operator terminal shows."""
+
+    def _port(self) -> int:
+        raw = os.environ.get("AGENTBELT_LOOPBACK_PORT")
+        if not raw:
+            self.skipTest("no loopback port grant in this environment")
+        return int(raw)
+
+    def test_post_requires_the_terminal_pin(self) -> None:
+        import contextlib
+        import threading
+        import time
+
+        from derailment.core.models import PseudoModel
+        from derailment.profiles import get_profile
+        from derailment.webui import serve
+
+        port = self._port()
+        handle: dict = {}
+        captured = io.StringIO()
+
+        def run_server() -> None:
+            with contextlib.redirect_stdout(captured):
+                serve(
+                    get_profile("healthy"),
+                    PseudoModel(seed=1),
+                    "pseudo-1",
+                    "",
+                    host="127.0.0.1",
+                    port=port,
+                    seed=1,
+                    max_turns=5,
+                    handle=handle,
+                    token="t-remote",
+                    remote=True,
+                )
+
+        thread = threading.Thread(target=run_server, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{port}"
+        for _ in range(60):
+            if handle.get("server"):
+                break
+            time.sleep(0.05)
+        time.sleep(0.2)
+        import re
+
+        match = re.search(r"PIN[^\n]*?(\d{6})", captured.getvalue())
+        self.assertIsNotNone(match, captured.getvalue())
+        pin = match.group(1)
+
+        # without the PIN: 401 even with a valid token
+        req = urllib.request.Request(
+            f"{base}/api/turn",
+            data=json.dumps({"message": "hi"}).encode(),
+            headers={
+                "Content-Type": "application/json",
+                "X-Derailment-Session": "t-remote",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                status = resp.status
+        except urllib.error.HTTPError as exc:
+            status = exc.code
+        self.assertEqual(status, 401)
+
+        # with the PIN: accepted
+        req = urllib.request.Request(
+            f"{base}/api/turn",
+            data=json.dumps({"message": "hi"}).encode(),
+            headers={
+                "Content-Type": "application/json",
+                "X-Derailment-Session": "t-remote",
+                "X-Derailment-Pin": pin,
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        self.assertIn("response", data)
+
+        handle["server"].shutdown()
+        thread.join(timeout=5)
 
 
 if __name__ == "__main__":

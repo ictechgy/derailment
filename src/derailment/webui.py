@@ -15,6 +15,7 @@ experience.
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import threading
 from datetime import date
@@ -39,6 +40,7 @@ def build_page(
     warning: str,
     token: str = "",
     max_turns: int = 0,
+    remote: bool = False,
 ) -> str:
     """Render the chat page (server-side tokens only; user content is
     inserted client-side with textContent, never innerHTML)."""
@@ -51,6 +53,7 @@ def build_page(
         .replace("__DATE__", date.today().isoformat())
         .replace("__MAXTURNS__", str(max_turns))
         .replace("__TOKEN__", token)
+        .replace("__REMOTE__", "true" if remote else "false")
     )
 
 
@@ -66,6 +69,7 @@ def serve(
     save_path: str | None = None,
     handle: dict | None = None,
     token: str | None = None,
+    remote: bool = False,
 ) -> list:
     """Start the local web server (blocking). Returns the accumulated
     turns when the server stops, so the caller can persist them.
@@ -78,6 +82,12 @@ def serve(
     session = Session(model, profile, seed=seed)
     if token is None:
         token = secrets.token_hex(16)  # POSTs must carry it (blocks drive-by pages)
+    # In remote mode the page (and thus the token) is reachable by anyone,
+    # so POSTs additionally require a PIN that only the operator's terminal
+    # shows — a GET alone never grants write access.
+    pin = f"{secrets.randbelow(900000) + 100000}" if remote else None
+    if remote:
+        print(f"remote mode PIN (enter it in the browser): {pin}")
     state = {
         "lock": threading.Lock(),
         "turns": [],
@@ -132,6 +142,12 @@ def serve(
             if self.headers.get("X-Derailment-Session") != token:
                 self._json({"error": "missing or bad session token"}, 401)
                 return
+            if pin is not None and self.headers.get("X-Derailment-Pin") != pin:
+                self._json(
+                    {"error": "missing or bad remote PIN (see the terminal)"},
+                    401,
+                )
+                return
             length = int(self.headers.get("Content-Length", 0) or 0)
             if length > MAX_BODY:
                 self._json({"error": "body too large"}, 413)
@@ -176,9 +192,23 @@ def serve(
                         }
                     )
             elif self.path == "/api/save":
-                out_path = str(
-                    data.get("path") or state["save_path"] or f"chat_{profile_key}.json"
-                )
+                client_path = str(data.get("path") or "").strip()
+                if client_path:
+                    # client-supplied: bare filename only, and never
+                    # overwrite an existing file (P1: remote file writes)
+                    if (
+                        client_path != os.path.basename(client_path)
+                        or client_path in ("", ".", "..")
+                    ):
+                        self._json({"error": "path must be a bare filename"}, 400)
+                        return
+                    out_path = client_path
+                    exclusive = True
+                else:
+                    # operator-configured path (from --save-transcripts) or
+                    # the default: trusted, may include directories
+                    out_path = state["save_path"] or f"chat_{profile_key}.json"
+                    exclusive = state["save_path"] is None
                 with state["lock"]:
                     transcript = Transcript(
                         profile=profile_key,
@@ -187,8 +217,15 @@ def serve(
                         turns=state["turns"],
                         script_name="interactive",
                     )
-                    with open(out_path, "w", encoding="utf-8") as fh:
-                        fh.write(transcript.to_json())
+                    try:
+                        mode = "x" if exclusive else "w"
+                        with open(out_path, mode, encoding="utf-8") as fh:
+                            fh.write(transcript.to_json())
+                    except FileExistsError:
+                        self._json(
+                            {"error": "file already exists (overwrite refused)"}, 409
+                        )
+                        return
                     n = len(state["turns"])
                 self._json({"saved": out_path, "turns": n})
             else:
@@ -288,6 +325,8 @@ _PAGE = """<!doctype html>
 </form>
 <script>
 const TOKEN = "__TOKEN__";
+const REMOTE = __REMOTE__;
+const PIN = REMOTE ? (prompt("Enter the PIN printed in the derail web terminal:") || "") : "";
 const log_aria = document.getElementById("log");
 const log = document.getElementById("log");
 const events = document.getElementById("events");
@@ -325,6 +364,7 @@ form.addEventListener("submit", async (ev) => {
       headers: {
         "Content-Type": "application/json",
         "X-Derailment-Session": TOKEN,
+        "X-Derailment-Pin": PIN,
       },
       body: JSON.stringify({ message: text }),
     });
@@ -350,6 +390,7 @@ saveBtn.addEventListener("click", async () => {
     headers: {
       "Content-Type": "application/json",
       "X-Derailment-Session": TOKEN,
+      "X-Derailment-Pin": PIN,
     },
     body: "{}",
   });
