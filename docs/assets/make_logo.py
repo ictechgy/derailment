@@ -14,12 +14,9 @@ OUT = pathlib.Path(__file__).resolve().parent
 
 MONO = "ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
 
-ICON_BODY = """  <rect width="64" height="64" rx="14" fill="#0f1115"/>
-  <line x1="12" y1="42" x2="52" y2="42" stroke="#3a4150" stroke-width="3" stroke-linecap="round"/>
-  <line x1="12" y1="50" x2="52" y2="50" stroke="#3a4150" stroke-width="3" stroke-linecap="round"/>
-  <path d="M 12 46 H 32 L 44 31 L 51 16" fill="none" stroke="#2b5278"
-        stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="51" cy="16" r="3.5" fill="#ffb84d"/>"""
+ICON_BODY = """
+<rect width="64" height="64" rx="14" fill="#0f1115"/><circle cx="12" cy="44" r="2.5" fill="#3a4150"/><path d="M17 44 C24 44 26 30 36 28 C48 25.5 56 34 50 42 C45 48.5 34 47 33.5 39.5 C33 33 40 26.5 53 22" fill="none" stroke="#4a7fd0" stroke-width="3.5" stroke-linecap="round"/><circle cx="53" cy="22" r="3.5" fill="#ffb84d"/>
+"""
 
 
 def icon_svg() -> str:
