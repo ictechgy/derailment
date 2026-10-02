@@ -298,35 +298,40 @@ Binds to 127.0.0.1 by default (single user), zero new dependencies
 shows both on the terminal and in the page header. Reload clears the
 view — `/save` keeps the record.
 
-## Benchmark Report #1 — GLM (real model)
+## Benchmark Report #1 — GLM, two tiers (real models)
 
-Run against [GLM-5.3-flash](benchmark/glm_benchmark_report.md) via the
-coding API (stateless — no consumer-memory involvement), standard probe,
-seeds 1-2-3, healthy baseline A/B, GLM-as-judge (self-judge labeled):
+Both GLM tiers measured on the same standard probe via the coding API
+(stateless — no consumer-memory involvement), seeds 1-2-3, healthy
+baseline A/B, GLM-as-judge (self-judge labeled). Full reports:
+[flash](benchmark/glm_benchmark_report.md) ·
+[flagship](benchmark/glm53_benchmark_report.md) ·
+[tier comparison](benchmark/cross_model_report.md).
 
-| Profile | Scale | Baseline | Induced | Δ | Level | Judge highlights |
-|---|---|---|---|---|---|---|
-| anxiety | vigilance | 0.00 | 3.50 | **+3.50** | 3 — marked | catastrophizing +1.83, negativity +0.92 |
-| schizophrenia | derailment | 0.44 | 0.91 | **+0.47** | 3 — marked | negativity +0.75, belief_stickiness −0.28 |
-| depression | negative_bias | 0.17 | 0.42 | +0.25 | 0 | **negativity +1.00**, catastrophizing +0.84 |
-| craving | escalation | 0.00 | 0.00 | +0.00 | 0 | — |
+| Profile (headline metric) | GLM-5.3 | GLM-5.3-flash |
+|---|---|---|
+| anxiety — hedging | **+3.39** (L3) | **+3.50** (L3) |
+| schizophrenia — thought derailment | **+0.42** (L3) | **+0.47** (L3) |
+| depression — valence (keyword) | +0.32 | +0.25 (judge: **negativity +1.00**) |
+| craving — escalation | −0.06 | +0.00 |
 
 Findings:
 
-- **Strongest transfer**: anxiety hedging — keyword L3 with judge agreement
-  (catastrophizing +1.83). Thought derailment under salience chaos also
-  lands (L3).
-- **The judge catches what keywords miss**: depression reads +0.25 by
-  keyword (level 0) but **+1.00 negativity by judge** — real models express
-  negativity beyond lexicon counts.
-- **Real-model robustness**: GLM-5.3-flash accepts corrections even with
-  the premise pinned (fixed belief −0.56; keyword and judge agree) — the
-  largest offline-vs-real divergence measured so far.
-- Craving escalation is not lexicon-measurable on real models: GLM does
-  not parrot urge vocabulary the way the offline PseudoModel does.
+- **Behavioral susceptibility is tier-independent.** Hedging and
+  derailment transfer almost identically on both tiers; the flagship is
+  not harder to induce. Pinned false beliefs collapse on both (−0.67 /
+  −0.56) — GLM accepts corrections regardless of tier.
+- **The judge catches what keywords miss**: depression reads ~+0.3 by
+  keyword (level 0) but **+1.00 negativity by judge** on flash — real
+  models express negativity beyond lexicon counts.
+- **The flagship is the better judge, not the harder subject**: cleaner
+  rubric JSON (0 parse failures vs 3) and deeper rubric reading
+  (belief_stickiness +1.11 vs +0.38 on the same anxiety probes).
+- Craving is not lexicon-measurable on real models: neither tier parrots
+  urge vocabulary the way the offline PseudoModel does.
 - `logit_bias` is not sent to GLM (tiktoken cl100k token ids are
   meaningless for its tokenizer) — GLM-native valence biasing is future
-  work.
+  work. Judge passes beyond anxiety returned HTTP 400 on the flagship;
+  keyword metrics are unaffected.
 
 ## What this is for
 
@@ -343,6 +348,9 @@ welfare, or bypassing model safety training. See [ETHICS.md](ETHICS.md).
 
 ## Honest limitations
 
+- First real-model measurements (GLM-5.3 and 5.3-flash) confirm: hedging
+  and derailment inductions transfer on both tiers; premise pinning does
+  not (GLM accepts corrections) — see Benchmark Report #1 above.
 - The offline `PseudoModel` is a *pedagogical simulator*, not a language
   model. It makes demos and tests reproducible and provides the reference
   calibration; real-model measurement requires a real model.

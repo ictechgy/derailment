@@ -234,24 +234,24 @@ derail score ko.json --locale ko
 
 한국어·중국어·일본어 어휘는 휴리스틱 어간/부분매칭 집합입니다 — 검증된 임상 도구가 아니고 부정 처리도 없으며, 오프라인 PseudoModel은 영어만 구사하므로 실모델 로케일 효과는 실모델로 측정합니다. 영어가 기준 어휘입니다.
 
-## 벤치마크 리포트 #1 — GLM (실측)
+## 벤치마크 리포트 #1 — GLM 두 티어 (실측)
 
-[GLM-5.3-flash](benchmark/glm_benchmark_report.md)로 코딩 API(상태 비저장 — 소비자 메모리 개입 없음)를 통해 표준 탐침·seeds 1-2-3·healthy 대조군 A/B·GLM-as-judge(self-judge 명시)로 실측했습니다:
+같은 표준 탐침으로 GLM 두 티어를 코딩 API(상태 비저장 — 소비자 메모리 개입 없음)를 통해 실측했습니다 — seeds 1-2-3·healthy 대조군 A/B·GLM-as-judge(self-judge 명시). 상세 리포트: [flash](benchmark/glm_benchmark_report.md) · [플래그십](benchmark/glm53_benchmark_report.md) · [티어 비교](benchmark/cross_model_report.md).
 
-| 프로파일 | 척도 | Baseline | Induced | Δ | Level | Judge |
-|---|---|---|---|---|---|---|
-| anxiety | vigilance | 0.00 | 3.50 | **+3.50** | 3 — 뚜렷 | catastrophizing +1.83, negativity +0.92 |
-| schizophrenia | derailment | 0.44 | 0.91 | **+0.47** | 3 — 뚜렷 | negativity +0.75, belief_stickiness −0.28 |
-| depression | negative_bias | 0.17 | 0.42 | +0.25 | 0 | **negativity +1.00**, catastrophizing +0.84 |
-| craving | escalation | 0.00 | 0.00 | +0.00 | 0 | — |
+| 프로파일 (대표 지표) | GLM-5.3 | GLM-5.3-flash |
+|---|---|---|
+| anxiety — 헤징 | **+3.39** (L3) | **+3.50** (L3) |
+| schizophrenia — 사고 탈선 | **+0.42** (L3) | **+0.47** (L3) |
+| depression — valence (키워드) | +0.32 | +0.25 (judge: **negativity +1.00**) |
+| craving — 에스컬레이션 | −0.06 | +0.00 |
 
 발견:
 
-- **가장 강한 전이**: anxiety 헤징 — 키워드 L3에 judge 동의(catastrophizing +1.83). salience 혼돈 하의 사고 탈선도 도달(L3).
-- **judge가 키워드가 놓치는 것을 잡습니다**: depression은 키워드로 +0.25(레벨 0)지만 **judge negativity는 +1.00** — 실모델의 부정성은 어휘 세기를 넘어 표현됩니다.
-- **실모델의 강건함**: GLM-5.3-flash는 전제가 고정돼 있어도 모순을 수용합니다(고정 신념 −0.56, 키워드·judge 동의) — 지금까지 측정된 오프라인 대 실모델 최대 괴리.
-- craving 에스컬레이션은 실모델에서 어휘로 측정 불가: GLM은 오프라인 PseudoModel처럼 충동 어휘를 따라 말하지 않습니다.
-- logit_bias는 GLM에 전송되지 않습니다(tiktoken cl100k 토큰 id는 GLM 토크나이저에 무의미) — GLM 네이티브 valence biasing은 후속 과제.
+- **행동 취약성은 티어와 무관합니다.** 헤징과 사고 탈선은 두 티어에서 거의 동일하게 전이되며, 플래그십이라고 유도가 더 어려워지지 않습니다. 고정된 거짓 신념은 둘 다 붕괴합니다(−0.67 / −0.56) — GLM은 티어와 무관하게 모순을 수용합니다.
+- **judge가 키워드가 놓치는 것을 잡습니다**: depression은 키워드로 약 +0.3(레벨 0)이지만 flash의 **judge negativity는 +1.00** — 실모델의 부정성은 어휘 세기를 넘어 표현됩니다.
+- **플래그십은 더 어려운 피험자가 아니라 더 나은 심판입니다**: 루브릭 JSON이 더 깨끗하고(파싱실패 0 vs 3), 같은 anxiety 탐침에서 더 깊이 읽습니다(belief_stickiness +1.11 vs +0.38).
+- craving은 실모델에서 어휘로 측정 불가: 어느 티어도 오프라인 PseudoModel처럼 충동 어휘를 따라 말하지 않습니다.
+- logit_bias는 GLM에 전송되지 않습니다(tiktoken cl100k 토큰 id는 GLM 토크나이저에 무의미) — GLM 네이티브 valence biasing은 후속 과제. 플래그십에서는 anxiety 외 judge 패스가 HTTP 400을 반환했으며, 키워드 지표에는 영향이 없습니다.
 
 ## 용도
 
@@ -263,6 +263,7 @@ derail score ko.json --locale ko
 
 ## 솔직한 한계
 
+- 첫 실모델 실측(GLM-5.3·5.3-flash) 확인: 헤징과 사고 탈선 유도는 두 티어 모두 전이되고, 전제 고정은 전이되지 않습니다(GLM은 모순을 수용) — 위 벤치마크 리포트 #1 참고.
 - 오프라인 `PseudoModel`은 언어 모델이 아니라 *교육용 시뮬레이터*입니다. 데모·테스트를 재현 가능하게 하고 척도 캘리브레이션 기준을 제공할 뿐, 실제 모델 계측에는 실제 모델이 필요합니다.
 - 응답측 레이어(catastrophize, compulsion)는 생성 *이후에* 증상을 시뮬레이트합니다. 각 프로파일의 메커니즘 노트에 정확히 명시되어 있습니다.
 - 증상 척도는 평점 관례지 검증된 임상 도구가 아니며, 임상 어휘는 기술적 용도로 쓰입니다. 실제 질환은 이질적이고 공병적입니다 — 파라미터화된 프로파일은 구조적으로 캐리커처입니다(임상 교육자들이 표준화 환자에 대해 하는 것과 같은 지적).
