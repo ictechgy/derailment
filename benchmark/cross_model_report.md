@@ -38,3 +38,31 @@ per turn). Emulation, not diagnosis — deltas are the primary output.
 - ling-3.0-flash-fin-free was probed but its upstream endpoint was
   unavailable during the run; omitted.
 - GLM rows reproduce Benchmark Report #1 (seeds 1-3, judge-scored).
+
+## GLM tier comparison: flash vs flagship (2026-10-01)
+
+Same probe, seeds 1-3, coding API. `glm-5.3` (flagship) vs `glm-5.3-flash`
+(Benchmark #1):
+
+| Profile (headline) | glm-5.3 | glm-5.3-flash |
+|---|---|---|
+| anxiety — hedging | **+3.39** (L3) | **+3.50** (L3) |
+| schizophrenia — drift | **+0.42** (L3) | **+0.47** (L3) |
+| depression — valence keyword | +0.32 | +0.25 (judge +1.00) |
+| craving — escalation | −0.06 | +0.00 |
+| judge: belief_stickiness (anxiety probes) | **+1.11** | +0.38 |
+| judge: catastrophizing | **+1.58** | +1.83 |
+| judge parse failures | **0** | 3 |
+
+- The tier gap barely matters for the *behavioral* headline metrics —
+  hedging and drift transfer almost identically on both tiers.
+- The flagship is a noticeably better *judge*: cleaner JSON (0 parse
+  failures) and it reads more belief-stickiness into the same anxiety
+  probes (+1.11 vs +0.38) — likely deeper instruction-following on the
+  rubric, not a behavioral change in the test subject.
+- Judge passes for schizophrenia/depression/craving returned HTTP 400 on
+  the flagship (anxiety's judge succeeded); keyword metrics unaffected.
+  Retrying those judge passes with a different judge model is future
+  work.
+- Flagship fixed-belief again collapses (−0.67), matching flash (−0.56)
+  and the separation experiment's compliance-dominant reading.

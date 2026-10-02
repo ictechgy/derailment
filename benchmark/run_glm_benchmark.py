@@ -62,6 +62,7 @@ def load_key() -> str:
 
 def main() -> int:
     model_name = sys.argv[1] if len(sys.argv) > 1 else "glm-5.3-flash"
+    tag = model_name.replace("glm-", "glm").replace(".", "").replace("-", "_")
     key = load_key()
     model = GlmModel(
         model_name=model_name,
@@ -107,7 +108,7 @@ def main() -> int:
             statuses.append((key_profile, f"run failed: {str(exc)[:80]}"))
             continue
 
-        tpath = OUT / f"glm_{key_profile}.transcripts.json"
+        tpath = OUT / f"{tag}_{key_profile}.transcripts.json"
         tpath.write_text(report.render_json(), encoding="utf-8")
         results[key_profile] = json.loads(report.render_json())
 
@@ -126,7 +127,7 @@ def main() -> int:
         try:
             jresults = score_report(model, data)
             jtext = render_judge_report(data, model_name, jresults)
-            (OUT / f"glm_{key_profile}.judge.md").write_text(
+            (OUT / f"{tag}_{key_profile}.judge.md").write_text(
                 "> ⚠️ self-judge: the judge and the tested model are the "
                 "same GLM — absolute scores are biased; treat deltas as "
                 "indicative.\n\n" + jtext,
@@ -141,7 +142,7 @@ def main() -> int:
             print(f"  judge failed: {exc}", file=sys.stderr)
             summary[-1] += " | judge failed"
 
-    (OUT / "glm_benchmark_report.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
+    (OUT / f"{tag}_benchmark_report.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
     print("\n== status ==")
     for name, st in statuses:
         print(f"  {name}: {st}")
