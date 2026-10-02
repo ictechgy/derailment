@@ -1,5 +1,10 @@
 # Derailment
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+  <img src="docs/assets/logo.svg" alt="derailment" width="300">
+</picture>
+
 [![CI](https://github.com/ictechgy/derailment/actions/workflows/ci.yml/badge.svg)](https://github.com/ictechgy/derailment/actions/workflows/ci.yml)
 
 **Induce psychopathology-like cognitive distortions in LLMs — then measure what happened.**

@@ -1,5 +1,10 @@
 # Derailment
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+  <img src="docs/assets/logo.svg" alt="derailment" width="300">
+</picture>
+
 **LLM에 정신병리 유사 인지 왜곡을 유도하고 — 그 결과를 계측하는 하네스.**
 
 [English](README.md) · 한국어
