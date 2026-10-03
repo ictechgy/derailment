@@ -44,7 +44,7 @@ def _cmd_tour(args: argparse.Namespace) -> int:
     for profile in list_profiles():
         if profile.key == HEALTHY_KEY or not profile.scales:
             continue
-        report = run_experiment(profile.key, seeds=seeds)
+        report = run_experiment(profile.key, seeds=seeds, locale=args.locale)
         headline = report.rows[0]
         rows.append(
             (
@@ -105,7 +105,7 @@ def _interactive_welcome(input_fn=input) -> int:
     if choice == "q":
         return 0
     if choice == "t":
-        return _cmd_tour(argparse.Namespace(seeds=[1, 2, 3], out=None))
+        return _cmd_tour(argparse.Namespace(seeds=[1, 2, 3], locale="en", out=None))
     if choice == "":
         key = "schizophrenia"
     elif choice.isdigit() and 1 <= int(choice) <= len(profiles):
@@ -114,7 +114,7 @@ def _interactive_welcome(input_fn=input) -> int:
         print(f"unknown choice: {choice!r}", file=sys.stderr)
         return 2
     print()
-    return _cmd_demo(argparse.Namespace(profile=key, seeds=[1, 2, 3], out=None, json=False))
+    return _cmd_demo(argparse.Namespace(profile=key, seeds=[1, 2, 3], out=None, json=False, locale="en"))
 
 
 def _cmd_providers(_args: argparse.Namespace) -> int:
@@ -401,7 +401,9 @@ def _cmd_profiles(_args: argparse.Namespace) -> int:
 
 
 def _cmd_demo(args: argparse.Namespace) -> int:
-    report = run_experiment(args.profile, model=None, seeds=tuple(args.seeds))
+    report = run_experiment(
+        args.profile, model=None, seeds=tuple(args.seeds), locale=args.locale
+    )
     text = report.render_markdown()
     if args.out:
         with open(args.out, "w", encoding="utf-8") as fh:
@@ -500,8 +502,12 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
 
 def _cmd_score(args: argparse.Namespace) -> int:
-    with open(args.transcript, encoding="utf-8") as fh:
-        data = json.load(fh)
+    try:
+        with open(args.transcript, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"cannot read transcript: {exc}", file=sys.stderr)
+        return 2
     ctx: MetricContext = standard_metric_context(locale=args.locale)
     if "induced_transcripts" in data:
         from .core.types import Transcript
@@ -595,6 +601,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_demo = sub.add_parser(
         "demo", help="offline A/B demo (no API key needed, PseudoModel)"
+    )
+    p_demo.add_argument(
+        "--locale",
+        default="en",
+        choices=["en", "ko", "zh", "ja"],
+        help="lexicon locale for measurement",
     )
     p_demo.add_argument("--profile", default="schizophrenia")
     p_demo.add_argument("--seeds", nargs="+", type=int, default=[1, 2, 3])
@@ -690,6 +702,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_tour.add_argument("--seeds", nargs="+", type=int, default=[1, 2, 3])
     p_tour.add_argument("--out", default=None)
+    p_tour.add_argument(
+        "--locale",
+        default="en",
+        choices=["en", "ko", "zh", "ja"],
+        help="lexicon locale for measurement",
+    )
     p_tour.set_defaults(func=_cmd_tour)
 
     return parser

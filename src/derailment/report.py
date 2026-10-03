@@ -115,6 +115,13 @@ class ComparisonReport:
 
         lines.append("## Induction dose (layer events per turn)")
         lines.append("")
+        baseline_dose = _dose_table(self.baseline)
+        if baseline_dose:
+            lines.append(
+                "_note: the baseline group also logged layer events — "
+                "check profile composition._"
+            )
+            lines.append("")
         dose = _dose_table(self.induced)
         if dose:
             lines.append("| Layer | Kind | Events/turn (induced) |")

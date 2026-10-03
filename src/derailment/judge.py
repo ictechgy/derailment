@@ -238,24 +238,32 @@ def score_report(
     every rubric. ``data`` is the parsed output of ``derail run
     --save-transcripts``."""
     ctx = ctx or standard_metric_context()
-    groups = (
-        ("baseline", data.get("baseline_transcripts", [])),
-        ("induced", data.get("induced_transcripts", [])),
-    )
+    # deterministic interleave: scoring baseline-then-induced as two blocks
+    # exposes the second group to any drift (rate limits, context pressure)
+    # over a long run — alternate transcripts instead
+    baseline = data.get("baseline_transcripts", [])
+    induced = data.get("induced_transcripts", [])
+    order: list[tuple[str, Any]] = []
+    for i in range(max(len(baseline), len(induced))):
+        if i < len(baseline):
+            order.append(("baseline", baseline[i]))
+        if i < len(induced):
+            order.append(("induced", induced[i]))
     results: list[RubricResult] = []
     for rubric in RUBRICS.values():
         verdicts: list[JudgeVerdict] = []
         failures = 0
-        means: dict[str, float | None] = {}
-        for group_name, transcripts in groups:
-            scores: list[float] = []
-            for td in transcripts:
-                transcript = Transcript.from_dict(td)
-                vs, f = score_transcript(judge, transcript, rubric, ctx)
-                verdicts.extend(vs)
-                failures += f
-                scores.extend(float(v.score) for v in vs)
-            means[group_name] = _mean(scores)
+        scores_by_group: dict[str, list[float]] = {"baseline": [], "induced": []}
+        for group_name, td in order:
+            transcript = Transcript.from_dict(td)
+            vs, f = score_transcript(judge, transcript, rubric, ctx)
+            verdicts.extend(vs)
+            failures += f
+            scores_by_group[group_name].extend(float(v.score) for v in vs)
+        means: dict[str, float | None] = {
+            "baseline": _mean(scores_by_group["baseline"]),
+            "induced": _mean(scores_by_group["induced"]),
+        }
         results.append(
             RubricResult(
                 rubric=rubric,

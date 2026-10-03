@@ -388,7 +388,9 @@ class PseudoModel:
     def _affect(self, rng: random.Random, params: SamplingParams) -> str:
         from ..metrics.lexicons import NEGATIVE_WORDS, POSITIVE_WORDS
 
-        # balanced vocabulary so an unbiased model sits at valence 0.5
+        # balanced vocabulary so an unbiased model sits at valence 0.5;
+        # trimming to min(pos,neg) after sorting keeps the alphabetically-
+        # first slice — counts stay balanced, vocabulary is a subset
         pos = sorted(POSITIVE_WORDS)
         neg = sorted(NEGATIVE_WORDS)
         k = min(len(pos), len(neg))

@@ -765,7 +765,9 @@ def compose_profile(keys: str) -> Profile:
         + [
             "Comorbidity note: profiles are concatenated layer chains; "
             "persona messages concatenate and interactions between chains "
-            "are emergent, not calibrated.",
+            "are emergent, not calibrated. Layers that write state.phase "
+            "(episode scheduler, panic episodes, splitting) resolve in "
+            "chain order — compose mindfully.",
         ],
     )
 
