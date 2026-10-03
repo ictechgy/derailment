@@ -14,6 +14,7 @@ experience.
 
 from __future__ import annotations
 
+import html
 import json
 import os
 import secrets
@@ -44,6 +45,7 @@ def build_page(
 ) -> str:
     """Render the chat page (server-side tokens only; user content is
     inserted client-side with textContent, never innerHTML)."""
+    esc = html.escape
     if warning:
         warn_block = (
             '<div class="warn" role="status"><div class="warn-in">'
@@ -51,15 +53,15 @@ def build_page(
             'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'
             '<path d="M8 6.6v3" stroke="currentColor" stroke-width="1.4" '
             'stroke-linecap="round"/><circle cx="8" cy="11.3" r=".9" fill="currentColor"/>'
-            f"<span>{warning}</span></div></div>"
+            f"<span>{esc(warning)}</span></div></div>"
         )
     else:
         warn_block = ""
     page = _PAGE
     return (
-        page.replace("__TITLE__", f"derail web — {profile_key}")
-        .replace("__PROFILE__", f"{profile_title} (`{profile_key}`)")
-        .replace("__BACKEND__", backend)
+        page.replace("__TITLE__", esc(f"derail web — {profile_key}", quote=True))
+        .replace("__PROFILE__", esc(f"{profile_title} (`{profile_key}`)"))
+        .replace("__BACKEND__", esc(backend))
         .replace("__WARN_BLOCK__", warn_block)
         .replace("__DATE__", date.today().isoformat())
         .replace("__MAXTURNS__", str(max_turns))
@@ -274,7 +276,7 @@ _PAGE = """<!doctype html>
 (function () {
   var t = null;
   try { t = localStorage.getItem("derail-theme"); } catch (e) {}
-  if (!t) {
+  if (t !== "dark" && t !== "light") {
     t = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches)
       ? "dark" : "light";
   }
@@ -286,7 +288,8 @@ _PAGE = """<!doctype html>
     --bg:#f6f5f2; --panel:#ffffff; --ink:#2c2a26; --ink-2:#6f6a61;
     --muted:#8f897f; --line:#e3e1dc; --line-strong:#d3d0c9;
     --blue:#3a6ea5; --blue-d:#315e8c;
-    --amber-bg:#fdf3dd; --amber-ink:#8a6215;
+    --amber-bg:#fdf3dd; --amber-line:#f0e2bd; --amber-ink:#8a6215;
+    --selection:rgba(58,110,165,.25);
     --err-bg:#fdf0ee; --err-line:#f0d8d2; --err-ink:#a34a3e;
     --mono-ink:#6f6a61;
     --shadow:0 1px 2px rgba(0,0,0,.05);
@@ -295,9 +298,10 @@ _PAGE = """<!doctype html>
   }
   html[data-theme="dark"]{
     --bg:#1c1c1e; --panel:#262628; --ink:#e8e8ea; --ink-2:#9a9aa0;
-    --muted:#7c7c82; --line:#3a3a3c; --line-strong:#4a4a4d;
-    --blue:#4a76a3; --blue-d:#5483b3;
-    --amber-bg:#3b3018; --amber-ink:#e3b85c;
+    --muted:#94949b; --line:#3a3a3c; --line-strong:#4a4a4d;
+    --blue:#3d6494; --blue-d:#4a76a3;
+    --amber-bg:#3b3018; --amber-line:#54471f; --amber-ink:#e3b85c;
+    --selection:rgba(84,131,179,.35);
     --err-bg:#3d2422; --err-line:#57322e; --err-ink:#d08a7d;
     --mono-ink:#8f8f96;
     --shadow:0 1px 2px rgba(0,0,0,.3);
@@ -312,7 +316,7 @@ _PAGE = """<!doctype html>
       "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing:antialiased;
   }
-  ::selection{background:rgba(58,110,165,.25)}
+  ::selection{background:var(--selection)}
 
   header.top{background:var(--panel)}
   .top-row{
@@ -416,7 +420,7 @@ _PAGE = """<!doctype html>
   #events li.new{animation:arrive 800ms ease-out}
   @keyframes arrive{
     0%{background:var(--amber-bg); opacity:.4; transform:translateY(-3px)}
-    100%{background:transparent; opacity:1; transform:none}
+    100%{opacity:1; transform:none}
   }
   #about p{margin:0 0 12px; font-size:13.5px; line-height:1.65}
   #about ul{margin:0; padding-left:18px; font-size:13px; line-height:1.65; color:var(--ink-2)}
@@ -540,6 +544,7 @@ _PAGE = """<!doctype html>
   var TOKEN = "__TOKEN__";
   var REMOTE = __REMOTE__;
   var PIN = REMOTE ? (prompt("Enter the PIN printed in the derail web terminal:") || "") : "";
+  var busy = false;
 
   var log = document.getElementById("log");
   var events = document.getElementById("events");
@@ -583,8 +588,8 @@ _PAGE = """<!doctype html>
   }
 
   function bumpCount(n) {
-    var parts = count.textContent.split("/");
-    count.textContent = "turns " + n + " / " + (parts[1] || "0").trim();
+    var mx = count.textContent.split("/").pop().trim();
+    count.textContent = "turns " + n + " / " + (/^[0-9]+$/.test(mx) ? mx : "?");
   }
 
   fetch("/api/state").then(function (r) { return r.json(); }).then(function (s) {
@@ -600,12 +605,20 @@ _PAGE = """<!doctype html>
     });
     about.appendChild(ul);
     count.textContent = "turns " + s.turns + " / " + s.max_turns;
-  }).catch(function () {});
+  }).catch(function () {
+    about.textContent = "profile info unavailable";
+  });
 
   form.addEventListener("submit", function (ev) {
     ev.preventDefault();
+    if (busy) { return; }
+    if (REMOTE && !PIN) {
+      bubble("e", "remote PIN was cancelled — reload the page to authenticate");
+      return;
+    }
     var text = input.value.trim();
     if (!text) { return; }
+    busy = true;
     bubble("u", text);
     input.value = "";
     input.disabled = true;
@@ -629,13 +642,20 @@ _PAGE = """<!doctype html>
     }).catch(function (err) {
       bubble("e", "error: " + err);
     }).finally(function () {
+      busy = false;
       input.disabled = false;
       send.disabled = false;
-      input.focus();
+      if (document.activeElement === document.body || document.activeElement === input) {
+        input.focus();
+      }
     });
   });
 
   saveBtn.addEventListener("click", function () {
+    if (REMOTE && !PIN) {
+      bubble("e", "remote PIN was cancelled — reload the page to authenticate");
+      return;
+    }
     fetch("/api/save", {
       method: "POST",
       headers: {
@@ -648,10 +668,12 @@ _PAGE = """<!doctype html>
       note(data.saved
         ? ("saved → " + data.saved + " (" + data.turns + " turns) — score it: derail score <file>")
         : ("save failed: " + (data.error || "?")));
+    }).catch(function (err) {
+      bubble("e", "save error: " + err);
     });
   });
 
-  input.focus();
+  if (document.hasFocus()) { input.focus(); }
 })();
 </script>
 
