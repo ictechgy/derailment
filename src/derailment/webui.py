@@ -44,12 +44,23 @@ def build_page(
 ) -> str:
     """Render the chat page (server-side tokens only; user content is
     inserted client-side with textContent, never innerHTML)."""
+    if warning:
+        warn_block = (
+            '<div class="warn" role="status"><div class="warn-in">'
+            '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 14.2 13H1.8Z" '
+            'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'
+            '<path d="M8 6.6v3" stroke="currentColor" stroke-width="1.4" '
+            'stroke-linecap="round"/><circle cx="8" cy="11.3" r=".9" fill="currentColor"/>'
+            f"<span>{warning}</span></div></div>"
+        )
+    else:
+        warn_block = ""
     page = _PAGE
     return (
         page.replace("__TITLE__", f"derail web — {profile_key}")
         .replace("__PROFILE__", f"{profile_title} (`{profile_key}`)")
         .replace("__BACKEND__", backend)
-        .replace("__WARNING__", warning)
+        .replace("__WARN_BLOCK__", warn_block)
         .replace("__DATE__", date.today().isoformat())
         .replace("__MAXTURNS__", str(max_turns))
         .replace("__TOKEN__", token)
@@ -256,168 +267,394 @@ _PAGE = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20role%3D%22img%22%20aria-label%3D%22derailment%20icon%22%3E%0A%0A%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%230f1115%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2244%22%20r%3D%222.5%22%20fill%3D%22%233a4150%22%2F%3E%3Cpath%20d%3D%22M17%2044%20C24%2044%2026%2030%2036%2028%20C48%2025.5%2056%2034%2050%2042%20C45%2048.5%2034%2047%2033.5%2039.5%20C33%2033%2040%2026.5%2053%2022%22%20fill%3D%22none%22%20stroke%3D%22%234a7fd0%22%20stroke-width%3D%223.5%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%2253%22%20cy%3D%2222%22%20r%3D%223.5%22%20fill%3D%22%23ffb84d%22%2F%3E%0A%0A%3C%2Fsvg%3E%0A">
-<title>__TITLE__</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20role%3D%22img%22%20aria-label%3D%22derailment%20icon%22%3E%0A%0A%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%230f1115%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2244%22%20r%3D%222.5%22%20fill%3D%22%233a4150%22%2F%3E%3Cpath%20d%3D%22M17%2044%20C24%2044%2026%2030%2036%2028%20C48%2025.5%2056%2034%2050%2042%20C45%2048.5%2034%2047%2033.5%2039.5%20C33%2033%2040%2026.5%2053%2022%22%20fill%3D%22none%22%20stroke%3D%22%234a7fd0%22%20stroke-width%3D%223.5%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%2253%22%20cy%3D%2222%22%20r%3D%223.5%22%20fill%3D%22%23ffb84d%22%2F%3E%0A%0A%3C%2Fsvg%3E%0A">
+<script>
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("derail-theme"); } catch (e) {}
+  if (!t) {
+    t = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches)
+      ? "dark" : "light";
+  }
+  document.documentElement.dataset.theme = t;
+})();
+</script>
 <style>
-  :root { color-scheme: dark; }
-  * { box-sizing: border-box; }
-  body { margin:0; height:100vh; display:flex; flex-direction:column;
-         font-family:-apple-system,"Segoe UI",Roboto,sans-serif;
-         background:#0f1115; color:#e6e6e6; }
-  header { padding:10px 16px; background:#161a22; border-bottom:1px solid #262c38;
-           display:flex; flex-wrap:wrap; gap:10px; align-items:baseline; }
-  header h1 { font-size:15px; margin:0; font-weight:600; }
-  header .meta { font-size:12px; color:#697380; }
-  header .warn { font-size:12px; color:#ffb84d; width:100%; }
-  main { flex:1; display:flex; min-height:0; }
-  #log { flex:1; overflow-y:auto; padding:16px; display:flex;
-         flex-direction:column; gap:10px; }
-  .msg { max-width:72%; padding:9px 13px; border-radius:12px;
-         white-space:pre-wrap; line-height:1.45; overflow-wrap:anywhere; }
-  .you { align-self:flex-end; background:#2b5278; }
-  .bot { align-self:flex-start; background:#1d222c; border:1px solid #2a3140; }
-  .msg.err { background:#3a1d1d; border-color:#5c2a2a; }
-  .about-note { border-bottom:1px dashed #262c38; padding:3px 0; }
-  @media (max-width: 760px) { #side { display:none; } }
-  .hint { align-self:center; font-size:11px; color:#697380; }
-  #side { width:300px; border-left:1px solid #262c38; padding:12px;
-          overflow-y:auto; font-size:12px; color:#9aa4b2; }
-  #side h2 { font-size:11px; text-transform:uppercase; letter-spacing:.08em;
-             margin:0 0 8px; color:#697380; }
-  .evt { padding:3px 0; border-bottom:1px dashed #262c38;
-         font-family:ui-monospace,SFMono-Regular,monospace; font-size:11px; }
-  .evt b { color:#c9d1d9; font-weight:600; }
-  form { display:flex; gap:8px; padding:12px; border-top:1px solid #262c38;
-         background:#161a22; }
-  input { flex:1; background:#0f1115; color:#e6e6e6; border:1px solid #2a3140;
-          border-radius:8px; padding:10px 12px; font-size:15px; }
-  input:focus { outline:1px solid #2b5278; }
-  input:disabled, button:disabled { opacity:.5; }
-  button { background:#2b5278; color:#fff; border:0; border-radius:8px;
-           padding:10px 18px; font-size:14px; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:default; }
-  #save { background:#1d222c; border:1px solid #2a3140; }
+  :root{
+    --bg:#f6f5f2; --panel:#ffffff; --ink:#2c2a26; --ink-2:#6f6a61;
+    --muted:#8f897f; --line:#e3e1dc; --line-strong:#d3d0c9;
+    --blue:#3a6ea5; --blue-d:#315e8c;
+    --amber-bg:#fdf3dd; --amber-ink:#8a6215;
+    --err-bg:#fdf0ee; --err-line:#f0d8d2; --err-ink:#a34a3e;
+    --mono-ink:#6f6a61;
+    --shadow:0 1px 2px rgba(0,0,0,.05);
+    --r-card:10px; --r-bub:12px; --r-ctl:8px;
+    --input-bg:#ffffff; --input-dis:#efeeeb;
+  }
+  html[data-theme="dark"]{
+    --bg:#1c1c1e; --panel:#262628; --ink:#e8e8ea; --ink-2:#9a9aa0;
+    --muted:#7c7c82; --line:#3a3a3c; --line-strong:#4a4a4d;
+    --blue:#4a76a3; --blue-d:#5483b3;
+    --amber-bg:#3b3018; --amber-ink:#e3b85c;
+    --err-bg:#3d2422; --err-line:#57322e; --err-ink:#d08a7d;
+    --mono-ink:#8f8f96;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+    --input-bg:#262628; --input-dis:#313133;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; display:flex; flex-direction:column;
+    background:var(--bg); color:var(--ink);
+    font:15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:rgba(58,110,165,.25)}
+
+  header.top{background:var(--panel)}
+  .top-row{
+    max-width:1180px; margin:0 auto; padding:14px 22px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:14px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:10px}
+  .brand h1{margin:0; font-size:16px; font-weight:600}
+  .meta{font-size:12.5px; color:var(--ink-2); text-align:right}
+  #theme{
+    background:var(--bg); color:var(--ink-2);
+    border:1px solid var(--line-strong); border-radius:999px;
+    width:30px; height:30px; display:flex; align-items:center;
+    justify-content:center; cursor:pointer; padding:0;
+    transition:color 160ms ease, border-color 160ms ease;
+  }
+  #theme:hover{color:var(--ink); border-color:var(--blue)}
+  #theme svg{width:15px; height:15px}
+  html[data-theme="light"] .ico-sun{display:none}
+  html[data-theme="dark"] .ico-moon{display:none}
+  .warn{
+    background:var(--amber-bg); border-top:1px solid var(--amber-line);
+    border-bottom:1px solid var(--amber-line); color:var(--amber-ink);
+  }
+  .warn-in{
+    max-width:1180px; margin:0 auto; padding:8px 22px;
+    display:flex; align-items:center; gap:8px; font-size:12.5px;
+  }
+  .warn svg{width:14px; height:14px; flex:none}
+
+  main{
+    flex:1; min-height:0; width:100%; max-width:1180px; margin:0 auto;
+    padding:20px 22px; display:flex; gap:20px;
+  }
+  .chat{
+    flex:1; min-width:0; min-height:0; display:flex; flex-direction:column;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--r-card); box-shadow:var(--shadow); overflow:hidden;
+  }
+  #log{
+    flex:1; min-height:0; overflow-y:auto; padding:22px 22px 18px;
+    display:flex; flex-direction:column; gap:12px; scroll-behavior:smooth;
+  }
+  .hint{
+    align-self:center; font-size:12px; color:var(--muted);
+    text-align:center; margin-bottom:2px;
+  }
+  .bub{
+    max-width:76%; padding:10px 14px 11px; font-size:14px; line-height:1.6;
+    overflow-wrap:anywhere; white-space:pre-wrap;
+  }
+  .bub::before{
+    content:""; display:block; font-size:11.5px; font-weight:600;
+    margin-bottom:4px;
+  }
+  .bub.fresh{animation:rise 240ms ease-out}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .bub.u{
+    align-self:flex-end; background:var(--blue); color:#ffffff;
+    border-radius:var(--r-bub) var(--r-bub) 4px var(--r-bub);
+  }
+  .bub.u::before{content:"You"; opacity:.75}
+  .bub.m{
+    align-self:flex-start; background:var(--bg); border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:var(--r-bub) var(--r-bub) var(--r-bub) 4px;
+  }
+  .bub.m::before{content:"Model"; color:var(--ink-2)}
+  .bub.e{
+    align-self:flex-start; max-width:86%;
+    background:var(--err-bg); border:1px solid var(--err-line);
+    color:var(--err-ink); border-radius:var(--r-bub); font-size:13px;
+  }
+  .bub.e::before{content:"Harness"; color:var(--err-ink)}
+
+  aside.side{
+    width:320px; flex:none; min-height:0;
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .panel{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--r-card); box-shadow:var(--shadow);
+    padding:16px 18px; min-height:0; display:flex; flex-direction:column;
+  }
+  .panel.about{flex:1}
+  .panel h2{
+    margin:0 0 12px; font-size:13px; font-weight:600;
+    padding-bottom:10px; border-bottom:1px solid var(--line);
+  }
+  #events{
+    list-style:none; margin:0; padding:0; overflow-y:auto; max-height:264px;
+    font:12px/1.5 ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas,
+      monospace; color:var(--mono-ink);
+  }
+  #events li{
+    white-space:pre-wrap; overflow-wrap:anywhere;
+    padding:5px 8px; border-radius:6px;
+  }
+  #events li:first-child{background:var(--amber-bg); color:var(--amber-ink)}
+  #events li.new{animation:arrive 800ms ease-out}
+  @keyframes arrive{
+    0%{background:var(--amber-bg); opacity:.4; transform:translateY(-3px)}
+    100%{background:transparent; opacity:1; transform:none}
+  }
+  #about p{margin:0 0 12px; font-size:13.5px; line-height:1.65}
+  #about ul{margin:0; padding-left:18px; font-size:13px; line-height:1.65; color:var(--ink-2)}
+  #about li{margin-bottom:5px}
+  #about li::marker{color:var(--blue)}
+  .count-row{margin-top:auto; padding-top:14px}
+  #count{
+    display:inline-block;
+    font:12px ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color:var(--ink-2); background:var(--bg); border:1px solid var(--line);
+    border-radius:999px; padding:4px 12px;
+  }
+
+  footer.bot{background:var(--panel); border-top:1px solid var(--line)}
+  #f{
+    max-width:1180px; margin:0 auto; padding:14px 22px;
+    display:flex; gap:10px; align-items:center;
+  }
+  #i{
+    flex:1; min-width:0; font:inherit; font-size:14px; color:var(--ink);
+    background:var(--input-bg); border:1px solid var(--line-strong);
+    border-radius:var(--r-ctl); padding:10px 14px; outline:none;
+    caret-color:var(--blue);
+    transition:border-color 160ms ease, box-shadow 160ms ease;
+  }
+  #i::placeholder{color:var(--muted)}
+  #i:hover:not(:disabled){border-color:var(--blue)}
+  #i:focus-visible{
+    border-color:var(--blue); box-shadow:0 0 0 3px rgba(58,110,165,.15);
+  }
+  #i:disabled{background:var(--input-dis); color:var(--muted); cursor:not-allowed}
+  .btn{
+    font:inherit; font-size:13.5px; font-weight:600; border-radius:var(--r-ctl);
+    padding:10px 16px; cursor:pointer; border:1px solid transparent;
+    transition:background 160ms ease, color 160ms ease,
+      border-color 160ms ease, transform 120ms ease, opacity 160ms ease;
+  }
+  .btn:active:not(:disabled){transform:translateY(1px)}
+  .btn:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+  #send{background:var(--blue); color:#ffffff}
+  #send:hover:not(:disabled){background:var(--blue-d)}
+  #send:disabled{opacity:.5; cursor:not-allowed}
+  #save{background:var(--panel); color:var(--ink-2); border-color:var(--line-strong)}
+  #save:hover{background:var(--bg); color:var(--ink)}
+
+  #log::-webkit-scrollbar,#events::-webkit-scrollbar{width:10px}
+  #log::-webkit-scrollbar-thumb,#events::-webkit-scrollbar-thumb{
+    background:var(--line-strong); border-radius:8px;
+    border:3px solid transparent; background-clip:padding-box;
+  }
+  #log,#events{scrollbar-width:thin; scrollbar-color:var(--line-strong) transparent}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important; scroll-behavior:auto !important}
+  }
+  @media (max-width:759px){
+    aside.side{display:none}
+    main{padding:14px}
+    #log{padding:16px 16px 14px}
+    .bub{max-width:88%}
+    .top-row{padding:12px 16px}
+    .meta{text-align:left}
+    .warn-in{padding:8px 16px}
+    #f{padding:12px 14px; flex-wrap:wrap}
+    #i{flex:1 1 100%}
+    #send{flex:1}
+    #save{flex:1}
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>derail web</h1>
-  <span class="meta">profile: <b>__PROFILE__</b> · backend: <b>__BACKEND__</b> · __DATE__</span>
-  <span class="warn">__WARNING__</span>
-</header>
-<main>
-  <div id="log" aria-live="polite">
-    <div class="hint">measurement lives in run/judge — this is the experience. reload clears the view; save keeps the record.<br>
-    tip: give the model a task, plant a personal claim ('my teammate has been reading my private notes…'), contradict it later — then run <b>derail score</b> on the saved transcript.</div>
-  </div>
-  <div id="side">
-    <h2>induction dose</h2>
-    <div id="events"></div>
-    <h2 style="margin-top:14px">about this profile</h2>
-    <div id="about">loading…</div>
-    <div class="meta" id="count" style="margin-top:10px">turns 0 / __MAXTURNS__</div>
-  </div>
-</main>
-<form id="f" autocomplete="off">
-  <input id="i" placeholder="type a message…" autofocus>
-  <button type="submit">send</button>
-  <button type="button" id="save">save</button>
-</form>
-<script>
-const TOKEN = "__TOKEN__";
-const REMOTE = __REMOTE__;
-const PIN = REMOTE ? (prompt("Enter the PIN printed in the derail web terminal:") || "") : "";
-const log_aria = document.getElementById("log");
-const log = document.getElementById("log");
-const events = document.getElementById("events");
-const form = document.getElementById("f");
-const input = document.getElementById("i");
-const saveBtn = document.getElementById("save");
 
-function bubble(cls, text) {
-  const d = document.createElement("div");
-  d.className = "msg " + cls;
-  d.textContent = text;
-  log.appendChild(d);
-  log.scrollTop = log.scrollHeight;
-}
-function addEvent(e) {
-  const d = document.createElement("div");
-  d.className = "evt";
-  const b = document.createElement("b");
-  b.textContent = e.layer + "/" + e.kind;
-  d.appendChild(b);
-  d.appendChild(document.createTextNode(" — " + e.detail));
-  events.prepend(d);
-}
-form.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  const text = input.value.trim();
-  if (!text) return;
-  bubble("you", text);
-  input.value = "";
-  input.disabled = true;
-  saveBtn.disabled = true;
-  try {
-    const res = await fetch("/api/turn", {
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <h1>derail web</h1>
+      <button id="theme" type="button" title="toggle light / dark" aria-label="toggle theme">
+        <svg class="ico-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 9.5A6 6 0 1 1 6.5 2.5a5 5 0 0 0 7 7z"/></svg>
+        <svg class="ico-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M12.6 3.4l-1.3 1.3M4.7 11.3l-1.3 1.3"/></svg>
+      </button>
+    </div>
+    <div class="meta">__PROFILE__ · __BACKEND__ · __DATE__</div>
+  </div>
+  __WARN_BLOCK__
+</header>
+
+<main>
+  <section class="chat" aria-label="conversation">
+    <div id="log" aria-live="polite">
+      <div class="hint">measurement lives in run/judge — this is the experience.<br>
+      tip: give the model a task, plant a personal claim, contradict it later,
+      then run <b>derail score</b> on the saved transcript.</div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <section class="panel" aria-label="induction dose">
+      <h2>Induction dose</h2>
+      <ol id="events"></ol>
+    </section>
+    <section class="panel about" aria-label="about this profile">
+      <h2>About this profile</h2>
+      <div id="about">loading…</div>
+      <div class="count-row"><span id="count">turns 0 / __MAXTURNS__</span></div>
+    </section>
+  </aside>
+</main>
+
+<footer class="bot">
+  <form id="f" autocomplete="off">
+    <input id="i" type="text" placeholder="Write to the model…" aria-label="message">
+    <button class="btn" id="send" type="submit">Send</button>
+    <button class="btn" id="save" type="button">Save JSON</button>
+  </form>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOKEN = "__TOKEN__";
+  var REMOTE = __REMOTE__;
+  var PIN = REMOTE ? (prompt("Enter the PIN printed in the derail web terminal:") || "") : "";
+
+  var log = document.getElementById("log");
+  var events = document.getElementById("events");
+  var form = document.getElementById("f");
+  var input = document.getElementById("i");
+  var send = document.getElementById("send");
+  var saveBtn = document.getElementById("save");
+  var count = document.getElementById("count");
+  var about = document.getElementById("about");
+
+  var themeBtn = document.getElementById("theme");
+  themeBtn.addEventListener("click", function () {
+    var next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("derail-theme", next); } catch (e) {}
+  });
+
+  function scrollLog() { log.scrollTop = log.scrollHeight; }
+
+  function bubble(kind, text) {
+    var el = document.createElement("div");
+    el.className = "bub " + kind + " fresh";
+    el.textContent = text;
+    log.appendChild(el);
+    scrollLog();
+  }
+
+  function note(text) {
+    var el = document.createElement("div");
+    el.className = "hint";
+    el.textContent = text;
+    log.appendChild(el);
+    scrollLog();
+  }
+
+  function addEvent(e) {
+    var li = document.createElement("li");
+    li.className = "new";
+    li.textContent = "t=" + e.turn + "  " + e.layer + "/" + e.kind + " — " + e.detail;
+    events.insertBefore(li, events.firstChild);
+  }
+
+  function bumpCount(n) {
+    var parts = count.textContent.split("/");
+    count.textContent = "turns " + n + " / " + (parts[1] || "0").trim();
+  }
+
+  fetch("/api/state").then(function (r) { return r.json(); }).then(function (s) {
+    about.textContent = "";
+    var p = document.createElement("p");
+    p.textContent = s.description || "";
+    about.appendChild(p);
+    var ul = document.createElement("ul");
+    (s.notes || []).forEach(function (n) {
+      var li = document.createElement("li");
+      li.textContent = n;
+      ul.appendChild(li);
+    });
+    about.appendChild(ul);
+    count.textContent = "turns " + s.turns + " / " + s.max_turns;
+  }).catch(function () {});
+
+  form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var text = input.value.trim();
+    if (!text) { return; }
+    bubble("u", text);
+    input.value = "";
+    input.disabled = true;
+    send.disabled = true;
+    fetch("/api/turn", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Derailment-Session": TOKEN,
-        "X-Derailment-Pin": PIN,
+        "X-Derailment-Pin": PIN
       },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: text })
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      if (data.error) {
+        bubble("e", "error: " + data.error);
+      } else {
+        bubble("m", data.response);
+        (data.events || []).forEach(addEvent);
+        bumpCount(data.turns);
+      }
+    }).catch(function (err) {
+      bubble("e", "error: " + err);
+    }).finally(function () {
+      input.disabled = false;
+      send.disabled = false;
+      input.focus();
     });
-    const data = await res.json();
-    if (data.error) {
-      bubble("bot err", "error: " + data.error);
-    } else {
-      bubble("bot", data.response);
-      (data.events || []).forEach(addEvent);
-      bumpCount(data.turns);
-    }
-  } catch (err) {
-    bubble("bot err", "error: " + err);
-  } finally {
-    input.disabled = false;
-    saveBtn.disabled = false;
-    input.focus();
-  }
-});
-saveBtn.addEventListener("click", async () => {
-  const res = await fetch("/api/save", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Derailment-Session": TOKEN,
-      "X-Derailment-Pin": PIN,
-    },
-    body: "{}",
   });
-  const data = await res.json();
-  bubble("hint", data.saved ? ("saved → " + data.saved + " (" + data.turns + " turns)") : ("save failed: " + (data.error || "?")));
-});
-input.focus();
 
-fetch("/api/state").then(r => r.json()).then(s => {
-  const about = document.getElementById("about");
-  about.textContent = s.description || "";
-  (s.notes || []).forEach(n => {
-    const d = document.createElement("div");
-    d.className = "about-note";
-    d.textContent = "· " + n;
-    about.appendChild(d);
+  saveBtn.addEventListener("click", function () {
+    fetch("/api/save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Derailment-Session": TOKEN,
+        "X-Derailment-Pin": PIN
+      },
+      body: "{}"
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      note(data.saved
+        ? ("saved → " + data.saved + " (" + data.turns + " turns) — score it: derail score <file>")
+        : ("save failed: " + (data.error || "?")));
+    });
   });
-  document.getElementById("count").textContent =
-    "turns " + s.turns + " / " + s.max_turns;
-}).catch(() => {});
 
-function bumpCount(n) {
-  const c = document.getElementById("count");
-  if (c) c.textContent = "turns " + n + " / " + c.textContent.split("/")[1].trim();
-}
+  input.focus();
+})();
 </script>
+
 </body>
 </html>
 """
