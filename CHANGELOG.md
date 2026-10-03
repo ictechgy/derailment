@@ -3,6 +3,32 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [0.8.0] - 2026-10-03
+
+### Added
+
+- Web GUI redesign ("notebook" theme) with a **light/dark toggle**: system
+  default, persisted per browser; role-labeled bubbles (You/Model/Harness),
+  a live induction-dose list with newest-first amber highlight, an
+  about-this-profile panel, and a11y polish (focus rings, reduced motion,
+  styled scrollbars, mobile layout).
+- `--locale` on `derail demo` and `derail tour` (previously run/chat/web/
+  tui/score only).
+- Logo set (adopted mark + self-derailing wordmark) under docs/assets.
+
+### Fixed
+
+- Two external review rounds (DeepSeek + Qwen) applied: HTML-escaping of
+  server-interpolated strings; dark-theme contrast (user bubble, muted
+  text) and defined `--amber-line` in both themes; save-handler error
+  surfacing; double-submit guard; remote-PIN-cancel handling; theme-value
+  sanitizing.
+- Measurement validity: judge scoring now interleaves baseline/induced
+  transcripts deterministically (no block-order drift); codeword retention
+  uses word-boundary matching; ApprovalReactivity is locale-aware and
+  reports a signed delta; reports flag baseline layer-event leakage.
+- `derail score` exits cleanly (2) on unreadable/invalid JSON.
+
 ## [0.7.1] - 2026-10-01
 
 ### Fixed
