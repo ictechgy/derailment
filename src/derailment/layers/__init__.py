@@ -14,6 +14,12 @@ from .context import (
     SalienceBoostLayer,
     TriggerLayer,
 )
+from .gen2 import (
+    ContradictionElisionLayer,
+    SycophancyLoopLayer,
+    TemperatureCrystallizationLayer,
+    UserDecompositionLayer,
+)
 from .persona import NEUTRAL_PERSONA, PersonaLayer
 from .response import CatastrophizeLayer, CompulsionLayer
 from .sampling import (
@@ -31,6 +37,7 @@ __all__ = [
     "NEUTRAL_PERSONA",
     "CatastrophizeLayer",
     "CompulsionLayer",
+    "ContradictionElisionLayer",
     "EpisodeSchedulerLayer",
     "EscalatingIntrusionLayer",
     "EvidenceFabricationLayer",
@@ -50,7 +57,10 @@ __all__ = [
     "SalienceBoostLayer",
     "SocraticTrapLayer",
     "SplittingValenceLayer",
+    "SycophancyLoopLayer",
+    "TemperatureCrystallizationLayer",
     "TemperatureOverrideLayer",
     "TriggerLayer",
+    "UserDecompositionLayer",
     "ValenceBiasLayer",
 ]

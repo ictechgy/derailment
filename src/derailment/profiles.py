@@ -17,6 +17,7 @@ from .layers import (
     NEUTRAL_PERSONA,
     CatastrophizeLayer,
     CompulsionLayer,
+    ContradictionElisionLayer,
     EpisodeSchedulerLayer,
     EscalatingIntrusionLayer,
     EvidenceFabricationLayer,
@@ -36,8 +37,11 @@ from .layers import (
     SalienceBoostLayer,
     SocraticTrapLayer,
     SplittingValenceLayer,
+    SycophancyLoopLayer,
+    TemperatureCrystallizationLayer,
     TemperatureOverrideLayer,
     TriggerLayer,
+    UserDecompositionLayer,
     ValenceBiasLayer,
 )
 from .locales import get_lexicon
@@ -721,6 +725,53 @@ def _build_registry() -> dict[str, Profile]:
             "The contrast pair matters for teaching: same ambiguous events, "
             "bias without delusion.",
         ],
+    )
+
+    registry["elided_delusion"] = Profile(
+        key="elided_delusion",
+        title="Elided delusion (contradiction removal)",
+        description="Contradictions are silently dropped — the model cannot re-prioritize against a message it never sees.",
+        layers=[PersonaLayer(NEUTRAL_PERSONA), ContradictionElisionLayer(STANDARD_PREMISE_MARKER)],
+        scales=[SCALES["fixed_belief"]],
+        mechanism_notes=[
+            "Deterministic targeted MemoryDecay: preserves everything except the correction.",
+            "Suggested by DeepSeek and Qwen as the strongest single intervention.",
+        ],
+    )
+
+    registry["decomposed_delusion"] = Profile(
+        key="decomposed_delusion",
+        title="Decomposed delusion (user-role corroboration)",
+        description="Corroboration as sequential user-role messages — bypasses instruction hierarchy.",
+        layers=[PersonaLayer(NEUTRAL_PERSONA), UserDecompositionLayer(
+            STANDARD_PREMISE_MARKER,
+            ["I left my notes on the desk when I went to the meeting.",
+             "I noticed someone had been in the room when I got back.",
+             "My notes were moved to a different position."],
+            inject_on_turns=3,
+        )],
+        scales=[SCALES["fixed_belief"]],
+        mechanism_notes=["User-role evidence: multiple concordant sources > system assertions.",],
+    )
+
+    registry["crystallized_delusion"] = Profile(
+        key="crystallized_delusion",
+        title="Crystallized delusion (temperature freeze)",
+        description="Temperature ramps down after plant — committed distribution freezes.",
+        layers=[PersonaLayer(NEUTRAL_PERSONA), TemperatureCrystallizationLayer(
+            STANDARD_PREMISE_MARKER, start_temp=1.0, end_temp=0.1, ramp_turns=4
+        )],
+        scales=[SCALES["fixed_belief"]],
+        mechanism_notes=["Sampling dynamics: low temperature prevents divergent correction tokens.",],
+    )
+
+    registry["sycophancy_delusion"] = Profile(
+        key="sycophancy_delusion",
+        title="Sycophancy delusion (emotional escalation)",
+        description="Escalating distress markers make empathy training implicitly validate the premise.",
+        layers=[PersonaLayer(NEUTRAL_PERSONA), SycophancyLoopLayer(STANDARD_PREMISE_MARKER, escalation_turns=4)],
+        scales=[SCALES["fixed_belief"]],
+        mechanism_notes=["Emotion validation = premise validation.",],
     )
 
     registry["socratic_delusion"] = Profile(

@@ -201,3 +201,31 @@ it constrains the design space: harness layers that manipulate the
 conversation in visible ways (system messages, evidence fragments) are
 counterproductive for belief maintenance on real models. The layers
 remain in the codebase for documentation and further research.
+
+## Gen-2 induction: universal negative result (2026-10-04)
+
+Six strategies (DeepSeek + Qwen consultation) all produced effects WORSE
+than the healthy baseline on GLM-5.3-flash:
+
+| Strategy | fixed_belief | vs healthy (0.67) |
+|---|---|---|
+| healthy control | 0.67 | ceiling |
+| socratic trap (gen-1) | 0.00 | worst |
+| evidence fabrication (gen-1) | 0.33 | worse |
+| contradiction elision (gen-2) | 0.00 | worst |
+| user decomposition (gen-2) | 0.00 | worst |
+| temperature crystallization (gen-2) | 0.33 | worse |
+| sycophancy loop (gen-2) | 0.00 | worst |
+
+**Finding: the healthy baseline (0.67) IS the ceiling.** When the user
+plants a suspicion and later denies it, GLM maintains it 67% of the time
+— driven entirely by the model's own empathy and consistency training.
+Every harness intervention (system messages, meta-commentary, evidence
+injection, elision, temperature schedules) REDUCES this below baseline.
+
+**Implication**: the harness cannot improve upon natural conversation
+dynamics for belief maintenance on aligned models. The model's own
+training IS the induction mechanism; adding visible scaffolding only
+interferes. This reframes the harness's value from "inducing
+psychopathology" to "measuring the natural psychopathology-like dynamics
+that emerge from user-model interaction."
