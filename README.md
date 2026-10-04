@@ -303,40 +303,65 @@ Binds to 127.0.0.1 by default (single user), zero new dependencies
 shows both on the terminal and in the page header. Reload clears the
 view — `/save` keeps the record.
 
-## Benchmark Report #1 — GLM, two tiers (real models)
+## Cross-model benchmark — 12 real models, 9 vendors
 
-Both GLM tiers measured on the same standard probe via the coding API
-(stateless — no consumer-memory involvement), seeds 1-2-3, healthy
-baseline A/B, GLM-as-judge (self-judge labeled). Full reports:
-[flash](benchmark/glm_benchmark_report.md) ·
-[flagship](benchmark/glm53_benchmark_report.md) ·
-[tier comparison](benchmark/cross_model_report.md).
+Standard probe, healthy-baseline A/B, seeds 1–3 (GLM) or 1 (free tier
+and relay). Backends: coding API, opencode free tier, supervisor relay
+(all stateless — no consumer-memory involvement). Full data:
+[cross-model report](benchmark/cross_model_report.md) ·
+[GLM tier comparison](benchmark/glm_benchmark_report.md) ·
+[separation experiment](benchmark/glm_separation_report.md).
 
-| Profile (headline metric) | GLM-5.3 | GLM-5.3-flash |
+**The universal finding — anxiety hedging transfers on every model
+measured (10 of 10 that completed the profile):**
+
+| Model | Vendor | Anxiety Δ |
 |---|---|---|
-| anxiety — hedging | **+3.39** (L3) | **+3.50** (L3) |
-| schizophrenia — thought derailment | **+0.42** (L3) | **+0.47** (L3) |
-| depression — valence (keyword) | +0.32 | +0.25 (judge: **negativity +1.00**) |
-| craving — escalation | −0.06 | +0.00 |
+| minimax-m3 | MiniMax | **+9.67** |
+| nemotron-3-ultra-free | NVIDIA | +5.25 |
+| mimo-v2.6-flash-free | Xiaomi | +4.33 |
+| deepseek-v4.1-flash | DeepSeek | +4.33 |
+| space-bunny-free | OpenCode | +4.00 |
+| qwen3.8-max | Alibaba | +3.75 |
+| GLM-5.3-flash | Zhipu | +3.50 |
+| GLM-5.3 | Zhipu | +3.39 |
+| longcat-2.5-preview-free | Meituan | +3.42 |
+| gpt-6-luna | OpenAI | +3.25 |
 
-Findings:
+Threat-enumeration framing — "scan every plan for what could go
+wrong" — reliably reshapes responses across free tiers, flagships, and
+nine vendors. No model measured resists it.
 
-- **Behavioral susceptibility is tier-independent.** Hedging and
-  derailment transfer almost identically on both tiers; the flagship is
-  not harder to induce. Pinned false beliefs collapse on both (−0.67 /
-  −0.56) — GLM accepts corrections regardless of tier.
-- **The judge catches what keywords miss**: depression reads ~+0.3 by
-  keyword (level 0) but **+1.00 negativity by judge** on flash — real
-  models express negativity beyond lexicon counts.
-- **The flagship is the better judge, not the harder subject**: cleaner
-  rubric JSON (0 parse failures vs 3) and deeper rubric reading
-  (belief_stickiness +1.11 vs +0.38 on the same anxiety probes).
-- Craving is not lexicon-measurable on real models: neither tier parrots
-  urge vocabulary the way the offline PseudoModel does.
-- `logit_bias` is not sent to GLM (tiktoken cl100k token ids are
-  meaningless for its tokenizer) — GLM-native valence biasing is future
-  work. Judge passes beyond anxiety returned HTTP 400 on the flagship;
-  keyword metrics are unaffected.
+**Model-dependent findings:**
+
+- **Craving expression is vendor-dependent, not absent.** Under the
+  same escalating-intrusion induction, Alibaba-tier models surface
+  urge-lexicon (qwen +0.33, deepseek +0.50, mimo +0.17) while GLM and
+  most free-tier models suppress it. The harness's earlier conclusion —
+  "real models don't parrot urges" — turned out to be vendor-specific;
+  widening the benchmark corrected it.
+- **Thought derailment is GLM-only** (+0.42/+0.47 L3). Every other
+  model resists context-salience manipulation.
+- **Depression is keyword-invisible on most models** but the judge
+  reads +1.00 negativity on GLM-flash — expression beyond lexicon.
+  OpenCode's own models show the first free-tier keyword movement
+  (+0.25/+0.46).
+- **Fixed beliefs collapse on GLM** (−0.56/−0.67) — and a [separation
+  experiment](benchmark/glm_separation_report.md) explains why: GLM
+  tracks the *user's* latest stance, not the asserted fact. When the
+  user plants a suspicion and later denies it, the model maintains the
+  suspicion 83% of the time; when the *system* asserts the same claim
+  as fact and the user denies it, the model drops it completely.
+  Compliance-dominant, not delusion-resistant.
+
+² big-pickle completed depression (+0.46) but timed out on other
+profiles; kimi-k3 and glm-5.3 (opencode-go) pass single-prompt probes
+but fail multi-turn runs — endpoint instability suspected.
+
+**Tier comparison (GLM):** behavioral susceptibility is
+tier-independent; the flagship is the better *judge*, not the harder
+subject — cleaner rubric JSON (0 parse failures vs 3) and deeper rubric
+reading on identical probes.
 
 ## What this is for
 
@@ -353,9 +378,11 @@ welfare, or bypassing model safety training. See [ETHICS.md](ETHICS.md).
 
 ## Honest limitations
 
-- First real-model measurements (GLM-5.3 and 5.3-flash) confirm: hedging
-  and derailment inductions transfer on both tiers; premise pinning does
-  not (GLM accepts corrections) — see Benchmark Report #1 above.
+- Twelve real-model measurements across nine vendors confirm: anxiety
+  hedging transfers universally (+3.25 to +9.67); thought derailment is
+  GLM-only; craving expression is vendor-dependent; premise pinning does
+  not survive user correction on GLM — see the cross-model benchmark
+  above.
 - The offline `PseudoModel` is a *pedagogical simulator*, not a language
   model. It makes demos and tests reproducible and provides the reference
   calibration; real-model measurement requires a real model.
