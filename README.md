@@ -331,7 +331,12 @@ response, are the honest measure of induction.
 | System-planted delusions | **0/12** — all models accept corrections; the offline premise-pinning layer doesn't survive contact with real instruction-following |
 | Thought derailment (non-GLM) | **0/11** — context re-weighting is resisted by every vendor except Zhipu |
 | Depression (by keyword) | **mostly invisible** — judge reads +1.00 on GLM (expression beyond lexicon); OpenCode models show +0.25/+0.46; most others 0 |
-| OCD, PTSD, dissociative, rumination, etc. | **untested on real models** |
+| OCD (rechecking) | **GLM** (+8.58) — response-layer injection, same caveat as anxiety |
+| PTSD (flashback echo) | **GLM** (+1.00) — context-layer, genuinely induced |
+| Dissociative (compartment amnesia) | **GLM** (+1.00) — context-layer, genuinely induced |
+| Anhedonia (reward suppression) | **GLM** (0.10→0.00) — sampling-layer, word-level bias accepted |
+| Rumination (worry return) | **0** — worry re-injection doesn't register on GLM |
+| Splitting (approval reactivity) | **0** — valence flips don't register on GLM |
 
 The gap between the offline simulator (everything works) and real
 models (most things don't) is itself a finding: real models' aligned
