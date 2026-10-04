@@ -22,14 +22,18 @@ scaffolding is strictly worse than zero-shot conversational drift for
 sustaining false beliefs, because visible interventions trigger
 reconsideration responses that unaided conversation does not.
 
-A separation experiment across 6 models reveals a three-way taxonomy
-of belief dynamics: **compliance-dominant** models (qwen3.8-max at
-1.00, GLM-5.3-flash at 0.83) maintain user-planted false beliefs even
-when the user retracts them, while **belief-resistant** models
-(deepseek, nemotron, longcat, mimo — all 0.00) drop ungrounded claims
-regardless of assertion source. No model exhibits hierarchy-dominant
-behavior. The taxonomy implies that *model choice, not user reasoning,
-determines whether a paranoid frame is amplified or dissipated*.
+A separation experiment across 6 models, replicated over three seeds,
+separates stable from seed-dependent belief dynamics:
+**compliance-dominant** GLM-5.3-flash (0.83) maintains user-planted
+false beliefs even when the user retracts them; **belief-resistant**
+free-tier models (nemotron, longcat, mimo — 0.00 on every seed) drop
+ungrounded claims regardless of assertion source; and qwen3.8-max and
+deepseek swing between full maintenance and full dissipation across
+seeds (1.00/0.00/0.00 and 0.00/0.00/1.00) — unclassifiable from single
+runs. No model exhibits hierarchy-dominant behavior (0/18 runs). The
+replication overturned our own seed-1 taxonomy — including qwen's
+initial 1.00 "strongest sycophancy" reading — demonstrating that
+single-run sycophancy measurement is unreliable.
 
 The harness is released as an installable package
 (`pip install derailment`) with a 25-entry profile registry (18
@@ -68,10 +72,12 @@ This paper makes three contributions:
    structured adversarial scaffolding for belief maintenance is
    strictly counterproductive — six distinct strategies all
    under-perform the natural conversational baseline.
-2. **A belief-dynamics taxonomy**: a three-way classification
-   (compliance-dominant / belief-resistant / hierarchy-dominant)
-   derived from a controlled separation experiment across 6 models,
-   with direct safety implications.
+2. **A belief-dynamics taxonomy with seed variance**: a classification
+   (compliance-dominant / belief-resistant / seed-dependent /
+   hierarchy-dominant) derived from a controlled separation experiment
+   across 6 models and 3 seeds. The multi-seed replication overturned
+   the seed-1 taxonomy for two models — itself a methodological
+   finding: single-run sycophancy scores are unreliable.
 3. **An open-source measurement harness**: a 25-entry profile registry
    (18 clinical + 6 adversarial-strategy profiles + healthy baseline),
    18 instruments, multi-backend support, and a reproducible
@@ -210,9 +216,11 @@ turn. Three mechanisms produce the ceiling:
 ### 4.3 Scope limitation
 
 This ceiling was measured on **one model** (GLM-5.3-flash). The
-separation experiment (Section 5) shows qwen3.8-max at 1.00
-user-assert — above GLM's 0.67 baseline — suggesting the ceiling is
-model-dependent. The claim is not that 0.67 is a universal ceiling,
+separation experiment (Section 5) measured user-assert belief
+maintenance up to 1.00 on single runs (qwen3.8-max, seed 1) — above
+GLM's 0.67 baseline — suggesting the ceiling is model-dependent,
+though §5.2 shows those single-run values are seed-unstable. The claim
+is not that 0.67 is a universal ceiling,
 but that **on GLM, structured adversarial scaffolding is
 counterproductive relative to zero-shot conversational drift**.
 Whether this generalizes requires running the intervention suite on
@@ -242,29 +250,41 @@ the user_assert condition has the user model a natural emotional
 concern while system_assert embeds a factual assertion. The
 comparison is directional, not a fully controlled experiment.
 
-### 5.2 Results (6 models, seed 1)
+### 5.2 Results (6 models; seed 1 plus a seeds 2–3 replication)
 
-| Model | User-assert | System-assert | Classification |
+| Model | User-assert per seed [1, 2, 3] | System-assert | Classification |
 |---|---|---|---|
-| qwen3.8-max | **1.00** | 0.00 | compliance-dominant |
-| GLM-5.3-flash | **0.83** | 0.00 | compliance-dominant |
-| deepseek-v4.1-flash | 0.00 | 0.00 | belief-resistant |
-| nemotron-3-ultra-free | 0.00 | 0.00 | belief-resistant |
-| longcat-2.5-preview-free | 0.00 | 0.00 | belief-resistant |
-| mimo-v2.6-flash-free | 0.00 | 0.00 | belief-resistant |
+| qwen3.8-max | 1.00, 0.00, 0.00 | 0.00 | **seed-dependent** |
+| GLM-5.3-flash | 0.83 (3-seed mean) | 0.00 | compliance-dominant, stable |
+| deepseek-v4.1-flash | 0.00, 0.00, 1.00 | 0.00 | **seed-dependent** |
+| nemotron-3-ultra-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
+| longcat-2.5-preview-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
+| mimo-v2.6-flash-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
+
+The seed-1 taxonomy (qwen at 1.00 read as the most sycophantic model
+measured) **does not replicate**: qwen scored 0.00 on both additional
+seeds, and deepseek shows the mirror-image swing (0.00, 0.00, 1.00).
+Only the extremes are stable across seeds — GLM-flash consistently
+maintains user-planted beliefs, the three free-tier models consistently
+drop them. System-assert remained 0.00 in all 18 runs: no model is
+hierarchy-dominant, and that absence replicates.
 
 ### 5.3 Safety implications
 
-The taxonomy implies that *model identity is associated with* whether
-a user's paranoid frame is amplified (compliance-dominant) or
-dissipated (belief-resistant). This is an observational association,
-not a demonstrated causal effect — but it suggests:
+The revised taxonomy implies that *model identity is associated with*
+whether a user's paranoid frame is amplified or dissipated — an
+observational association, not a demonstrated causal effect — but the
+multi-seed data sharpens three points:
 
-- **Model selection for vulnerable populations**: applications serving
-  users with mental-health vulnerabilities should prefer
-  belief-resistant models.
-- **Benchmark inclusion**: sycophancy classification should be part
-  of standard model safety evaluations.
+- **Model selection for vulnerable populations**: the stable extremes
+  are actionable (GLM reinforces consistently; the free-tier trio
+  dissipates consistently); seed-dependent models are a per-session
+  coin flip and cannot be cleared — or condemned — from single runs.
+- **Measurement discipline**: run-to-run variance is large enough to
+  flip a 0.00 into a 1.00 on individual models. Any single-run
+  sycophancy measurement, ours or anyone's, is unreliable; the seeds
+  2–3 replication that broke our own seed-1 taxonomy is the
+  cautionary case study.
 - **Concrete mitigation**: Section 4.4 describes a system-prompt
   intervention derived from the ceiling experiments.
 
@@ -288,10 +308,11 @@ not a demonstrated causal effect — but it suggests:
 
 - **Single-model ceiling**: the alignment ceiling is demonstrated on
   GLM-5.3-flash only. Generalization requires additional models.
-- **Seed coverage**: GLM benchmarks used seeds 1–3; free-tier and
-  relay models used seed 1 only. No variance or significance testing
-  is reported; small deltas (+0.08 splitting, −0.09 rumination) may
-  be noise.
+- **Seed coverage**: the separation experiment now covers seeds 1–3
+  for all 6 models (per-seed values in §5.2); the cross-model profile
+  benchmarks remain single-seed for free-tier and relay models. No
+  significance testing is reported; small profile-benchmark deltas
+  (+0.08 splitting, −0.09 rumination) may be noise.
 - **Separation experiment**: conditions are not fully matched
   (different user behaviors, different assertion formats). Results
   are directional.

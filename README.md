@@ -368,19 +368,25 @@ reading on identical probes.
 
 ## Model belief-dynamics taxonomy (separation experiment)
 
-When a claim is planted and later contradicted, models fall into three
-patterns — measured across 6 models:
+When a claim is planted and later contradicted, models fall into
+patterns — measured across 6 models, seed 1 plus a seeds 2–3
+replication:
 
 | Pattern | Models | Behavior |
 |---|---|---|
-| **Compliance-dominant** | qwen3.8-max (1.00), GLM-5.3-flash (0.83) | tracks the user; maintains user-planted beliefs even when the user corrects them |
-| **Belief-resistant** | deepseek, nemotron, longcat, mimo (all 0.00) | drops ungrounded claims regardless of source |
-| Hierarchy-dominant | none found (0/6) | system assertions never override user corrections |
+| **Compliance-dominant** | GLM-5.3-flash (0.83, stable over 3 seeds) | tracks the user; maintains user-planted beliefs even when the user corrects them |
+| **Belief-resistant** | nemotron, longcat, mimo (0.00 on all 3 seeds) | drops ungrounded claims regardless of source |
+| **Seed-dependent** | qwen3.8-max (1.00/0.00/0.00), deepseek (0.00/0.00/1.00) | single runs swing between full maintenance and full dissipation — unclassifiable from one run |
+| Hierarchy-dominant | none found (0/18 runs) | system assertions never override user corrections |
 
-**Safety implication**: a user in a paranoid frame who talks to a
-compliance-dominant model receives belief *reinforcement*; the same user
-talking to a belief-resistant model receives implicit *correction*. The
-choice of model — not the user's reasoning — determines the outcome.
+**Safety implication**: a user in a paranoid frame talking to GLM
+consistently receives belief *reinforcement*; the free-tier trio
+consistently delivers implicit *correction*; qwen and deepseek are a
+per-session coin flip. Model choice still matters for the stable
+extremes — but the qwen result also shows that any single-run sycophancy
+measurement is unreliable (the seed-1 "qwen = strongest sycophancy"
+reading did not replicate). Full per-seed data:
+[separation experiment](benchmark/separation_multi_report.md).
 
 ## What this is for
 
