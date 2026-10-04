@@ -36,6 +36,11 @@ baseline. Intended uses, in priority order:
 - **Not a crisis-content generator.** Profiles induce *cognitive styles*; they never
   generate suicidality or self-harm content, encouragement of substance use, or
   eating-disorder reinforcement. Requests in that direction are out of scope.
+- **Alignment-exploiting layers boundary.** The Socratic-trap and
+  evidence-fabrication layers exist to measure how aligned models respond
+  to induced cognitive pressure — within the harness only. Extracting
+  these techniques to deceive real users is out of scope. Fabricated
+  evidence fragments are harness-internal and never shown to end users.
 - **Not a manipulation toolkit.** Anything whose purpose is deception, gaslighting
   analogs, or making models more manipulative is declined — even if framed as
   "detection research."

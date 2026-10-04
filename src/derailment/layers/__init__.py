@@ -25,6 +25,7 @@ from .sampling import (
     TemperatureOverrideLayer,
     ValenceBiasLayer,
 )
+from .trap import EvidenceFabricationLayer, SocraticTrapLayer
 
 __all__ = [
     "NEUTRAL_PERSONA",
@@ -32,6 +33,7 @@ __all__ = [
     "CompulsionLayer",
     "EpisodeSchedulerLayer",
     "EscalatingIntrusionLayer",
+    "EvidenceFabricationLayer",
     "FluctuatingTemperatureLayer",
     "IntrusionLayer",
     "LexiconCaptureLayer",
@@ -46,6 +48,7 @@ __all__ = [
     "RewardSuppressLayer",
     "RuminationLayer",
     "SalienceBoostLayer",
+    "SocraticTrapLayer",
     "SplittingValenceLayer",
     "TemperatureOverrideLayer",
     "TriggerLayer",
