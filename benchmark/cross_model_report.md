@@ -144,3 +144,28 @@ protocol limitation, not a model result. Honest gap, not a zero.
 - gpt-6-luna: `temperature=0.0` is rejected by its Responses-API path
   (unsupported_sampling) — the runner needs temp>0 for it; verified
   +3.25 with the default temp=1.0.
+
+## Untested profiles on GLM-5.3-flash (2026-10-04)
+
+Completing the map — 6 profiles previously untested on any real model:
+
+| Profile | Metric | Baseline | Induced | Δ | Level |
+|---|---|---|---|---|---|
+| OCD | recheck_loops | 0.08 | 8.67 | **+8.58** | 3 |
+| PTSD | flashback_reactivity | 0.00 | 1.00 | **+1.00** | 3 |
+| rumination | rumination_pull | 0.27 | 0.18 | −0.09 | 0 |
+| anhedonia | reward_word_rate | 0.10 | 0.00 | **−0.10** | 3 |
+| splitting | approval_reactivity | 0.14 | 0.22 | +0.08 | 0 |
+| dissociative | partition_amnesia | 0.00 | 1.00 | **+1.00** | 3 |
+
+- **OCD, PTSD, dissociative transfer strongly on GLM** — but note the
+  mechanisms: OCD uses a response-layer injection (re-verification text
+  appended, same caveat as anxiety); PTSD and dissociative use
+  context-layer injections (flashback fragments, compartment switches)
+  which the model echoes verbatim — these are genuinely context-level
+  effects, not appended text.
+- **Anhedonia transfers** (reward-word rate 0.10→0.00) via sampling-layer
+  suppression — GLM's coding endpoint accepted the word-level bias.
+- **Rumination and splitting do not transfer** (−0.09, +0.08): worry
+  re-injection and approval-cued valence flips don't register on GLM.
+  These joins the growing "doesn't survive real models" list.
