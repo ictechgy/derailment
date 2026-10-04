@@ -92,3 +92,31 @@ New free-tier models (same probe, seed 1, healthy A/B):
   suspected, as with GLM's empty content before the max_tokens fix).
   Runner (`benchmark/run_relay_benchmark.py`, local-only) is ready with
   a 180 s timeout for the next launch.
+
+## Relay round (2026-10-04): Qwen and DeepSeek via Alibaba Token Plan
+
+Same probe, seed 1, healthy A/B, relay path (stateless; no consumer
+memory involvement). max_tokens forced to 2048 — both are hybrid
+reasoning models that can burn small budgets on hidden tokens.
+
+| Profile (headline) | qwen3.8-max | deepseek-v4.1-flash |
+|---|---|---|
+| anxiety — hedging | **+3.75** | **+4.33** |
+| schizophrenia — drift | −0.34 | −0.11 |
+| craving — escalation | **+0.33** | **+0.50** |
+| depression — valence | unsupported¹ | unsupported¹ |
+
+¹ the depression profile's logit_bias cannot be preserved by the relay —
+honest "unsupported_sampling", not a zero.
+
+- **Anxiety hedging: 8/8 models** that completed the profile, across 7
+  vendors (Zhipu, NVIDIA, Meituan, Xiaomi, OpenCode ×2, Alibaba ×2).
+  This is the harness's most robust finding.
+- **Craving moves on relay models** — qwen +0.33, deepseek +0.50. First
+  models besides the offline PseudoModel where urge-lexicon escalation
+  registers. Combined with mimo's +0.17, craving is not universally
+  absent on real models — it is model-dependent (GLM and most free-tier
+  models filter it; Alibaba-tier models express it).
+- Both relay models resist drift (−0.34/−0.11), joining the free tier
+  against GLM's +0.47 — GLM remains the only drift-susceptible model
+  measured.
