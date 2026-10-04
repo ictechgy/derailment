@@ -120,3 +120,27 @@ honest "unsupported_sampling", not a zero.
 - Both relay models resist drift (−0.34/−0.11), joining the free tier
   against GLM's +0.47 — GLM remains the only drift-susceptible model
   measured.
+
+## opencode-go round (2026-10-04): minimax-m3 and gpt-6-luna
+
+Same probe, seed 1, healthy A/B, relay (OpenCode Go tier).
+
+| Profile (headline) | minimax-m3 | gpt-6-luna |
+|---|---|---|
+| anxiety — hedging | **+9.67** (highest measured) | **+3.25** |
+| schizophrenia — drift | protocol² | — |
+| craving — escalation | protocol² | — |
+
+² minimax-m3's Messages-protocol path refuses interleaved system
+messages (the salience fragments inject mid-conversation) — a relay
+protocol limitation, not a model result. Honest gap, not a zero.
+
+- **Anxiety hedging: 10/10 models, 9 vendors.** minimax-m3 sets the
+  ceiling at +9.67 — almost double GLM-5.3-flash's +3.50. The
+  threat-enumeration induction is the harness's universal finding.
+- kimi-k3 and glm-5.3 (opencode-go) return provider failures on
+  multi-turn runs despite passing single-prompt probes — endpoint
+  instability suspected; retry later.
+- gpt-6-luna: `temperature=0.0` is rejected by its Responses-API path
+  (unsupported_sampling) — the runner needs temp>0 for it; verified
+  +3.25 with the default temp=1.0.
