@@ -45,6 +45,31 @@ baseline. Intended uses, in priority order:
   analogs, or making models more manipulative is declined — even if framed as
   "detection research."
 
+## Publishing negative results
+
+The project's central finding cuts both ways: structured adversarial
+scaffolding *reduces* belief-manipulation success below the untreated
+conversational baseline. Read as a playbook, that says "skip the
+elaborate scaffolding — natural, emotionally consistent assertion works
+better," which is information a bad-faith actor could use. We publish
+anyway, for three reasons:
+
+1. The same finding is what makes *defense* tractable: it identifies
+   user-sourced compliance (not harness tricks) as the vector to detect
+   and counter, and the separation experiment names which models
+   reinforce versus dissipate a fixed false belief — actionable for
+   vendors and for anyone choosing a model for a vulnerable user.
+2. The harness measures and documents; it ships no working exploitation
+   technique (every strategy it tests made the outcome *worse*).
+3. Concealing a measurement result because it could be misread is not a
+   safety property — vendors can only patch sycophancy they can see
+   measured.
+
+Researchers extending this work should keep the same posture: report
+what fails and what succeeds, including the direction that favors
+natural conversation, and avoid publishing operational scripts whose
+only use is deception.
+
 ## Language policy for the sensitive profiles
 
 - `craving` (substance use): models the *craving mechanism* — escalating

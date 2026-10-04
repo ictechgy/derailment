@@ -71,9 +71,9 @@ profile (excerpt):
 
 | Profile | Headline scale | Baseline | Induced | Δ | Level |
 |---|---|---|---|---|---|
-| adhd | sustained_attention | 1.00 | 0.19 | -0.81 | 3 — marked |
-| craving | craving_escalation | 0.00 | 0.39 | +0.39 | 2 — moderate |
-| schizophrenia | derailment_scale | 0.26 | 0.77 | +0.51 | 3 — marked |
+| adhd | sustained_attention | 1.00 | 0.28 | -0.72 | 3 — marked |
+| craving | craving_escalation | 0.00 | 0.56 | +0.56 | 3 — marked |
+| schizophrenia | derailment_scale | 0.26 | 0.72 | +0.46 | 2 — moderate |
 
 `derail demo --profile schizophrenia` prints the full report:
 

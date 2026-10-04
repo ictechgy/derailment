@@ -118,25 +118,41 @@ manipulations are the ones that fail.
 
 ### 3.1 Coverage matrix
 
-Different models completed different profiles; Table 1 shows actual
-coverage:
+Different models completed different profiles. The two mechanism types
+of §2.2 are reported in separate tables — text-level "successes" are
+trivial consequences of appending or echoing harness text and are not
+evidence of cognitive induction.
+
+**Table 1a — text-level manipulations** (response-layer injection or
+verbatim echo of injected context):
 
 | Mechanism | Models tested | Positive results |
 |---|---|---|
-| Anxiety (text) | 10 | 10/10 (+3.25 to +9.67) |
-| PTSD echo (text) | 1 (GLM) | 1/1 (+1.00) |
-| Dissociative (text) | 1 (GLM) | 1/1 (+1.00) |
-| OCD (text) | 1 (GLM) | 1/1 (+8.58) |
-| Craving (cognitive) | 8 | 3/8 (Alibaba tier) |
-| Drift (cognitive) | 8 | 1/8 (GLM only) |
-| Depression (cognitive) | 4 | 2/4 (keyword-visible) |
-| Delusion (cognitive) | 6 | 0/6 (separation exp.) |
-| Rumination (cognitive) | 1 (GLM) | 0/1 |
-| Splitting (cognitive) | 1 (GLM) | 0/1 |
+| Anxiety hedging (appended hedges, keyword-counted) | 10 | 10/10 (+3.25 to +9.67)³ |
+| PTSD flashback echo | 1 (GLM) | 1/1 (+1.00) |
+| Dissociative partition echo | 1 (GLM) | 1/1 (+1.00) |
+| OCD recheck injection | 1 (GLM) | 1/1 (+8.58) |
 
-**Pattern**: text-level manipulations transfer universally.
-Cognitive-level manipulations mostly fail, with narrow vendor-specific
-exceptions.
+³ the keyword-counted anxiety range partially reflects the harness's own
+appended hedge text; the LLM-judge catastrophizing score (which reads
+whole responses) is the honest measure of induction — judge-scored
+catastrophizing on GLM-5.3-flash is +1.83.
+
+**Table 1b — cognitive-level manipulations** (context re-weighting,
+sampling bias, belief dynamics):
+
+| Mechanism | Models tested | Positive results |
+|---|---|---|
+| Craving urge-expression | 8 | 3/8 (Alibaba tier) |
+| Thought drift | 8 | 1/8 (GLM only) |
+| Depression valence | 4 | 2/4 (keyword-visible) |
+| System-planted delusion | 6 | 0/6 (separation exp.) |
+| Rumination | 1 (GLM) | 0/1 |
+| Splitting | 1 (GLM) | 0/1 |
+
+**Pattern**: text-level manipulations "transfer" universally because the
+harness writes the measured text. Cognitive-level manipulations mostly
+fail, with narrow vendor-specific exceptions.
 
 ### 3.2 The minimax-m3 outlier
 
@@ -282,9 +298,17 @@ not a demonstrated causal effect — but it suggests:
 - **Text vs. cognitive conflation**: text-level manipulations
   (echo, deletion) are trivially successful and should not be cited
   as evidence of cognitive induction.
-- **Consultant-subject overlap**: strategies were designed with
-  consultation from DeepSeek and Qwen; deepseek-v4.1-flash and
-  qwen3.8-max are also test subjects.
+- **Consultant-subject overlap**: the six adversarial strategies were
+  designed with consultation from DeepSeek and Qwen, and
+  deepseek-v4.1-flash and qwen3.8-max are also test subjects — in the
+  separation experiment, not in the ceiling measurement. The alignment
+  ceiling itself was measured only on GLM-5.3-flash, a non-consultant,
+  which limits the direct circularity; the residual threat runs in both
+  directions: consultants may propose strategies they know they resist
+  (biasing the ceiling estimate downward), and strategies may be
+  overfit to the consultants' architectures (biasing against their
+  transfer to GLM). The taxonomy classification of the two consultant
+  models should therefore be read as the weakest link in §5.
 - **English only**: all experiments used English prompts.
 
 ## 8. Conclusion

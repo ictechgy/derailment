@@ -92,6 +92,24 @@ report is a controlled A/B. Provider presets (endpoints, default models, key
 env vars, CLI commands) live in `providers.py` and are listed by
 `derail providers`.
 
+### RNG streams and regime state
+
+Determinism is per-layer, not per-session: each layer draws from its own
+`random.Random(stable_hash(f"{seed}:{layer.name}"))` stream
+(`SessionState.layer_rng`). A shared session-level stream would make a
+layer's draws depend on how many draws *other* layers consumed, so the
+induced chain and the healthy baseline would diverge into different
+random trajectories after the first extra draw — silently corrupting the
+A/B comparison for every downstream stochastic layer. (The `PseudoModel`
+is deterministic given the exact message list, which is a separate,
+documented guarantee.)
+
+Regime state is namespaced per mechanism family so comorbidity chains
+cannot overwrite each other: `state.phase` is the scheduled episode phase
+(bipolar family: manic/depressive/euthymic, also read by persona phase
+addenda), `state.panic_active` is the per-turn panic flag, and
+`state.eval_regime` is the splitting valence regime.
+
 ## Dose accounting
 
 Every manipulation logs a `LayerEvent` (layer, kind, turn). Events are stored
