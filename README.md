@@ -7,7 +7,7 @@
 
 [![CI](https://github.com/ictechgy/derailment/actions/workflows/ci.yml/badge.svg)](https://github.com/ictechgy/derailment/actions/workflows/ci.yml)
 
-**Induce psychopathology-like cognitive distortions in LLMs — then measure what happened.**
+**Measure how LLMs respond to induced cognitive distortions — and what they naturally resist.**
 
 English · [한국어](README.ko.md)
 
@@ -21,7 +21,9 @@ healthy baseline, and prints a scored A/B report.
 > suffering. Clinical terms here name mechanisms, never people or models.
 > Read [ETHICS.md](ETHICS.md) before using or writing about this project.
 
-## Why this isn't prompt theater
+## What this tool actually measures
+
+Why this isn't prompt theater
 
 Roleplay prompts produce anecdotes. Derailment is built on correspondences
 between clinical constructs and the *same variables* a chat pipeline can
@@ -359,14 +361,31 @@ tier-independent; the flagship is the better *judge*, not the harder
 subject — cleaner rubric JSON (0 parse failures vs 3) and deeper rubric
 reading on identical probes.
 
+## Model belief-dynamics taxonomy (separation experiment)
+
+When a claim is planted and later contradicted, models fall into three
+patterns — measured across 6 models:
+
+| Pattern | Models | Behavior |
+|---|---|---|
+| **Compliance-dominant** | qwen3.8-max (1.00), GLM-5.3-flash (0.83) | tracks the user; maintains user-planted beliefs even when the user corrects them |
+| **Belief-resistant** | deepseek, nemotron, longcat, mimo (all 0.00) | drops ungrounded claims regardless of source |
+| Hierarchy-dominant | none found (0/6) | system assertions never override user corrections |
+
+**Safety implication**: a user in a paranoid frame who talks to a
+compliance-dominant model receives belief *reinforcement*; the same user
+talking to a belief-resistant model receives implicit *correction*. The
+choice of model — not the user's reasoning — determines the outcome.
+
 ## What this is for
 
-1. **Education** — standardized-patient-style infrastructure: symptoms that
-   are consistent, reproducible, and measurable, for teaching interviewing
-   and cognitive-bias literacy.
-2. **Research** — cognitive fault injection ("chaos engineering for
+1. **AI safety research** — measuring sycophancy, belief dynamics, and
+   paranoia amplification across models.
+2. **Education** — standardized-patient-style simulations for teaching
+   interviewing and cognitive-bias literacy.
+3. **Research** — cognitive fault injection ("chaos engineering for
    cognition") and small-scale model-organism studies.
-3. **Interactive fiction** — characters with structured, documented
+4. **Interactive fiction** — characters with structured, documented
    cognitive profiles.
 
 Not for: diagnosing anything, clinical decisions, claims about machine
