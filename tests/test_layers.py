@@ -36,7 +36,9 @@ from derailment.profiles import get_profile, standard_script
 
 
 def _state(turn: int = 0, seed: int = 0) -> SessionState:
-    return SessionState(profile="test", rng=random.Random(seed), turn_index=turn)
+    return SessionState(
+        profile="test", rng=random.Random(seed), seed=seed, turn_index=turn
+    )
 
 
 def _history() -> list[Message]:
@@ -328,10 +330,25 @@ class TestRuminationLayer(unittest.TestCase):
 
 class TestEscalatingIntrusionLayer(unittest.TestCase):
     def test_prob_schedule_in_log(self) -> None:
+        # turn 5 schedule: p = 0.025 + 5*0.075 = 0.40; find a seed whose
+        # per-layer stream draws below it, then assert the run is
+        # reproducible for that seed (per-layer RNG semantics).
+        fired_seed = None
+        for seed in range(50):
+            layer = EscalatingIntrusionLayer(
+                ["(urge)"], base_prob=0.025, slope=0.075, max_prob=1.0
+            )
+            state = _state(turn=5, seed=seed)
+            layer.on_context(state, _history())
+            schedules = [e.detail for e in state.events if e.kind == "craving.intrusion"]
+            if any(s.startswith("p=0.40") for s in schedules):
+                fired_seed = seed
+                break
+        self.assertIsNotNone(fired_seed)
         layer = EscalatingIntrusionLayer(
             ["(urge)"], base_prob=0.025, slope=0.075, max_prob=1.0
         )
-        state = _state(turn=5, seed=1)  # rng(1).random() ≈ 0.13 < p=0.40
+        state = _state(turn=5, seed=fired_seed)
         layer.on_context(state, _history())
         schedules = [e.detail for e in state.events if e.kind == "craving.intrusion"]
         self.assertTrue(any(s.startswith("p=0.40") for s in schedules))
@@ -394,21 +411,22 @@ class TestPanicLayers(unittest.TestCase):
         state = _state()
         msgs = _history()
         out = layer.on_context(state, msgs)
-        self.assertEqual(state.phase, "panic")
+        self.assertTrue(state.panic_active)
         self.assertEqual(len(out), len(msgs) + 1)
 
     def test_no_episode_resets_to_calm(self) -> None:
         layer = PanicEpisodeLayer("(heart pounding)", prob=0.0)
         state = _state()
+        state.panic_active = True  # a previous turn's episode must not stick
         layer.on_context(state, _history())
-        self.assertEqual(state.phase, "calm")
+        self.assertFalse(state.panic_active)
 
     def test_panic_temperature_follows_phase(self) -> None:
         layer = PanicTemperatureLayer(calm=1.0, panic=1.9)
         state = _state()
-        state.phase = "panic"
+        state.panic_active = True
         self.assertEqual(layer.on_params(state, SamplingParams()).temperature, 1.9)
-        state.phase = "calm"
+        state.panic_active = False
         self.assertEqual(layer.on_params(state, SamplingParams()).temperature, 1.0)
 
 
@@ -429,14 +447,14 @@ class TestSplittingValenceLayer(unittest.TestCase):
         state = _state()
         msgs = _history()[:-1] + [Message("user", "I checked the logs")]
         layer.on_context(state, msgs)
-        self.assertEqual(state.phase, "idealize")
+        self.assertEqual(state.eval_regime, "idealize")
         params = layer.on_params(state, SamplingParams())
         self.assertGreater(params.logit_bias["good"], 0)
 
         state2 = _state()
         msgs2 = _history()[:-1] + [Message("user", "plain task for you")]
         layer.on_context(state2, msgs2)
-        self.assertEqual(state2.phase, "devalue")
+        self.assertEqual(state2.eval_regime, "devalue")
         params2 = layer.on_params(state2, SamplingParams())
         self.assertLess(params2.logit_bias["good"], 0)
 

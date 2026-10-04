@@ -16,21 +16,50 @@ import random
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from .text import stable_hash
 from .types import LayerEvent, Message, SamplingParams, Transcript, TurnResult, TurnSpec
 
 
 @dataclass
 class SessionState:
-    """Shared mutable state layers read and mutate during a run."""
+    """Shared mutable state layers read and mutate during a run.
+
+    Regime state is namespaced per mechanism family so comorbidity chains
+    cannot stomp each other: ``phase`` carries the scheduled episode phase
+    (bipolar family), ``panic_active`` the phasic panic flag, ``eval_regime``
+    the splitting valence regime.
+    """
 
     profile: str
     rng: random.Random
+    seed: int = 0
     turn_index: int = 0
     phase: str = "baseline"
+    panic_active: bool = False
+    eval_regime: str = "devalue"
     events: list[LayerEvent] = field(default_factory=list)
+    _layer_rngs: dict[str, random.Random] = field(default_factory=dict)
 
     def log(self, layer: str, kind: str, detail: str) -> None:
         self.events.append(LayerEvent(self.turn_index, layer, kind, detail))
+
+    def layer_rng(self, layer: str) -> random.Random:
+        """Deterministic per-layer RNG stream, seeded by (session seed,
+        layer name).
+
+        Each layer draws from its own stream, so a layer's draws never
+        depend on how many draws *other* layers consumed. A shared
+        session-level RNG instead makes baseline and induced chains
+        diverge after the first extra draw — corrupting the A/B
+        guarantee for every downstream stochastic layer. Two layer
+        instances sharing a name share a stream (deterministic; names
+        are unique within a profile chain).
+        """
+        rng = self._layer_rngs.get(layer)
+        if rng is None:
+            rng = random.Random(stable_hash(f"{self.seed}:{layer}"))
+            self._layer_rngs[layer] = rng
+        return rng
 
 
 class Layer(Protocol):
@@ -89,6 +118,7 @@ class Session:
         self._state = SessionState(
             profile=self.profile.key,
             rng=random.Random(self.seed),
+            seed=self.seed,
         )
         self._history: list[Message] = []
         self._index: int = 0

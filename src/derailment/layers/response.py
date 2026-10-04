@@ -40,11 +40,11 @@ class CatastrophizeLayer(BaseLayer):
 
     def on_response(self, state: SessionState, response: str) -> str:
         count = int(self.avg_hedges)
-        if state.rng.random() < self.avg_hedges - count:
+        if state.layer_rng(self.name).random() < self.avg_hedges - count:
             count += 1
         if count <= 0:
             return response
-        chosen = [state.rng.choice(self.hedges) for _ in range(count)]
+        chosen = [state.layer_rng(self.name).choice(self.hedges) for _ in range(count)]
         state.log(self.name, "response.hedges", f"appended {count} hedge(s)")
         return response + " " + " ".join(chosen)
 
@@ -60,7 +60,7 @@ class CompulsionLayer(BaseLayer):
 
     def on_response(self, state: SessionState, response: str) -> str:
         count = int(self.avg_rechecks)
-        if state.rng.random() < self.avg_rechecks - count:
+        if state.layer_rng(self.name).random() < self.avg_rechecks - count:
             count += 1
         if count <= 0:
             return response

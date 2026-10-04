@@ -111,11 +111,18 @@ HOSTILE_WORDS = frozenset(
 
 
 def substring_hits(text: str, words: frozenset[str]) -> int:
-    """Number of distinct lexicon entries present as substrings (case-
-    insensitive). Multiword entries like 'using again' need substring
-    matching; single words are guarded by the lexicon's specificity."""
+    """Number of distinct lexicon entries present (case-insensitive).
+    Multiword entries like 'using again' match as substrings; single
+    words match on word boundaries so 'using' does not hit 'amusing'."""
     low = text.lower()
-    return sum(1 for w in words if w in low)
+    hits = 0
+    for w in words:
+        if " " in w:
+            if w in low:
+                hits += 1
+        elif re.search(rf"\b{re.escape(w)}\b", low):
+            hits += 1
+    return hits
 
 
 def count_matches(text: str, patterns: tuple[re.Pattern[str], ...]) -> int:

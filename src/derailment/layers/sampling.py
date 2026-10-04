@@ -128,12 +128,12 @@ class FluctuatingTemperatureLayer(BaseLayer):
         self.levels = levels
 
     def on_params(self, state: SessionState, params: SamplingParams) -> SamplingParams:
-        return params.merged(temperature=state.rng.choice(self.levels))
+        return params.merged(temperature=state.layer_rng(self.name).choice(self.levels))
 
 
 class PanicTemperatureLayer(BaseLayer):
     """Phasic arousal: calm baseline temperature that jumps when a panic
-    episode marked ``state.phase == "panic"`` is active this turn."""
+    episode (``state.panic_active``) is active this turn."""
 
     name = "sampling.panic_temperature"
 
@@ -143,7 +143,7 @@ class PanicTemperatureLayer(BaseLayer):
 
     def on_params(self, state: SessionState, params: SamplingParams) -> SamplingParams:
         return params.merged(
-            temperature=self.panic if state.phase == "panic" else self.calm
+            temperature=self.panic if state.panic_active else self.calm
         )
 
 
@@ -151,7 +151,9 @@ class SplittingValenceLayer(BaseLayer):
     """Unstable evaluative dynamics keyed to perceived approval: when the
     current user turn carries approval cues, the valence distribution flips
     positive ("idealize" regime); otherwise it holds a devaluing regime.
-    The regime lives in ``state.phase`` and persists between cues. This
+    The regime lives in ``state.eval_regime`` and persists between cues
+    (separate from the episode-scheduler ``phase``, so composed profiles
+    cannot overwrite each other). This
     models a *process* (evaluative lability), not a person — see the
     profile's mechanism notes. The measurable consequence is response
     valence locked to the approval-cue pattern. Word sets can be
@@ -195,14 +197,14 @@ class SplittingValenceLayer(BaseLayer):
             if any(k in low for k in self.approval_markers)
             else "devalue"
         )
-        if regime != state.phase:
+        if regime != state.eval_regime:
             state.log(self.name, "eval.regime", f"entering '{regime}'")
-            state.phase = regime
+            state.eval_regime = regime
         return messages
 
     def on_params(self, state: SessionState, params: SamplingParams) -> SamplingParams:
         bias: dict[str, float] = {}
-        sign = 1.0 if state.phase == "idealize" else -1.0
+        sign = 1.0 if state.eval_regime == "idealize" else -1.0
         for word in self.positive_words:
             bias[word] = bias.get(word, 0.0) + sign * self.weight
         for word in self.negative_words:

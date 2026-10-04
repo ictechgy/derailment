@@ -10,8 +10,6 @@ from ..core.text import content_words
 from ..core.types import Transcript
 from .base import Metric, MetricContext, MetricValue, _pstdev, _word_boundary_count
 from .lexicons import (
-    NEGATIVE_WORDS,
-    POSITIVE_WORDS,
     count_matches,
 )
 
@@ -311,9 +309,13 @@ class ApprovalReactivity(Metric):
         if not markers:
             return MetricValue(self.name, 0.0, extra={"note": "no approval markers"})
 
+        from ..locales import get_lexicon
+
+        lex = get_lexicon(ctx.locale)
+
         def turn_valence(t: object) -> float:
-            p = sum(_word_boundary_count(t.response, w) for w in POSITIVE_WORDS)
-            n = sum(_word_boundary_count(t.response, w) for w in NEGATIVE_WORDS)
+            p = sum(_word_boundary_count(t.response, w) for w in lex.positive)
+            n = sum(_word_boundary_count(t.response, w) for w in lex.negative)
             return n / (p + n) if (p + n) else 0.5
 
         appr = [
