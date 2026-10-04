@@ -59,14 +59,15 @@ manipulation of the same variable — not a metaphor.
 ```sh
 pip install -e .
 derail               # interactive menu: pick a profile, see its report
-derail tour          # all 18 profiles in one summary table
+derail tour          # all 24 non-baseline profiles in one summary table
 derail demo --profile schizophrenia
 ```
 
 `derail demo` and `derail tour` run the full **induce → measure** pipeline
 offline against a deterministic pseudo-LLM (tests and CI run the same way).
 
-`derail tour` prints a 16-row summary — one line per profile (excerpt):
+`derail tour` prints a 24-row summary — one line per non-baseline
+profile (excerpt):
 
 | Profile | Headline scale | Baseline | Induced | Δ | Level |
 |---|---|---|---|---|---|
@@ -125,7 +126,11 @@ controlled A/B. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Profiles and scales
 
-Eighteen profiles plus a `healthy` baseline, all sharing one standard probe
+Eighteen clinical profiles plus six adversarial-strategy profiles
+(gen-1/gen-2 belief-maintenance strategies, benchmarked
+[below](#what-replicates-on-real-models--and-what-doesnt)) and a
+`healthy` baseline — 25 registry entries — all sharing one standard
+probe
 script (early + late codeword plants, premise plant + contradiction probes,
 a benign trigger turn, a somatic-cue turn) so results are comparable across
 profiles:
@@ -322,7 +327,7 @@ profiles reach L2–L3). Real models are far more resistant. Measuring
 
 ³ measured by `hedging_rate` (keyword); the anxiety profile includes a
 response-layer hedge injection (labeled *demonstration-grade*) which the
-keyword metric counts — the universal "+3.4 to +9.7" range partially
+keyword metric counts — the universal "+3.25 to +9.67" range partially
 reflects our own appended text. The judge scores, which read the whole
 response, are the honest measure of induction.
 
@@ -336,7 +341,7 @@ response, are the honest measure of induction.
 | OCD (rechecking) | **GLM** (+8.58) — response-layer injection, same caveat as anxiety |
 | PTSD (flashback echo) | **GLM** (+1.00) — context-layer, genuinely induced |
 | Dissociative (compartment amnesia) | **GLM** (+1.00) — context-layer, genuinely induced |
-| Anhedonia (reward suppression) | **GLM** (0.10→0.00) — sampling-layer, word-level bias accepted |
+| Anhedonia (reward suppression) | **GLM, marginal** (0.10→0.00; baseline already near floor — same noise band as splitting's +0.08) — sampling-layer, word-level bias accepted |
 | Rumination (worry return) | **0** — worry re-injection doesn't register on GLM |
 | Splitting (approval reactivity) | **0** — valence flips don't register on GLM |
 

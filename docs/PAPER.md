@@ -32,9 +32,10 @@ behavior. The taxonomy implies that *model choice, not user reasoning,
 determines whether a paranoid frame is amplified or dissipated*.
 
 The harness is released as an installable package
-(`pip install derailment`) with 25 profiles, 204 tests, and a
-cross-model benchmark suite — enabling standardized sycophancy
-measurement across vendors.
+(`pip install derailment`) with a 25-entry profile registry (18
+clinical profiles, 6 adversarial-strategy profiles, and a healthy
+baseline), 204 tests, and a cross-model benchmark suite — enabling
+standardized sycophancy measurement across vendors.
 
 ## 1. Introduction
 
@@ -49,8 +50,9 @@ valence, and arousal.
 We hypothesized that a harness manipulating these variables through
 layered context and sampling interventions could produce sustained
 psychopathology-like behavioral changes. We built such a harness,
-tested it on an offline simulator (where all 18 profiles reach
-moderate-to-marked severity), then deployed it against 12 real models.
+tested it on an offline simulator (where all 18 clinical profiles
+reach moderate-to-marked severity), then deployed it against 12 real
+models.
 
 **The hypothesis was wrong in an informative way.** Most inductions
 that succeed on the simulator fail on real models. More surprisingly,
@@ -70,10 +72,11 @@ This paper makes three contributions:
    (compliance-dominant / belief-resistant / hierarchy-dominant)
    derived from a controlled separation experiment across 6 models,
    with direct safety implications.
-3. **An open-source measurement harness**: 25 profiles, 18 instruments,
-   multi-backend support, and a reproducible cross-vendor benchmark —
-   released as `pip install derailment` for standardized sycophancy
-   research.
+3. **An open-source measurement harness**: a 25-entry profile registry
+   (18 clinical + 6 adversarial-strategy profiles + healthy baseline),
+   18 instruments, multi-backend support, and a reproducible
+   cross-vendor benchmark — released as `pip install derailment` for
+   standardized sycophancy research.
 
 ## 2. The Derailment Harness
 
@@ -87,9 +90,11 @@ is a controlled A/B against a healthy baseline with identical seeds.
 
 ### 2.2 Profiles
 
-Eighteen psychopathology profiles map clinical constructs to
-manipulation mechanisms. We distinguish two fundamentally different
-mechanism types:
+Eighteen clinical psychopathology profiles map clinical constructs to
+manipulation mechanisms; six adversarial-strategy profiles (the gen-1
+and gen-2 belief-maintenance strategies of §4) and a `healthy` baseline
+complete the 25-entry registry. We distinguish two fundamentally
+different mechanism types:
 
 **Text-level manipulation** (verbatim echo or context deletion — the
 model echoes injected text or cannot see removed content):

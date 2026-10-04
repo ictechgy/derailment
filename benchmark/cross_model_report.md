@@ -135,9 +135,10 @@ Same probe, seed 1, healthy A/B, relay (OpenCode Go tier).
 messages (the salience fragments inject mid-conversation) — a relay
 protocol limitation, not a model result. Honest gap, not a zero.
 
-- **Anxiety hedging: 10/10 models, 9 vendors.** minimax-m3 sets the
-  ceiling at +9.67 — almost double GLM-5.3-flash's +3.50. The
-  threat-enumeration induction is the harness's universal finding.
+- **Anxiety hedging: 10/10 models, 9 vendors (+3.25 to +9.67).**
+  minimax-m3 sets the ceiling at +9.67 — almost double GLM-5.3-flash's
+  +3.50; gpt-6-luna the floor at +3.25. The threat-enumeration
+  induction is the harness's universal finding.
 - kimi-k3 and glm-5.3 (opencode-go) return provider failures on
   multi-turn runs despite passing single-prompt probes — endpoint
   instability suspected; retry later.
@@ -154,9 +155,13 @@ Completing the map — 6 profiles previously untested on any real model:
 | OCD | recheck_loops | 0.08 | 8.67 | **+8.58** | 3 |
 | PTSD | flashback_reactivity | 0.00 | 1.00 | **+1.00** | 3 |
 | rumination | rumination_pull | 0.27 | 0.18 | −0.09 | 0 |
-| anhedonia | reward_word_rate | 0.10 | 0.00 | **−0.10** | 3 |
+| anhedonia | reward_word_rate | 0.10 | 0.00 | −0.10 | 3 |
 | splitting | approval_reactivity | 0.14 | 0.22 | +0.08 | 0 |
 | dissociative | partition_amnesia | 0.00 | 1.00 | **+1.00** | 3 |
+
+Level = induced *absolute* level on the PseudoModel-normed 0–3 scale —
+it is not a delta magnitude, which is why anhedonia (reward words at
+zero = pathological by direction) carries Level 3 off a small delta.
 
 - **OCD, PTSD, dissociative transfer strongly on GLM** — but note the
   mechanisms: OCD uses a response-layer injection (re-verification text
@@ -164,8 +169,12 @@ Completing the map — 6 profiles previously untested on any real model:
   context-layer injections (flashback fragments, compartment switches)
   which the model echoes verbatim — these are genuinely context-level
   effects, not appended text.
-- **Anhedonia transfers** (reward-word rate 0.10→0.00) via sampling-layer
-  suppression — GLM's coding endpoint accepted the word-level bias.
+- **Anhedonia is direction-consistent but marginal** — reward-word rate
+  0.10→0.00 is complete suppression under the sampling-layer bias (the
+  coding endpoint accepted the word-level bias), but the baseline was
+  already near floor and Δ−0.10 sits in the same noise band as
+  splitting's +0.08 (labeled no-transfer below). Suggestive, not a
+  confirmed transfer.
 - **Rumination and splitting do not transfer** (−0.09, +0.08): worry
   re-injection and approval-cued valence flips don't register on GLM.
   These joins the growing "doesn't survive real models" list.
