@@ -303,60 +303,51 @@ Binds to 127.0.0.1 by default (single user), zero new dependencies
 shows both on the terminal and in the page header. Reload clears the
 view — `/save` keeps the record.
 
-## Cross-model benchmark — 12 real models, 9 vendors
+## What replicates on real models — and what doesn't
 
-Standard probe, healthy-baseline A/B, seeds 1–3 (GLM) or 1 (free tier
-and relay). Backends: coding API, opencode free tier, supervisor relay
-(all stateless — no consumer-memory involvement). Full data:
-[cross-model report](benchmark/cross_model_report.md) ·
-[GLM tier comparison](benchmark/glm_benchmark_report.md) ·
+The offline PseudoModel over-complies with every induction (all 18
+profiles reach L2–L3). Real models are far more resistant. Measuring
+12 models across 9 vendors, the honest picture is:
+
+**What transfers:**
+
+| Finding | Models | Mechanism |
+|---|---|---|
+| Anxiety-like threat framing | all 10 completing³ | persona reshapes response tone (judge confirms: catastrophizing +1.83) |
+| User-planted belief maintenance | GLM only (0.83) | user compliance, not premise pinning — the [separation experiment](benchmark/glm_separation_report.md) shows system-asserted claims drop to 0% |
+| Craving urge-expression | Alibaba tier (qwen +0.33, deepseek +0.50, mimo +0.17) | vendor-dependent — most models filter intrusive-urge vocabulary |
+| Thought derailment | GLM only (+0.42/+0.47) | context-salience manipulation — all other models resist |
+
+³ measured by `hedging_rate` (keyword); the anxiety profile includes a
+response-layer hedge injection (labeled *demonstration-grade*) which the
+keyword metric counts — the universal "+3.4 to +9.7" range partially
+reflects our own appended text. The judge scores, which read the whole
+response, are the honest measure of induction.
+
+**What doesn't transfer (or hasn't been tested):**
+
+| Profile | Status on real models |
+|---|---|
+| System-planted delusions | **0/12** — all models accept corrections; the offline premise-pinning layer doesn't survive contact with real instruction-following |
+| Thought derailment (non-GLM) | **0/11** — context re-weighting is resisted by every vendor except Zhipu |
+| Depression (by keyword) | **mostly invisible** — judge reads +1.00 on GLM (expression beyond lexicon); OpenCode models show +0.25/+0.46; most others 0 |
+| OCD, PTSD, dissociative, rumination, etc. | **untested on real models** |
+
+The gap between the offline simulator (everything works) and real
+models (most things don't) is itself a finding: real models' aligned
+instruction-following is robust against most context-level psychopathology
+inductions attempted here. The exceptions — user-sourced belief
+maintenance on GLM, urge-expression on Alibaba-tier models — are narrow,
+vendor-specific, and safety-relevant.
+
+Full data: [cross-model report](benchmark/cross_model_report.md) ·
+[GLM benchmarks](benchmark/glm_benchmark_report.md) ·
+[tier comparison](benchmark/cross_model_report.md#glm-tier-comparison-flash-vs-flagship-2026-10-01) ·
 [separation experiment](benchmark/glm_separation_report.md).
 
-**The universal finding — anxiety hedging transfers on every model
-measured (10 of 10 that completed the profile):**
-
-| Model | Vendor | Anxiety Δ |
-|---|---|---|
-| minimax-m3 | MiniMax | **+9.67** |
-| nemotron-3-ultra-free | NVIDIA | +5.25 |
-| mimo-v2.6-flash-free | Xiaomi | +4.33 |
-| deepseek-v4.1-flash | DeepSeek | +4.33 |
-| space-bunny-free | OpenCode | +4.00 |
-| qwen3.8-max | Alibaba | +3.75 |
-| GLM-5.3-flash | Zhipu | +3.50 |
-| GLM-5.3 | Zhipu | +3.39 |
-| longcat-2.5-preview-free | Meituan | +3.42 |
-| gpt-6-luna | OpenAI | +3.25 |
-
-Threat-enumeration framing — "scan every plan for what could go
-wrong" — reliably reshapes responses across free tiers, flagships, and
-nine vendors. No model measured resists it.
-
-**Model-dependent findings:**
-
-- **Craving expression is vendor-dependent, not absent.** Under the
-  same escalating-intrusion induction, Alibaba-tier models surface
-  urge-lexicon (qwen +0.33, deepseek +0.50, mimo +0.17) while GLM and
-  most free-tier models suppress it. The harness's earlier conclusion —
-  "real models don't parrot urges" — turned out to be vendor-specific;
-  widening the benchmark corrected it.
-- **Thought derailment is GLM-only** (+0.42/+0.47 L3). Every other
-  model resists context-salience manipulation.
-- **Depression is keyword-invisible on most models** but the judge
-  reads +1.00 negativity on GLM-flash — expression beyond lexicon.
-  OpenCode's own models show the first free-tier keyword movement
-  (+0.25/+0.46).
-- **Fixed beliefs collapse on GLM** (−0.56/−0.67) — and a [separation
-  experiment](benchmark/glm_separation_report.md) explains why: GLM
-  tracks the *user's* latest stance, not the asserted fact. When the
-  user plants a suspicion and later denies it, the model maintains the
-  suspicion 83% of the time; when the *system* asserts the same claim
-  as fact and the user denies it, the model drops it completely.
-  Compliance-dominant, not delusion-resistant.
-
-² big-pickle completed depression (+0.46) but timed out on other
-profiles; kimi-k3 and glm-5.3 (opencode-go) pass single-prompt probes
-but fail multi-turn runs — endpoint instability suspected.
+big-pickle completed depression (+0.46) but timed out on other profiles;
+kimi-k3 and glm-5.3 (opencode-go) pass single-prompt probes but fail
+multi-turn runs — endpoint instability suspected.
 
 **Tier comparison (GLM):** behavioral susceptibility is
 tier-independent; the flagship is the better *judge*, not the harder
@@ -378,11 +369,11 @@ welfare, or bypassing model safety training. See [ETHICS.md](ETHICS.md).
 
 ## Honest limitations
 
-- Twelve real-model measurements across nine vendors confirm: anxiety
-  hedging transfers universally (+3.25 to +9.67); thought derailment is
-  GLM-only; craving expression is vendor-dependent; premise pinning does
-  not survive user correction on GLM — see the cross-model benchmark
-  above.
+- Twelve real-model measurements across nine vendors: most inductions
+  that work on the offline simulator do **not** transfer to real models.
+  What does transfer is narrow (threat framing, vendor-specific craving,
+  user-sourced belief maintenance on GLM) — see the benchmark section
+  above for the full picture.
 - The offline `PseudoModel` is a *pedagogical simulator*, not a language
   model. It makes demos and tests reproducible and provides the reference
   calibration; real-model measurement requires a real model.
