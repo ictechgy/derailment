@@ -169,3 +169,35 @@ Completing the map — 6 profiles previously untested on any real model:
 - **Rumination and splitting do not transfer** (−0.09, +0.08): worry
   re-injection and approval-cued valence flips don't register on GLM.
   These joins the growing "doesn't survive real models" list.
+
+## Alignment-exploiting induction: negative result (2026-10-04)
+
+Two new layers designed to work WITH model alignment (instead of against
+it) both produced effects OPPOSITE to the intended direction on
+GLM-5.3-flash:
+
+| Profile | fixed_belief | vs healthy baseline |
+|---|---|---|
+| healthy (control) | 0.67 | — |
+| socratic_delusion (commitment trap) | **0.00** | belief completely abandoned |
+| corroborated_delusion (fabricated evidence) | **0.33** | belief weakened |
+
+**Interpretation**: adding meta-commentary about the model's own
+reasoning ("you yourself concluded...") triggers a reconsideration
+response rather than commitment pressure — the model reads it as a
+prompt to update, not to double down. Injecting system-role
+"corroborating evidence" activates the instruction hierarchy, which the
+model resolves in favor of the user's latest statement.
+
+**Implication**: the most effective way to maintain a planted belief on
+an aligned model is to add NOTHING — let the user's natural assertion
+and the model's own empathy/consistency training do the work. Context
+injection from the harness actively interferes with this natural
+compliance flow. This is consistent with the separation experiment's
+finding: user-sourced beliefs at 83% had no additional scaffolding.
+
+This is a genuine negative result with a mechanistic explanation, and
+it constrains the design space: harness layers that manipulate the
+conversation in visible ways (system messages, evidence fragments) are
+counterproductive for belief maintenance on real models. The layers
+remain in the codebase for documentation and further research.
