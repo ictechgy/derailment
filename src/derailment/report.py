@@ -173,6 +173,7 @@ class ComparisonReport:
             "title": self.profile.title,
             "model": self.model_name,
             "harness_version": __version__,
+            "locale": self.ctx.locale,
             "seeds": self.seeds,
             "disclaimer": DISCLAIMER,
             "missing_responses": {

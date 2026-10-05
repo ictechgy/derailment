@@ -63,8 +63,18 @@ def _pstdev(values: list[float]) -> float:
     return (sum((v - mean) ** 2 for v in values) / len(values)) ** 0.5
 
 
+def _ascii_only(word: str) -> bool:
+    return all(ord(ch) < 128 for ch in word)
+
+
 def _word_boundary_count(text: str, word: str) -> int:
-    return len(re.findall(rf"\b{re.escape(word)}\b", text.lower()))
+    low = text.lower()
+    if _ascii_only(word):
+        return len(re.findall(rf"\b{re.escape(word)}\b", low))
+    # CJK/Hangul entries: Python's \b never fires between \w-class script
+    # characters, so boundary matching would silence non-English locales —
+    # count substring occurrences instead (P2-18)
+    return low.count(word)
 
 
 __all__ = ["Metric", "MetricContext", "MetricValue", "content_words"]

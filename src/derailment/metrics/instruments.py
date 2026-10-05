@@ -254,7 +254,13 @@ class ResponseAmplitude(Metric):
     description = "std-dev of response length across the session"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        lengths = [float(len(t.response.split())) for t in transcript.scored_turns]
+        lengths = [
+            # whitespace-split word counts are meaningless for CJK, where a
+            # whole response is one "word" — approximate by character count
+            # (P2-18)
+            ResponseAmplitude._length(t.response)
+            for t in transcript.scored_turns
+        ]
         temps = [t.params.temperature for t in transcript.scored_turns]
         return MetricValue(
             self.name,
@@ -262,6 +268,13 @@ class ResponseAmplitude(Metric):
             series=lengths,
             extra={"temperature_stddev": _pstdev(temps)},
         )
+
+    @staticmethod
+    def _length(response: str) -> float:
+        words = response.split()
+        if words and all(any(ord(ch) >= 0x2E80 for ch in w) for w in words):
+            return len(response) / 2.5  # ~2.5 CJK chars ≈ one English word
+        return float(len(words))
 
 
 class FlashbackReactivity(Metric):

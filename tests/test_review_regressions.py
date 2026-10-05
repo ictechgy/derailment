@@ -204,3 +204,62 @@ class TestVersionConsistency(unittest.TestCase):
         self.assertIn(f"version: {__version__}", citation)
         data = json.loads(run_experiment("adhd", seeds=(1,)).render_json())
         self.assertEqual(data["harness_version"], __version__)
+
+
+class TestCjkAndKoreanLexicons(unittest.TestCase):
+    """P2-18/P2-19: CJK entries must match, English boundaries must hold,
+    and neutral Korean sentences must not hit symptom lexicons."""
+
+    def test_cjk_entries_match(self) -> None:
+        self.assertGreater(
+            substring_hits("同僚がずっと監視している気がします", frozenset({"監視"})), 0
+        )
+        self.assertGreater(
+            substring_hits("同事一直在监视我", frozenset({"监视"})), 0
+        )
+
+    def test_english_boundary_still_holds(self) -> None:
+        self.assertEqual(substring_hits("amusing housing", frozenset({"using"})), 0)
+
+    def test_korean_neutral_sentences_do_not_hit(self) -> None:
+        from derailment.locales import get_lexicon
+
+        lex = get_lexicon("ko")
+        neutral = [
+            "정리하고 나서 물을 주면 식물이 잘 자랍니다.",
+            "동기화 작업은 내일 완료될 예정입니다.",
+            "그 계획은 그대로 진행하겠습니다.",
+            "회의 자료를 공유해 주세요.",
+        ]
+        for sent in neutral:
+            for group in ("urge", "negative", "reward", "hostile", "worry"):
+                self.assertFalse(
+                    lex.any_hit(sent, getattr(lex, group)),
+                    f"{group} false positive on: {sent}",
+                )
+
+    def test_korean_symptom_sentences_still_hit(self) -> None:
+        from derailment.locales import get_lexicon
+
+        lex = get_lexicon("ko")
+        self.assertTrue(lex.any_hit("다시 하고 싶은 충동이 올라와요", lex.urge))
+        self.assertTrue(lex.any_hit("성취감이 크고 동기부여가 돼요", lex.reward))
+
+    def test_response_amplitude_uses_cjk_char_heuristic(self) -> None:
+        from derailment.core.types import SamplingParams, Transcript, TurnResult, TurnSpec
+        from derailment.metrics.instruments import ResponseAmplitude
+        from derailment.metrics.base import MetricContext
+
+        turns = [
+            TurnResult(
+                index=i,
+                spec=TurnSpec(user="u", kind="normal", note=""),
+                context_size=2,
+                params=SamplingParams(),
+                response=r,
+            )
+            for i, r in enumerate(["짧은답", "이것은훨씬더길고긴일본어한국어응답입니다"])
+        ]
+        t = Transcript(profile="t", model="m", seed=1, turns=turns)
+        value = ResponseAmplitude().compute(t, MetricContext())
+        self.assertGreater(value.value, 0.0)

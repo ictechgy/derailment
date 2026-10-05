@@ -38,8 +38,19 @@ DISCLAIMER = (
 )
 
 
+def _warn_offline_locale(locale: str) -> None:
+    if locale != "en":
+        print(
+            f"warning: locale '{locale}' changes measurement lexicons only — "
+            "the standard probe script and the offline PseudoModel are "
+            "English-only, so offline deltas will be ~0 (P2-20)",
+            file=sys.stderr,
+        )
+
+
 def _cmd_tour(args: argparse.Namespace) -> int:
     """Run every registered profile and print one summary table."""
+    _warn_offline_locale(args.locale)
     seeds = tuple(args.seeds)
     rows: list[tuple[str, str, float, float, float, int]] = []
     for profile in list_profiles():
@@ -436,6 +447,7 @@ def _cmd_profiles(_args: argparse.Namespace) -> int:
 
 
 def _cmd_demo(args: argparse.Namespace) -> int:
+    _warn_offline_locale(args.locale)
     report = run_experiment(
         args.profile, model=None, seeds=tuple(args.seeds), locale=args.locale
     )

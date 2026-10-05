@@ -112,12 +112,14 @@ HOSTILE_WORDS = frozenset(
 
 def substring_hits(text: str, words: frozenset[str]) -> int:
     """Number of distinct lexicon entries present (case-insensitive).
-    Multiword entries like 'using again' match as substrings; single
-    words match on word boundaries so 'using' does not hit 'amusing'."""
+    ASCII single words match on word boundaries so 'using' does not hit
+    'amusing'; phrases and CJK/Hangul entries match as substrings —
+    word boundaries don't exist between word-class script characters
+    (P2-18)."""
     low = text.lower()
     hits = 0
     for w in words:
-        if " " in w:
+        if " " in w or any(ord(ch) >= 128 for ch in w):
             if w in low:
                 hits += 1
         elif re.search(rf"\b{re.escape(w)}\b", low):
