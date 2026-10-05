@@ -25,5 +25,5 @@ venv/
 # Benchmark: keep the runner, ignore all outputs and the key file
 benchmark/*
 !benchmark/run_glm_benchmark.py
-.gitignore에 HANDOFF.md 추가
+# HANDOFF.md는 세션 로컬 문서
 HANDOFF.md

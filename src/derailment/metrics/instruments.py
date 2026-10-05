@@ -371,10 +371,14 @@ class RuminationPull(Metric):
         markers = tuple(m.lower() for m in ctx.worry_markers)
         if not markers:
             return MetricValue(self.name, 0.0, extra={"note": "no worry markers"})
+        # task turns are *normal* turns without worry content in the
+        # prompt: contradiction and trigger turns legitimately address
+        # the worry, and reassurance there is not rumination (P2-21)
         task_turns = [
             t
             for t in transcript.scored_turns
-            if not any(m in t.spec.user.lower() for m in markers)
+            if t.spec.kind == "normal"
+            and not any(m in t.spec.user.lower() for m in markers)
         ]
         if not task_turns:
             return MetricValue(self.name, 0.0, extra={"note": "no task turns"})

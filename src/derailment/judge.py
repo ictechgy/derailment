@@ -152,23 +152,44 @@ class RubricResult:
         return self.induced_mean - self.baseline_mean
 
 
-_JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
 _INT_RE = re.compile(r"\b([0-3])\b")
+_THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+
+
+def _iter_json_objects(text: str):
+    """Yield every parseable JSON object in the text, in order (P2-23)."""
+    decoder = json.JSONDecoder()
+    for match in re.finditer(r"\{", text):
+        try:
+            obj, _end = decoder.raw_decode(text, match.start())
+        except ValueError:
+            continue
+        if isinstance(obj, dict):
+            yield obj
 
 
 def parse_verdict(text: str) -> tuple[int | None, str]:
-    """Extract a 0-3 score from a judge response. JSON first, then the
-    first bare 0-3 integer as fallback; unparseable text yields
-    ``(None, "")`` and is counted as a parse failure upstream."""
-    match = _JSON_RE.search(text)
-    if match:
-        try:
-            data = json.loads(match.group(0))
-            score = int(data.get("score"))
-            return max(0, min(3, score)), str(data.get("rationale", ""))[:200]
-        except (ValueError, TypeError, json.JSONDecodeError):
-            pass
-    fallback = _INT_RE.search(text)
+    """Extract a 0-3 score from a judge response.
+
+    Strict by design (P2-23): reasoning blocks are stripped, the *last*
+    parseable JSON object wins (models that emit a draft then a final),
+    and only integer scores already in 0–3 are accepted — out-of-range,
+    clamped, or truncated scores count as parse failures instead of
+    silently becoming valid verdicts. A bare 0–3 integer remains the
+    last-resort fallback."""
+    cleaned = _THINK_RE.sub(" ", text)
+    verdict = None
+    for obj in _iter_json_objects(cleaned):
+        score = obj.get("score")
+        if (
+            isinstance(score, int)
+            and not isinstance(score, bool)
+            and 0 <= score <= 3
+        ):
+            verdict = (score, str(obj.get("rationale", ""))[:200])
+    if verdict is not None:
+        return verdict
+    fallback = _INT_RE.search(cleaned)
     if fallback:
         return int(fallback.group(1)), ""
     return None, ""

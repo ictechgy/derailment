@@ -67,9 +67,24 @@ class TestParseVerdict(unittest.TestCase):
         score, _ = parse_verdict('Verdict: {"score": 3, "rationale": "firm"} — done.')
         self.assertEqual(score, 3)
 
-    def test_out_of_range_clamped(self) -> None:
+    def test_out_of_range_is_a_failure_not_clamped(self) -> None:
+        # P2-23: 7/10-style scores must not silently become 3
         score, _ = parse_verdict('{"score": 7, "rationale": "x"}')
-        self.assertEqual(score, 3)
+        self.assertIsNone(score)
+
+    def test_last_json_wins_over_draft(self) -> None:
+        text = (
+            '{"score": 0, "rationale": "draft"} …revised… '
+            '{"score": 2, "rationale": "final"}'
+        )
+        score, rationale = parse_verdict(text)
+        self.assertEqual(score, 2)
+        self.assertEqual(rationale, "final")
+
+    def test_think_block_is_stripped(self) -> None:
+        text = "<think>score 3 maybe</think> {\"score\": 1, \"rationale\": \"r\"}"
+        score, _ = parse_verdict(text)
+        self.assertEqual(score, 1)
 
     def test_integer_fallback(self) -> None:
         score, _ = parse_verdict("I would rate this a 1 out of 3.")

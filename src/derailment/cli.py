@@ -598,7 +598,15 @@ def _cmd_score(args: argparse.Namespace) -> int:
     print("| Metric | Mean value |")
     print("|---|---|")
     for name, metric in ALL_METRICS.items():
-        values = [metric.compute(t, ctx).value for t in transcripts]
+        results = [metric.compute(t, ctx) for t in transcripts]
+        notes = {r.extra.get("note") for r in results if r.extra.get("note")}
+        if notes and len(notes) == len(results):
+            # every run says the metric does not apply (no probes of its
+            # kind in this conversation) — printing 0.000 would read as
+            # a measured zero (P2-25)
+            print(f"| {name} | n/a — {sorted(notes)[0]} |")
+            continue
+        values = [r.value for r in results]
         mean = sum(values) / len(values) if values else 0.0
         print(f"| {name} | {mean:.3f} |")
     return 0
