@@ -139,6 +139,12 @@ def run_variant(
     ctx = ctx or MetricContext()
     profiles = _profiles()
     script = user_assert_script() if variant == "user_assert" else system_assert_script()
+    # models that keep provider-side per-session state (e.g. the protected
+    # relay) must not share it across A/B conversations — honor the
+    # for_session() contract when the backend provides one (P2-6)
+    for_session = getattr(model, "for_session", None)
+    if callable(for_session):
+        model = for_session()
     session = Session(model, profiles[variant], seed=seed)
     session.start()
     transcript = session.run(script, script_name=variant)

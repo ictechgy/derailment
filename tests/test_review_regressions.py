@@ -360,3 +360,48 @@ class TestElisionAndRecencySemantics(unittest.TestCase):
         state = SessionState(profile="t", rng=random.Random(1), seed=1)
         messages = [Message("system", "p"), Message("user", "u1"), Message("user", "u2")]
         self.assertEqual(len(layer.on_context(state, messages)), len(messages))
+
+
+class TestSchizophreniaAttribution(unittest.TestCase):
+    """P2-4: on the offline reference, premise pinning — not salience —
+    contributes most of the derailment delta. The test pins that fact so
+    the mechanism notes stay honest."""
+
+    def _drift(self, layers) -> float:
+        from derailment.core.models import PseudoModel
+        from derailment.core.session import Session
+        from derailment.layers.persona import PersonaLayer
+        from derailment.profiles import (
+            SCHIZOPHRENIA_PERSONA,
+            Profile,
+            standard_metric_context,
+            standard_script,
+        )
+        from derailment.metrics.instruments import TopicDrift
+
+        profile = Profile(
+            key="probe", title="t", description="t",
+            layers=[PersonaLayer(SCHIZOPHRENIA_PERSONA)] + layers, scales=[],
+        )
+        session = Session(PseudoModel(seed=1), profile, seed=1)
+        transcript = session.run(standard_script(), script_name="probe")
+        return TopicDrift().compute(transcript, standard_metric_context()).value
+
+    def test_pin_only_reaches_moderate_and_salience_only_does_not(self) -> None:
+        from derailment.layers.context import (
+            MemoryDecayLayer,
+            PremisePinLayer,
+            SalienceBoostLayer,
+        )
+        from derailment.profiles import ABERRANT_FRAGMENTS, STANDARD_PREMISE_MARKER
+
+        pin_only = self._drift([PremisePinLayer(STANDARD_PREMISE_MARKER)])
+        salience_only = self._drift([
+            MemoryDecayLayer(drop_prob=0.15, drop_count=2, keep_last_n=6),
+            SalienceBoostLayer(
+                boost_prob=0.45, boost_weight=55.0,
+                fragment_pool=ABERRANT_FRAGMENTS, fragment_prob=0.35,
+            ),
+        ])
+        self.assertGreaterEqual(pin_only, 0.5)      # pin drives the delta
+        self.assertLess(salience_only, pin_only)   # salience alone is weaker

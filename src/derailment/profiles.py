@@ -399,6 +399,11 @@ def _build_registry() -> dict[str, Profile]:
             "to attention re-weighting; the mapping is principled but partial "
             "— human psychosis involves far more than salience.",
             "Pinning models belief maintenance, not the genesis of delusions.",
+            "Attribution caveat (offline reference): ablation shows premise "
+            "pinning contributes most of the derailment-scale delta (pin "
+            "alone reaches moderate; decay+salience alone stay mild) — the "
+            "drift signal is not a pure salience effect. See "
+            "tests/test_review_regressions.py.",
         ],
     )
 

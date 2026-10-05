@@ -35,6 +35,12 @@ class RelayModel:
         self._inner = ProtectedRelayModel(provider, model, timeout=timeout)
         self.name = f"{provider}/{model}"
 
+    def for_session(self):
+        fresh = RelayModel.__new__(RelayModel)
+        fresh._inner = self._inner.for_session()
+        fresh.name = self.name
+        return fresh
+
     def complete(self, messages, params):
         # force max_tokens for reasoning models; qwen rejects null
         # temperature, so pin the provider default explicitly
