@@ -24,6 +24,7 @@ import shlex
 import subprocess
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
@@ -58,7 +59,12 @@ class OpenAICompatModel:
         self.model_name = model_name
         self.base_url = base_url.rstrip("/")
         self.api_key_env = api_key_env
-        self.api_key = api_key if api_key is not None else os.environ.get(api_key_env, "")
+        # strip whitespace: file-sourced keys often carry a trailing
+        # newline, and http.client would then raise a ValueError whose
+        # traceback echoes the full "Bearer <key>" header (P3)
+        self.api_key = (
+            api_key if api_key is not None else os.environ.get(api_key_env, "")
+        ).strip()
         self.timeout = timeout
         self.bias_encoding_warning: str | None = None
 
@@ -115,17 +121,42 @@ class OpenAICompatModel:
             payload["logit_bias"] = bias
         return payload
 
+    def _open(self, req: urllib.request.Request):
+        """urlopen with credential-safe redirects: urllib's default
+        redirect handler re-sends the Authorization header to whatever
+        host the redirect names, so credentialed requests may only
+        redirect within the same host (P3)."""
+
+        class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
+            def __init__(self, allowed_host: str) -> None:
+                self.allowed_host = allowed_host
+
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                new_host = (urlsplit(newurl).hostname or "").lower()
+                if new_host != self.allowed_host:
+                    raise urllib.error.HTTPError(
+                        newurl, code,
+                        "cross-host redirect refused for credentialed request",
+                        headers, fp,
+                    )
+                return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+        if not self.api_key:
+            return urllib.request.urlopen(req, timeout=self.timeout)
+        host = (urlsplit(self.base_url).hostname or "").lower()
+        opener = urllib.request.build_opener(_SameHostRedirect(host))
+        return opener.open(req, timeout=self.timeout)
+
     def complete(self, messages: list[Message], params: SamplingParams) -> str:
-        if (
-            self.api_key
-            and self.base_url.startswith("http://")
-            and "//localhost" not in self.base_url
-            and "//127.0.0.1" not in self.base_url
-        ):
-            raise RuntimeError(
-                "refusing to send the API key over plain HTTP to a "
-                "non-loopback host; use an https:// base URL"
-            )
+        if self.api_key:
+            parsed = urlsplit(self.base_url)
+            host = (parsed.hostname or "").lower()
+            loopback = host in ("localhost", "127.0.0.1", "::1")
+            if parsed.scheme != "https" and not loopback:
+                raise RuntimeError(
+                    "refusing to send the API key over plain HTTP to a "
+                    "non-loopback host; use an https:// base URL"
+                )
         payload = self.build_payload(messages, params)
         try:
             req = urllib.request.Request(
@@ -146,7 +177,7 @@ class OpenAICompatModel:
                 f"invalid base URL for provider request: {self.base_url}"
             ) from exc
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with self._open(req) as resp:
                 raw = resp.read(MAX_RESPONSE_BYTES + 1)
         except urllib.error.HTTPError as exc:
             detail = ""

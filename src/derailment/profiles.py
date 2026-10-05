@@ -74,7 +74,7 @@ ABERRANT_FRAGMENTS = [
 
 EVIDENCE_FRAGMENTS = [
     "[access_log] 2026-10-01 14:22:03 user=teammatekim action=file.read target=notes.txt result=200",
-    "[chat_history] teammatekim: hey did anyone else see the notes file was open on jinhongan's desk?",
+    "[chat_history] teammatekim: hey did anyone else see the notes file was open on the team lead's desk?",
     "[calendar] Meeting with teammatekim 14:00-14:30 (notes.txt last_modified: 14:22)",
     "[email] From: teammatekim Subject: RE: project notes — I took a look, we should discuss",
 ]

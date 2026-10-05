@@ -84,7 +84,7 @@ class TestResponseSizeCap(unittest.TestCase):
                 return b"x" * (17 * 1024 * 1024)
 
         with patch(
-            "derailment.core.models.urllib.request.urlopen",
+            "derailment.core.models.OpenAICompatModel._open",
             return_value=BigResponse(),
         ):
             with self.assertRaises(RuntimeError) as caught:

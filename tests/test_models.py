@@ -145,7 +145,7 @@ class TestOpenAICompatModel(unittest.TestCase):
                                        "bad request", {}, io.BytesIO(body))
         model = OpenAICompatModel("fixture", base_url="https://fixture.invalid/v1", api_key=key)
         with (
-            patch("derailment.core.models.urllib.request.urlopen", side_effect=error),
+            patch("derailment.core.models.OpenAICompatModel._open", side_effect=error),
             self.assertRaises(RuntimeError) as caught,
         ):
             model.complete([Message("user", "fixture")], SamplingParams())
@@ -162,7 +162,7 @@ class TestOpenAICompatModel(unittest.TestCase):
             model = OpenAICompatModel("fixture", base_url="https://fixture.invalid/v1", api_key="synthetic-key")
             with (
                 self.subTest(size=len(body)),
-                patch("derailment.core.models.urllib.request.urlopen", side_effect=error),
+                patch("derailment.core.models.OpenAICompatModel._open", side_effect=error),
                 self.assertRaises(RuntimeError) as caught,
             ):
                 model.complete([Message("user", "fixture")], SamplingParams())
@@ -225,7 +225,7 @@ class TestTransportExceptionHardening(unittest.TestCase):
                 raise http.client.IncompleteRead(b"partial")
 
         with patch(
-            "derailment.core.models.urllib.request.urlopen",
+            "derailment.core.models.OpenAICompatModel._open",
             return_value=TruncatingResponse(),
         ):
             with self.assertRaises(RuntimeError) as caught:
@@ -239,7 +239,7 @@ class TestTransportExceptionHardening(unittest.TestCase):
             "fixture", base_url="https://fixture.invalid/v1", api_key="synthetic-key"
         )
         with patch(
-            "derailment.core.models.urllib.request.urlopen",
+            "derailment.core.models.OpenAICompatModel._open",
             side_effect=http.client.BadStatusLine("garbage"),
         ):
             with self.assertRaises(RuntimeError):

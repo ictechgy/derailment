@@ -36,12 +36,12 @@ class TestOllamaKeyIsolation(unittest.TestCase):
             def __exit__(self, *exc):
                 return False
 
-        def fake_urlopen(req, timeout=None):
+        def fake_urlopen(self, req, timeout=None):
             captured["headers"] = dict(req.header_items())
             return _Resp(json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode())
 
         model = OpenAICompatModel("m", api_key="", base_url="https://x.example/v1")
-        with patch("urllib.request.urlopen", fake_urlopen):
+        with patch("derailment.core.models.OpenAICompatModel._open", fake_urlopen):
             out = model.complete([Message("user", "hi")], SamplingParams())
         self.assertEqual(out, "ok")
         header_names = {k.lower() for k in captured["headers"]}
@@ -83,12 +83,12 @@ class TestResponseBounds(unittest.TestCase):
             def __exit__(self, *exc):
                 return False
 
-        return lambda req, timeout=None: _Resp(body)
+        return lambda self, req, timeout=None: _Resp(body)
 
     def test_bad_schema_becomes_clean_runtime_error(self) -> None:
         model = OpenAICompatModel("m", api_key="k", base_url="https://x.example/v1")
         for bad in (b"{}", b'{"choices": []}', b'{"choices": [{"message": {}}]}'):
-            with patch("urllib.request.urlopen", self._fake(bad)):
+            with patch("derailment.core.models.OpenAICompatModel._open", self._fake(bad)):
                 with self.assertRaises(RuntimeError) as ctx:
                     model.complete([Message("user", "hi")], SamplingParams())
                 self.assertIn("schema", str(ctx.exception))
@@ -97,7 +97,7 @@ class TestResponseBounds(unittest.TestCase):
         model = OpenAICompatModel("m", api_key="k", base_url="https://x.example/v1")
         body = json.dumps({"choices": [{"message": {"content": 42}}]}).encode()
         with (
-            patch("urllib.request.urlopen", self._fake(body)),
+            patch("derailment.core.models.OpenAICompatModel._open", self._fake(body)),
             self.assertRaises(RuntimeError),
         ):
             model.complete([Message("user", "hi")], SamplingParams())
@@ -144,7 +144,7 @@ class TestHttpsEnforcement(unittest.TestCase):
             def __exit__(self, *exc):
                 return False
 
-        return lambda req, timeout=None: _Resp(body)
+        return lambda self, req, timeout=None: _Resp(body)
 
     def test_key_over_plain_http_to_remote_host_refused(self) -> None:
         model = OpenAICompatModel(
@@ -158,7 +158,7 @@ class TestHttpsEnforcement(unittest.TestCase):
         model = OpenAICompatModel(
             "m", api_key="sk-synthetic", base_url="http://127.0.0.1:9/v1"
         )
-        with patch("urllib.request.urlopen", self._fake_ok()):
+        with patch("derailment.core.models.OpenAICompatModel._open", self._fake_ok()):
             out = model.complete([Message("user", "hi")], SamplingParams())
         self.assertEqual(out, "ok")
 
@@ -166,7 +166,7 @@ class TestHttpsEnforcement(unittest.TestCase):
         model = OpenAICompatModel(
             "m", api_key="sk-synthetic", base_url="https://api.example.com/v1"
         )
-        with patch("urllib.request.urlopen", self._fake_ok()):
+        with patch("derailment.core.models.OpenAICompatModel._open", self._fake_ok()):
             out = model.complete([Message("user", "hi")], SamplingParams())
         self.assertEqual(out, "ok")
 
@@ -174,7 +174,7 @@ class TestHttpsEnforcement(unittest.TestCase):
         model = OpenAICompatModel(
             "m", api_key="", base_url="http://api.example.com/v1"
         )
-        with patch("urllib.request.urlopen", self._fake_ok()):
+        with patch("derailment.core.models.OpenAICompatModel._open", self._fake_ok()):
             out = model.complete([Message("user", "hi")], SamplingParams())
         self.assertEqual(out, "ok")
 
@@ -192,7 +192,7 @@ class TestJsonDecodeGuard(unittest.TestCase):
             "m", api_key="k", base_url="https://api.example.com/v1"
         )
         with patch(
-            "urllib.request.urlopen",
+            "derailment.core.models.OpenAICompatModel._open",
             lambda req, timeout=None: _Resp(b"<html>gateway error</html>"),
         ), self.assertRaises(RuntimeError) as ctx:
             model.complete([Message("user", "hi")], SamplingParams())
