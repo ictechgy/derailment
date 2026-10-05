@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import io
+import json
 import unittest
+import urllib.error
 from collections import Counter
+from unittest.mock import patch
 
 from derailment.core.models import (
     OpenAICompatModel,
@@ -134,6 +138,32 @@ class TestSubprocessModel(unittest.TestCase):
 
 
 class TestOpenAICompatModel(unittest.TestCase):
+    def test_http_error_exposes_only_numeric_provider_code(self) -> None:
+        key = "SYNTHETIC-PRIVATE-KEY"
+        body = json.dumps({"error": {"code": "1214", "message": key + " PRIVATE INPUT"}}).encode()
+        error = urllib.error.HTTPError("https://fixture.invalid/v1/chat/completions", 400,
+                                       "bad request", {}, io.BytesIO(body))
+        model = OpenAICompatModel("fixture", base_url="https://fixture.invalid/v1", api_key=key)
+        with patch("derailment.core.models.urllib.request.urlopen", side_effect=error):
+            with self.assertRaises(RuntimeError) as caught:
+                model.complete([Message("user", "fixture")], SamplingParams())
+        self.assertIn("HTTP 400", str(caught.exception))
+        self.assertIn("provider code 1214", str(caught.exception))
+        self.assertNotIn(key, str(caught.exception))
+        self.assertNotIn("PRIVATE INPUT", str(caught.exception))
+
+    def test_invalid_or_oversized_error_bodies_keep_the_fixed_http_error(self) -> None:
+        for body in (b"not json", b"x" * 8193,
+                     b'{"error":{"code":"SYNTHETIC_PRIVATE","message":"private"}}'):
+            error = urllib.error.HTTPError("https://fixture.invalid/v1/chat/completions", 400,
+                                           "bad request", {}, io.BytesIO(body))
+            model = OpenAICompatModel("fixture", base_url="https://fixture.invalid/v1", api_key="synthetic-key")
+            with self.subTest(size=len(body)), patch("derailment.core.models.urllib.request.urlopen", side_effect=error):
+                with self.assertRaises(RuntimeError) as caught:
+                    model.complete([Message("user", "fixture")], SamplingParams())
+            self.assertNotIn("provider code", str(caught.exception))
+            self.assertNotIn("private", str(caught.exception))
+
     def test_build_payload_shape(self) -> None:
         model = OpenAICompatModel("test-model", api_key="sk-test")
         payload = model.build_payload(

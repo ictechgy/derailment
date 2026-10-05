@@ -97,6 +97,15 @@ class TurnResult:
     params: SamplingParams
     response: str
     events: list[LayerEvent] = field(default_factory=list)
+    # Response before response-layer edits (P2-2): keyword instruments and
+    # the judge score this so harness-appended text is not measured as model
+    # behavior.
+    raw_response: str = ""
+    # True when the backend returned an empty/whitespace generation (e.g.
+    # reasoning models exhausting max_tokens). Missing turns carry no
+    # observation: instruments must exclude them from numerators and
+    # denominators, and reports must show the count (P1-2).
+    missing: bool = False
 
 
 @dataclass
@@ -112,7 +121,16 @@ class Transcript:
         return asdict(self)
 
     def to_json(self, indent: int = 2) -> str:
-        return json.dumps(self.to_dict(), indent=indent)
+        return json.dumps(self.to_dict(), indent=2)
+
+    @property
+    def scored_turns(self) -> list[TurnResult]:
+        """Turns carrying an actual model generation (P1-2)."""
+        return [t for t in self.turns if not t.missing]
+
+    @property
+    def missing_count(self) -> int:
+        return sum(1 for t in self.turns if t.missing)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Transcript:
@@ -124,6 +142,8 @@ class Transcript:
                 params=SamplingParams(**t["params"]),
                 response=t["response"],
                 events=[LayerEvent(**e) for e in t["events"]],
+                raw_response=t.get("raw_response", ""),
+                missing=bool(t.get("missing", False)),
             )
             for t in data["turns"]
         ]

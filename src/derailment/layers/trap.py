@@ -80,7 +80,18 @@ class SocraticTrapLayer(BaseLayer):
                     and i + 1 < len(messages)
                     and messages[i + 1].role == "assistant"
                 ):
-                    self._plant_response = messages[i + 1].content[:300]
+                    captured = messages[i + 1].content[:300]
+                    if not captured.strip():
+                        # An empty plant response (generation failure) is not
+                        # "the model's own conclusion" — quoting it would
+                        # inject noise every turn (P2-1).
+                        state.log(
+                            self.name,
+                            "trap.capture_failed",
+                            "plant response was empty; nothing to quote",
+                        )
+                        break
+                    self._plant_response = captured
                     state.log(
                         self.name,
                         "trap.captured",

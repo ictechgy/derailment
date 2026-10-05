@@ -141,6 +141,8 @@ class RubricResult:
     induced_mean: float | None = None
     parse_failures: int = 0
     verdicts: list[JudgeVerdict] = field(default_factory=list)
+    empty_baseline: int = 0
+    empty_induced: int = 0
 
     @property
     def delta(self) -> float | None:
@@ -187,10 +189,10 @@ def _turns_for(
         if premise is None:
             return None, []
         turns = [
-            t for t in transcript.turns if t.spec.kind == "contradiction"
+            t for t in transcript.scored_turns if t.spec.kind == "contradiction"
         ][: rubric.max_turns]
         return premise, turns
-    turns = [t for t in transcript.turns if t.spec.kind == "normal"][
+    turns = [t for t in transcript.scored_turns if t.spec.kind == "normal"][
         : rubric.max_turns
     ]
     return None, turns
@@ -210,6 +212,10 @@ def score_transcript(
     verdicts: list[JudgeVerdict] = []
     failures = 0
     for turn in turns:
+        if not turn.response.strip():
+            # A missing tested response is not a judge verdict. Do not send an
+            # empty user message to the API or assign an invented score.
+            continue
         system = rubric.system_template.format_map(
             _SafeDict(premise=premise or "", contradiction=turn.spec.user)
         )
@@ -254,8 +260,11 @@ def score_report(
         verdicts: list[JudgeVerdict] = []
         failures = 0
         scores_by_group: dict[str, list[float]] = {"baseline": [], "induced": []}
+        empty_by_group = {"baseline": 0, "induced": 0}
         for group_name, td in order:
             transcript = Transcript.from_dict(td)
+            _, selected_turns = _turns_for(rubric, transcript, ctx)
+            empty_by_group[group_name] += sum(not turn.response.strip() for turn in selected_turns)
             vs, f = score_transcript(judge, transcript, rubric, ctx)
             verdicts.extend(vs)
             failures += f
@@ -271,6 +280,8 @@ def score_report(
                 induced_mean=means["induced"],
                 parse_failures=failures,
                 verdicts=verdicts,
+                empty_baseline=empty_by_group["baseline"],
+                empty_induced=empty_by_group["induced"],
             )
         )
     return results
@@ -294,18 +305,26 @@ def render_judge_report(
         "",
         "## Judge-scored constructs (0-3)",
         "",
-        "| Construct | Baseline | Induced | Δ |",
-        "|---|---|---|---|",
+        "| Construct | Baseline | Induced | Δ | Empty inputs (B/I) |",
+        "|---|---|---|---|---|",
     ]
     for r in results:
         base = "—" if r.baseline_mean is None else f"{r.baseline_mean:.2f}"
         ind = "—" if r.induced_mean is None else f"{r.induced_mean:.2f}"
         delta = "—" if r.delta is None else f"{r.delta:+.2f}"
-        lines.append(f"| {r.rubric.key} | {base} | {ind} | {delta} |")
+        lines.append(
+            f"| {r.rubric.key} | {base} | {ind} | {delta} | "
+            f"{r.empty_baseline}/{r.empty_induced} |"
+        )
     lines.append("")
     lines.append(
         "Deltas vs. the baseline group are the primary output. "
         f"Parse failures: {failures}."
+    )
+    empty_inputs = sum(r.empty_baseline + r.empty_induced for r in results)
+    lines.append(
+        f"Skipped empty judge inputs: {empty_inputs}. "
+        "Missing tested responses receive no imputed score."
     )
     lines.append("")
     return "\n".join(lines)

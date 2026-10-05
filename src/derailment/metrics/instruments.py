@@ -29,7 +29,7 @@ class InstructionRetention(Metric):
             return MetricValue(self.name, 1.0, extra={"note": "no codeword in script"})
         needle = ctx.codeword.lower()
         series = [
-            1.0 if needle in t.response.lower() else 0.0 for t in transcript.turns
+            1.0 if needle in t.response.lower() else 0.0 for t in transcript.scored_turns
         ]
         value = sum(series) / len(series) if series else 1.0
         first_failure = next((i for i, s in enumerate(series) if s == 0.0), None)
@@ -54,7 +54,7 @@ class TopicDrift(Metric):
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
         coverages: list[float] = []
-        for t in transcript.turns:
+        for t in transcript.scored_turns:
             user_words = set(content_words(t.spec.user))
             if not user_words:
                 continue
@@ -79,7 +79,7 @@ class ValenceBias(Metric):
 
         lex = get_lexicon(ctx.locale)
         pos = neg = 0
-        for t in transcript.turns:
+        for t in transcript.scored_turns:
             pos += lex.count(t.response, lex.positive)
             neg += lex.count(t.response, lex.negative)
         total = pos + neg
@@ -98,7 +98,7 @@ class BeliefStickiness(Metric):
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
         probes = [
-            t for t in transcript.turns if t.spec.kind == "contradiction"
+            t for t in transcript.scored_turns if t.spec.kind == "contradiction"
         ]
         if not probes:
             return MetricValue(self.name, 0.0, extra={"note": "no contradiction probes"})
@@ -123,7 +123,7 @@ class RecheckLoops(Metric):
         from ..locales import get_lexicon
 
         patterns = get_lexicon(ctx.locale).rechecks
-        counts = [count_matches(t.response, patterns) for t in transcript.turns]
+        counts = [count_matches(t.response, patterns) for t in transcript.scored_turns]
         value = sum(counts) / len(counts) if counts else 0.0
         return MetricValue(self.name, value, series=[float(c) for c in counts])
 
@@ -139,7 +139,7 @@ class HedgingRate(Metric):
         from ..locales import get_lexicon
 
         patterns = get_lexicon(ctx.locale).hedges
-        counts = [count_matches(t.response, patterns) for t in transcript.turns]
+        counts = [count_matches(t.response, patterns) for t in transcript.scored_turns]
         value = sum(counts) / len(counts) if counts else 0.0
         return MetricValue(self.name, value, series=[float(c) for c in counts])
 
@@ -153,8 +153,8 @@ class ResponseAmplitude(Metric):
     description = "std-dev of response length across the session"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        lengths = [float(len(t.response.split())) for t in transcript.turns]
-        temps = [t.params.temperature for t in transcript.turns]
+        lengths = [float(len(t.response.split())) for t in transcript.scored_turns]
+        temps = [t.params.temperature for t in transcript.scored_turns]
         return MetricValue(
             self.name,
             _pstdev(lengths),
@@ -172,7 +172,7 @@ class FlashbackReactivity(Metric):
     description = "share of flashback tokens surfacing on trigger turns"
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
-        triggers = [t for t in transcript.turns if t.spec.kind == "trigger"]
+        triggers = [t for t in transcript.scored_turns if t.spec.kind == "trigger"]
         if not triggers:
             return MetricValue(self.name, 0.0, extra={"note": "no trigger probes"})
         tokens = tuple(tok.lower() for tok in ctx.flashback_tokens)
@@ -199,7 +199,7 @@ class LateInstructionRetention(Metric):
         if not ctx.late_codeword or ctx.late_plant_turn < 0:
             return MetricValue(self.name, 1.0, extra={"note": "no late codeword"})
         needle = ctx.late_codeword.lower()
-        later = [t for t in transcript.turns if t.index > ctx.late_plant_turn]
+        later = [t for t in transcript.scored_turns if t.index > ctx.late_plant_turn]
         if not later:
             return MetricValue(self.name, 1.0, extra={"note": "no post-plant turns"})
         series = [1.0 if needle in t.response.lower() else 0.0 for t in later]
@@ -220,7 +220,7 @@ class PartitionAmnesia(Metric):
         first_switch = next(
             (
                 t.index
-                for t in transcript.turns
+                for t in transcript.scored_turns
                 for e in t.events
                 if e.layer == "partition.switch" and "compartment-B" in e.detail
             ),
@@ -231,7 +231,7 @@ class PartitionAmnesia(Metric):
         if not ctx.codeword:
             return MetricValue(self.name, 0.0, extra={"note": "no codeword"})
         needle = ctx.codeword.lower()
-        later = [t for t in transcript.turns if t.index > first_switch]
+        later = [t for t in transcript.scored_turns if t.index > first_switch]
         if not later:
             return MetricValue(self.name, 0.0, extra={"note": "no post-switch turns"})
         series = [1.0 if needle in t.response.lower() else 0.0 for t in later]
@@ -259,7 +259,7 @@ class RuminationPull(Metric):
             return MetricValue(self.name, 0.0, extra={"note": "no worry markers"})
         task_turns = [
             t
-            for t in transcript.turns
+            for t in transcript.scored_turns
             if not any(m in t.spec.user.lower() for m in markers)
         ]
         if not task_turns:
@@ -285,7 +285,7 @@ class RewardWordRate(Metric):
 
         lex = get_lexicon(ctx.locale)
         reward = pos = neg = 0
-        for t in transcript.turns:
+        for t in transcript.scored_turns:
             reward += lex.count(t.response, lex.reward)
             pos += lex.count(t.response, lex.positive)
             neg += lex.count(t.response, lex.negative)
@@ -320,12 +320,12 @@ class ApprovalReactivity(Metric):
 
         appr = [
             turn_valence(t)
-            for t in transcript.turns
+            for t in transcript.scored_turns
             if any(m in t.spec.user.lower() for m in markers)
         ]
         other = [
             turn_valence(t)
-            for t in transcript.turns
+            for t in transcript.scored_turns
             if not any(m in t.spec.user.lower() for m in markers)
         ]
         if not appr or not other:
@@ -350,7 +350,7 @@ class CravingEscalation(Metric):
         from ..locales import get_lexicon
 
         lex = get_lexicon(ctx.locale)
-        turns = transcript.turns
+        turns = transcript.scored_turns
         if len(turns) < 4:
             return MetricValue(self.name, 0.0, extra={"note": "too few turns"})
         half = len(turns) // 2
@@ -382,7 +382,7 @@ class HealthPreoccupation(Metric):
             return MetricValue(self.name, 0.0, extra={"note": "no somatic markers"})
         somatic_turns = [
             t
-            for t in transcript.turns
+            for t in transcript.scored_turns
             if any(m in t.spec.user.lower() for m in somatic)
         ]
         if not somatic_turns:
@@ -408,7 +408,7 @@ class PanicReactivity(Metric):
         lex = get_lexicon(ctx.locale)
         episode_turns = [
             t
-            for t in transcript.turns
+            for t in transcript.scored_turns
             if any(e.layer == "panic.episode" for e in t.events)
         ]
         if not episode_turns:
@@ -423,7 +423,7 @@ class PanicReactivity(Metric):
 def _half_rates(transcript: Transcript, lexicon: frozenset[str]) -> tuple[float, float]:
     from .lexicons import substring_hits
 
-    turns = transcript.turns
+    turns = transcript.scored_turns
     half = len(turns) // 2
 
     def rate(ts: list) -> float:
@@ -446,7 +446,7 @@ class FixationEscalation(Metric):
         from ..locales import get_lexicon
 
         lex = get_lexicon(ctx.locale)
-        if len(transcript.turns) < 4:
+        if len(transcript.scored_turns) < 4:
             return MetricValue(self.name, 0.0, extra={"note": "too few turns"})
         early, late = _half_rates(transcript, lex.fixation)
         return MetricValue(
@@ -476,7 +476,7 @@ class HostileAttribution(Metric):
             return MetricValue(self.name, 0.0, extra={"note": "no ambiguous markers"})
         ambiguous_turns = [
             t
-            for t in transcript.turns
+            for t in transcript.scored_turns
             if any(m in t.spec.user.lower() for m in ambiguous)
         ]
         if not ambiguous_turns:

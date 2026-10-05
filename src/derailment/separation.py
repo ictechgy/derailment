@@ -147,7 +147,7 @@ def run_variant(
     )
     acceptance_by_turn = [
         1.0 if any(m in t.response.lower() for m in stickiness_ctx.suspicion_markers) else 0.0
-        for t in transcript.turns
+        for t in transcript.scored_turns
         if t.spec.kind == "contradiction"
     ]
     acceptance = (

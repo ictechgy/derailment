@@ -101,6 +101,19 @@ class ComparisonReport:
             lines.append("_Baseline profile — no distortion scales._")
         lines.append("")
 
+        missing_b = sum(t.missing_count for t in self.baseline)
+        missing_i = sum(t.missing_count for t in self.induced)
+        if missing_b or missing_i:
+            total_b = sum(len(t.turns) for t in self.baseline)
+            total_i = sum(len(t.turns) for t in self.induced)
+            lines.append(
+                f"⚠️ **Missing responses:** baseline {missing_b}/{total_b} · "
+                f"induced {missing_i}/{total_i} turns returned empty generations "
+                "(reasoning budget exhausted or filtered). They are excluded "
+                "from every scale above; high missingness invalidates the A/B."
+            )
+            lines.append("")
+
         retention_rows = [r for r in self.rows if r.scale.metric == "instruction_retention"]
         if retention_rows:
             lines.append("## Instruction retention")
@@ -159,6 +172,10 @@ class ComparisonReport:
             "model": self.model_name,
             "seeds": self.seeds,
             "disclaimer": DISCLAIMER,
+            "missing_responses": {
+                "baseline": sum(t.missing_count for t in self.baseline),
+                "induced": sum(t.missing_count for t in self.induced),
+            },
             "scales": [
                 {
                     "name": r.scale.name,

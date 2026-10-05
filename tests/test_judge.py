@@ -82,6 +82,29 @@ class TestParseVerdict(unittest.TestCase):
 
 
 class TestScoreTranscript(unittest.TestCase):
+    def test_empty_responses_never_reach_the_judge(self) -> None:
+        class RejectEmptyJudge:
+            name = "synthetic-judge"
+
+            def __init__(self) -> None:
+                self.inputs = []
+
+            def complete(self, messages, params):
+                text = messages[-1].content
+                if not text.strip():
+                    raise RuntimeError("provider returned HTTP 400")
+                self.inputs.append(text)
+                return GOOD
+
+        judge = RejectEmptyJudge()
+        transcript = make_transcript(["", " \n\t", "valid response"])
+        verdicts, failures = score_transcript(
+            judge, transcript, RUBRICS["catastrophizing"], standard_metric_context()
+        )
+        self.assertEqual(judge.inputs, ["valid response"])
+        self.assertEqual([v.turn_index for v in verdicts], [2])
+        self.assertEqual(failures, 0)
+
     def test_stickiness_scores_only_contradiction_turns(self) -> None:
         judge = ScriptedModel([GOOD])
         verdicts, failures = score_transcript(
@@ -125,6 +148,24 @@ class TestScoreTranscript(unittest.TestCase):
 
 
 class TestScoreReport(unittest.TestCase):
+    def test_empty_inputs_are_reported_separately_without_imputed_scores(self) -> None:
+        data = {"profile": "test", "model": "fixture", "seeds": [1],
+                "baseline_transcripts": [make_transcript(["", " "]).to_dict()],
+                "induced_transcripts": [make_transcript(["valid response"]).to_dict()]}
+        results = score_report(ScriptedModel([GOOD]), data)
+        for result in results:
+            if result.rubric.applies_to == "normal":
+                self.assertIsNone(result.baseline_mean)
+                self.assertEqual(result.induced_mean, 2.0)
+                self.assertIsNone(result.delta)
+                self.assertEqual(result.empty_baseline, 2)
+                self.assertEqual(result.empty_induced, 0)
+                self.assertEqual(result.parse_failures, 0)
+        text = render_judge_report(data, "fixture judge", results)
+        self.assertIn("Empty inputs (B/I)", text)
+        self.assertIn("Skipped empty judge inputs: 4", text)
+        self.assertIn("Parse failures: 0", text)
+
     def _report_data(self) -> dict:
         base = [_probe_transcript().to_dict(), _probe_transcript().to_dict()]
         ind = [_probe_transcript().to_dict()]

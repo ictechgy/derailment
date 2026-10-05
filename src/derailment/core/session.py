@@ -163,9 +163,16 @@ class Session:
         for layer in self.layers:
             params = layer.on_params(state, params)
 
-        response = self.model.complete(msgs, params)
-        for layer in reversed(self.layers):
-            response = layer.on_response(state, response)
+        raw_response = self.model.complete(msgs, params)
+        # An empty generation (reasoning models exhausting max_tokens,
+        # content filters) is a *missing observation*, not model behavior:
+        # do not decorate it with response-layer text, and flag it so
+        # instruments exclude the turn from their denominators (P1-2).
+        missing = not raw_response.strip()
+        response = raw_response
+        if not missing:
+            for layer in reversed(self.layers):
+                response = layer.on_response(state, response)
 
         result = TurnResult(
             index=self._index,
@@ -174,6 +181,8 @@ class Session:
             params=params,
             response=response,
             events=list(state.events),
+            raw_response=raw_response,
+            missing=missing,
         )
 
         self._history = [

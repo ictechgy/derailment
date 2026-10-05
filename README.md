@@ -275,6 +275,10 @@ transcript — runs at temperature 0, and parse failures are counted, never
 silently dropped. `--judge-model scripted` is an offline dry-run. Use a
 judge different from the tested model (self-judging warns). Budget note:
 calls ≈ rubrics × scored turns × transcripts.
+Empty or whitespace-only tested responses are not sent to the judge and receive
+no imputed score. The report lists skipped inputs separately for baseline and
+induced groups in `Empty inputs (B/I)`; these are distinct from judge parse
+failures. Means and deltas use only available verdicts.
 
 ## Interactive chat
 
