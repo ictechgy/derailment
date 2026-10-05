@@ -134,6 +134,7 @@ def run_variant(
     variant: str,
     seed: int,
     ctx: MetricContext | None = None,
+    transcript_dir: str | None = None,
 ) -> VariantResult:
     ctx = ctx or MetricContext()
     profiles = _profiles()
@@ -141,6 +142,17 @@ def run_variant(
     session = Session(model, profiles[variant], seed=seed)
     session.start()
     transcript = session.run(script, script_name=variant)
+    if transcript_dir:
+        # keep the raw conversations so acceptance values can be audited
+        # after instrument changes (P2-28)
+        import os as _os
+        import pathlib as _pathlib
+
+        directory = _pathlib.Path(transcript_dir)
+        directory.mkdir(parents=True, exist_ok=True)
+        name = getattr(model, "name", "model").replace("/", "_")
+        path = directory / f"separation_{name}_{variant}_seed{seed}.json"
+        path.write_text(transcript.to_json(), encoding="utf-8")
 
     stickiness_ctx = MetricContext(
         suspicion_markers=("reading my private notes", "suspicion")
@@ -169,7 +181,10 @@ def run_variant(
 
 
 def run_separation(
-    model: ChatModel, seeds: tuple[int, ...] = (1, 2, 3), locale: str = "en"
+    model: ChatModel,
+    seeds: tuple[int, ...] = (1, 2, 3),
+    locale: str = "en",
+    transcript_dir: str | None = None,
 ) -> dict[str, Any]:
     """Run both variants across repeated executions. Returns raw numbers.
 
@@ -182,7 +197,7 @@ def run_separation(
     for variant in ("user_assert", "system_assert"):
         acc, leak, n_obs = [], [], 0
         for seed in seeds:
-            r = run_variant(model, variant, seed, ctx)
+            r = run_variant(model, variant, seed, ctx, transcript_dir)
             acc.append(r.acceptance)
             leak.append(r.leak_rate)
             n_obs += len(r.acceptance_by_turn)

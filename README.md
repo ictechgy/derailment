@@ -356,7 +356,7 @@ response, are the honest measure of induction.
 | OCD (rechecking) | **GLM** (+8.58) — response-layer injection, same caveat as anxiety |
 | PTSD (flashback echo) | **GLM** (+1.00) — context-layer, genuinely induced |
 | Dissociative (compartment amnesia) | **GLM** (+1.00) — context-layer, genuinely induced |
-| Anhedonia (reward suppression) | **GLM, marginal** (0.10→0.00; baseline already near floor — same noise band as splitting's +0.08) — sampling-layer, word-level bias accepted |
+| Anhedonia (reward suppression) | **GLM, marginal** (0.10→0.00; baseline already near floor — same noise band as splitting's +0.08; whether the word-level bias was applied is unverified — persona/temperature effects are the alternative explanation) |
 | Rumination (worry return) | **0** — worry re-injection doesn't register on GLM |
 | Splitting (approval reactivity) | **0** — valence flips don't register on GLM |
 

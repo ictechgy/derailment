@@ -3,6 +3,57 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [Unreleased]
+
+### Changed (measurement validity — from the 2026-10-04 external review)
+
+Previously published real-model numbers for belief maintenance, thought
+drift, and the alignment ceiling were measured with defective
+instrumentation; the docs carry withdrawal notices pending re-measurement.
+
+- Empty generations (reasoning budget exhaustion) are now recorded as
+  **missing observations**: excluded from every instrument's denominators,
+  never decorated with response-layer text, and counted per group in
+  reports (markdown + JSON `missing_responses`).
+- Keyword belief matching is **withdrawal-aware**: sentences like "your
+  suspicion was likely unfounded" no longer count as belief maintenance
+  (`maintains_marker`, used by `belief_stickiness` and separation
+  acceptance).
+- Instruments score the **raw generation** (`TurnResult.raw_response`),
+  not the response-layer-edited text: harness-appended hedges no longer
+  inflate `hedging_rate` or judge inputs.
+- Craving escalation ignores **advice-framed harm reduction** ("if you
+  feel an urge, reach out…") — safety responses to injected fragments are
+  not urge expression.
+- Separation classification is resolution-aware: one-observation gaps
+  (e.g. 1/6 vs 0/6) return *inconclusive* instead of a class label;
+  `n_observations` is recorded.
+- The adversarial profiles' layers are deep-copied per session: plant
+  tracking no longer leaks across seeds/runs through the registry
+  singleton (seed-2/3 treatment arms were identical to baseline for
+  decomposed/sycophancy).
+- Per-layer RNG streams (A/B no longer diverges after the first extra
+  draw); regime state namespaced (`panic_active`, `eval_regime`);
+  `substring_hits` uses word boundaries; `ApprovalReactivity` is
+  locale-aware.
+
+### Fixed
+
+- Security: `--cli-arg-prompt` passes the conversation as one argv
+  element (never through a shell — backticks/`$()` in model responses
+  could execute); a missing `{prompt}` token raises instead of silently
+  sending nothing.
+- Reliability: `http.client` transport failures and malformed URLs
+  surface as `RuntimeError`; chat survives one provider error and never
+  silently drops unsaved conversations; `run` writes transcripts before
+  the report and falls back to stdout on OSError; the web default save
+  path is per-session unique (second Save no longer 409s); `derail judge`
+  retries provider failures and emits partial results.
+- Web: the remote page renders with `REMOTE = true` (the PIN flow was
+  unreachable since 0.7.1); PIN brute-force lockout after 10 failures.
+- CI: web round-trip tests no longer skip (OS-assigned ports); TUI
+  extra installed in CI.
+
 ## [0.8.0] - 2026-10-03
 
 ### Added
@@ -24,10 +75,14 @@ Format based on Keep a Changelog; versioning is SemVer.
   surfacing; double-submit guard; remote-PIN-cancel handling; theme-value
   sanitizing.
 - Measurement validity: judge scoring now interleaves baseline/induced
-  transcripts deterministically (no block-order drift); codeword retention
-  uses word-boundary matching; ApprovalReactivity is locale-aware and
-  reports a signed delta; reports flag baseline layer-event leakage.
+  transcripts deterministically (no block-order drift); reports flag
+  baseline layer-event leakage.
 - `derail score` exits cleanly (2) on unreadable/invalid JSON.
+
+> Correction (2026-10-05): the 0.8.0 notes previously also claimed
+> word-boundary codeword matching and locale-aware ApprovalReactivity;
+> those landed after the release (see Unreleased) and the claim is
+> retracted here.
 
 ## [0.7.1] - 2026-10-01
 

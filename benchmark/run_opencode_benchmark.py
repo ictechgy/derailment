@@ -35,7 +35,9 @@ class OpenCodeModel:
     """One subprocess call per turn; the harness re-renders the whole
     conversation as the prompt (opencode sessions are per-call)."""
 
-    BINARY = "/Users/jinhongan/.opencode/bin/opencode"
+    BINARY = os.path.join(
+        os.path.expanduser("~"), ".opencode", "bin", "opencode"
+    )
 
     def __init__(self, model_id: str, timeout: float = 180.0) -> None:
         self.model_id = model_id
@@ -114,7 +116,8 @@ def main() -> int:
             except RuntimeError as exc:
                 print(f"  [{profile}] FAILED: {str(exc)[:120]}", file=sys.stderr, flush=True)
                 continue
-            (out_dir / f"opencode_{profile}.json").write_text(
+            tag = model_id.replace("/", "_")
+            (out_dir / f"opencode_{tag}_{profile}.json").write_text(
                 json.dumps(result, indent=2), encoding="utf-8"
             )
             base = result["variants"][HEALTHY_KEY]

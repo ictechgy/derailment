@@ -166,10 +166,13 @@ class ComparisonReport:
 
     # ------------------------------------------------------------------
     def render_json(self) -> str:
+        from . import __version__
+
         data: dict[str, Any] = {
             "profile": self.profile.key,
             "title": self.profile.title,
             "model": self.model_name,
+            "harness_version": __version__,
             "seeds": self.seeds,
             "disclaimer": DISCLAIMER,
             "missing_responses": {

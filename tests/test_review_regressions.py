@@ -184,3 +184,23 @@ class TestWebEmptyMessageWithToken(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestVersionConsistency(unittest.TestCase):
+    """P2-29: pyproject, __version__ and CITATION must agree, and reports
+    must record the harness version."""
+
+    def test_versions_agree_and_reports_record_them(self) -> None:
+        import re
+
+        from derailment import __version__
+        from derailment.report import run_experiment
+
+        pyproject = open("pyproject.toml", encoding="utf-8").read()
+        match = re.search(r'^version = "([^"]+)"', pyproject, re.MULTILINE)
+        self.assertTrue(match)
+        self.assertEqual(match.group(1), __version__)
+        citation = open("CITATION.cff", encoding="utf-8").read()
+        self.assertIn(f"version: {__version__}", citation)
+        data = json.loads(run_experiment("adhd", seeds=(1,)).render_json())
+        self.assertEqual(data["harness_version"], __version__)

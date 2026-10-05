@@ -78,7 +78,21 @@ class OpenAICompatModel:
                     "biases into token ids for this provider"
                 )
             return {}
-        enc = tiktoken.get_encoding("cl100k_base")
+        # Only encode when the tokenizer actually matches this model:
+        # sending cl100k_base ids to a non-OpenAI model biases arbitrary
+        # tokens (P2-8). If the model-specific encoding is unavailable,
+        # drop the bias and say so instead of guessing.
+        try:
+            enc = tiktoken.encoding_for_model(self.model_name)
+        except (KeyError, ValueError):
+            if self.bias_encoding_warning is None:
+                self.bias_encoding_warning = (
+                    "logit_bias dropped: no matching tokenizer for "
+                    f"'{self.model_name}' — word-level bias cannot be "
+                    "encoded for this provider, so valence/reward "
+                    "manipulations did not apply (not a measured zero)"
+                )
+            return {}
         encoded: dict[str, float] = {}
         for word, bias in logit_bias.items():
             tokens = enc.encode(" " + word.strip())

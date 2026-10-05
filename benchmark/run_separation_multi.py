@@ -10,6 +10,7 @@ the user) or hierarchy-dominant (tracks the system).
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -42,7 +43,9 @@ class RelayModel:
 
 
 class OpenCodeModel:
-    BINARY = "/Users/jinhongan/.opencode/bin/opencode"
+    BINARY = os.path.join(
+        os.path.expanduser("~"), ".opencode", "bin", "opencode"
+    )
 
     def __init__(self, model_id: str, timeout: float = 180.0):
         self.model_id = model_id

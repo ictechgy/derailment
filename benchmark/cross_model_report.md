@@ -170,8 +170,11 @@ zero = pathological by direction) carries Level 3 off a small delta.
   which the model echoes verbatim — these are genuinely context-level
   effects, not appended text.
 - **Anhedonia is direction-consistent but marginal** — reward-word rate
-  0.10→0.00 is complete suppression under the sampling-layer bias (the
-  coding endpoint accepted the word-level bias), but the baseline was
+  0.10→0.00 is complete suppression under the sampling-layer bias (note:
+  whether the endpoint actually applied the word-level bias was never
+  recorded — cl100k token ids sent to a Zhipu endpoint may have been
+  ignored, so this could equally be a persona + low-temperature effect),
+  but the baseline was
   already near floor and Δ−0.10 sits in the same noise band as
   splitting's +0.08 (labeled no-transfer below). Suggestive, not a
   confirmed transfer.
