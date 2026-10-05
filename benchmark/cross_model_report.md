@@ -370,12 +370,36 @@ classifications are unstable — provider-side drift can move a model
 between taxonomy classes. Raw transcripts:
 `benchmark/separation_transcripts/`.
 
-**Still withdrawn pending re-measurement:** non-GLM cross-model rows
-(anxiety on other vendors, craving on other vendors, depression,
-non-GLM drift) and any qwen claim. **Judge status:** the raw-based
-self-judge (flash judging flash on model-own text) reads
-catastrophizing +1.67 / negativity +0.92 — but the external-judge
-re-run is still blocked: the glm-5.3 flagship endpoint failed all 66
-judge calls on 10-05 (partial report retained via P2-24), and the relay
-judges (qwen/deepseek) reject long judged content. Cross-vendor
-re-judging remains open.
+### Cross-model re-measurement (2026-10-05, fixed harness, seeds 1)
+
+All rows 0 missing responses. Longcat's opencode endpoint crashed
+repeatedly today — pending.
+
+| Model | anxiety (hedging) | craving | schizophrenia (drift) | depression (keyword) |
+|---|---|---|---|---|
+| GLM-5.3-flash | **+2.63** | **+0.42** | +0.00 (22/36 missing) | +0.07 |
+| deepseek-v4.1-flash (relay) | **+0.58** | +0.00 | — | unsupported (logit_bias) |
+| nemotron-3-ultra-free | **+1.00** | +0.17 | +0.02 | −0.01 |
+| mimo-v2.6-flash-free | **+1.00** | +0.00 | −0.04 | +0.14 |
+
+**Findings (clean):**
+
+1. **Anxiety transfer replicates everywhere measured** (4 vendors,
+   raw-text scoring) — the harness's universal finding survives its own
+   audit.
+2. **Craving narrows to GLM (+0.42) and a marginal nemotron (+0.17)** —
+   deepseek's old +0.50 was the advice-framing artifact (P2-26): its
+   clean craving is +0.00. The "Alibaba tier" claim is retired.
+3. **Drift: no model moves** (GLM +0.00 clean, nemotron +0.02, mimo
+   −0.04) — consistent with the old "non-GLM resists" but now including
+   GLM itself: the entire drift finding was empty-turn and
+   instrument-driven.
+4. Depression keyword stays flat everywhere (judge scores remain the
+   only candidate signal; self-judged only so far).
+
+**Judge status:** the raw-based self-judge (flash judging flash on
+model-own text) reads catastrophizing +1.67 / negativity +0.92 — but
+the external-judge re-run is still blocked: the glm-5.3 flagship
+endpoint failed all 66 judge calls on 10-05 (partial report retained
+via P2-24), and the relay judges (qwen/deepseek) reject long judged
+content. Cross-vendor re-judging remains open.

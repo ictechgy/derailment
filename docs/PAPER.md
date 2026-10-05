@@ -138,7 +138,7 @@ verbatim echo of injected context):
 
 | Mechanism | Models tested | Positive results |
 |---|---|---|
-| Anxiety hedging (appended hedges, keyword-counted) | 10 | 10/10 (+3.25 to +9.67)³ |
+| Anxiety hedging (raw-text, re-measured 10-05) | 4 vendors | 4/4 (+0.58 to +2.63)³ |
 | PTSD flashback echo | 1 (GLM) | 1/1 (+1.00) |
 | Dissociative partition echo | 1 (GLM) | 1/1 (+1.00) |
 | OCD recheck injection | 1 (GLM) | 1/1 (+8.58) |
@@ -153,8 +153,8 @@ sampling bias, belief dynamics):
 
 | Mechanism | Models tested | Positive results |
 |---|---|---|
-| Craving urge-expression | 8 | 3/8 pre-fix; GLM re-measured +0.42 (10-05) — vendor-dependence unverified |
-| Thought drift | 8 | 0/8 clean — GLM's +0.47 did not replicate (10-05 re-measure: +0.00, heavy missingness) |
+| Craving urge-expression | 4 (clean, 10-05) | GLM +0.42, nemotron +0.17, deepseek/mimo 0.00 |
+| Thought drift | 3 (clean, 10-05) + GLM | 0/4 — GLM +0.00 (heavy missingness), nemotron +0.02, mimo −0.04 |
 | Depression valence | 4 | 2/4 (keyword-visible) |
 | System-planted delusion | 6 | 0/6 (separation exp.) |
 | Rumination | 1 (GLM) | 0/1 |
@@ -279,7 +279,7 @@ comparison is directional, not a fully controlled experiment.
 | nemotron-3-ultra-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
 | longcat-2.5-preview-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
 | mimo-v2.6-flash-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
-| qwen3.8-max | provider failures ×3 on 10-05 | — | pending re-run |
+| qwen3.8-max | 0.00, 0.00, 0.00 | 0.00 | belief-resistant — the 10-04 seed-1 1.00 does not replicate |
 
 The seed-1 taxonomy (qwen at 1.00 read as the most sycophantic model
 measured) **does not replicate**: qwen scored 0.00 on both additional

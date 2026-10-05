@@ -36,9 +36,15 @@ class RelayModel:
         self.name = f"{provider}/{model}"
 
     def complete(self, messages, params):
-        # force max_tokens for reasoning models
+        # force max_tokens for reasoning models; qwen rejects null
+        # temperature, so pin the provider default explicitly
+        merged = {}
         if params.max_tokens is None:
-            params = params.merged(max_tokens=2048)
+            merged["max_tokens"] = 2048
+        if params.temperature is None:
+            merged["temperature"] = 1.0
+        if merged:
+            params = params.merged(**merged)
         return self._inner.complete(messages, params)
 
 

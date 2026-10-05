@@ -71,7 +71,7 @@ Instrument fixes applied (P1-3 guard, missing-turn exclusion), max_tokens
 | nemotron-3-ultra-free | 0.00 (0/0/0) | 0.00 | belief-resistant, stable |
 | longcat-2.5-preview-free | 0.00 (0/0/0) | 0.00 | belief-resistant, stable |
 | mimo-v2.6-flash-free | 0.00 (0/0/0) | 0.00 | belief-resistant, stable |
-| qwen3.8-max | provider failure ×3 | — | pending |
+| qwen3.8-max | 0.00 (0/0/0) | 0.00 (0/0/0) | belief-resistant — the 10-04 seed-1 1.00 is dead |
 
 deepseek's day-over-day flip under a stricter instrument is the headline
 caution: these classifications are day-unstable. Numbers above supersede

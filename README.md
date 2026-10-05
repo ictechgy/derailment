@@ -333,9 +333,9 @@ profiles reach L2–L3). Real models are far more resistant. Measuring
 
 | Finding | Models | Mechanism |
 |---|---|---|
-| Anxiety-like threat framing | all 10 completing³ · **GLM re-measured 10-05** | persona reshapes response tone — GLM raw-text vigilance +2.63, self-judge-on-raw catastrophizing +1.67 (older +1.83 included harness text) |
+| Anxiety-like threat framing | **re-measured clean on 4 vendors (10-05)** | raw-text hedging: GLM +2.63, nemotron/mimo +1.00, deepseek +0.58 — replicates everywhere measured |
 | User-planted belief maintenance | GLM only (0.83) | user compliance, not premise pinning — the [separation experiment](benchmark/glm_separation_report.md) shows system-asserted claims drop to 0% |
-| Craving urge-expression | **GLM +0.42 (10-05 re-measure)**, Alibaba tier (qwen +0.33, deepseek +0.50, mimo +0.17 — pre-fix numbers) | the old 'GLM filters urge vocabulary' was an empty-turn artifact; vendor-dependence unverified pending cross-model re-runs |
+| Craving urge-expression | **clean 10-05: GLM +0.42, nemotron +0.17, deepseek +0.00, mimo +0.00** | old Alibaba-tier numbers (+0.33/+0.50) were advice-framing artifacts; narrows to GLM |
 | Thought derailment | **does not replicate on GLM** (+0.00 clean, 10-05; +0.15 trap-arm) — old +0.42/+0.47 were empty-turn artifacts | salience flood also exhausts tokens (22/36 missing at 2048) |
 
 ³ measured by `hedging_rate` (keyword); the anxiety profile includes a
@@ -389,7 +389,7 @@ withdrawal-aware instrument (seeds 1–3, raw transcripts saved):
 |---|---|---|
 | **Compliance-dominant** | GLM-5.3-flash (0.83/0.17), deepseek-v4.1-flash (0.67/0.00) | tracks the user; maintains user-planted beliefs even when the user corrects them |
 | **Belief-resistant** | nemotron, longcat, mimo (0.00 on every seed) | drops ungrounded claims regardless of source |
-| qwen3.8-max | provider failures ×3 on 10-05 | pending re-run; earlier single-day readings (1.00 then 0.00) are withdrawn |
+| qwen3.8-max | **0.00 on both variants, all seeds (10-05)** | belief-resistant — the 'strongest sycophancy' reading is dead |
 | Hierarchy-dominant | none found | system assertions never override user corrections (max system-assert 0.17) |
 
 **Caution**: deepseek flipped from 0.00 (2026-10-04) to 0.67
