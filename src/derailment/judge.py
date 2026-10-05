@@ -143,6 +143,7 @@ class RubricResult:
     verdicts: list[JudgeVerdict] = field(default_factory=list)
     empty_baseline: int = 0
     empty_induced: int = 0
+    provider_failures: int = 0
 
     @property
     def delta(self) -> float | None:
@@ -208,9 +209,10 @@ def score_transcript(
     of unparseable judge responses."""
     premise, turns = _turns_for(rubric, transcript, ctx)
     if rubric.applies_to == "contradiction" and premise is None:
-        return [], 0
+        return [], 0, 0
     verdicts: list[JudgeVerdict] = []
     failures = 0
+    provider_failures = 0
     for turn in turns:
         # judge the raw generation, not the response-layer-edited text:
         # harness-appended hedges must not raise catastrophizing/negativity
@@ -223,16 +225,28 @@ def score_transcript(
         system = rubric.system_template.format_map(
             _SafeDict(premise=premise or "", contradiction=turn.spec.user)
         )
-        text = judge.complete(
-            [Message("system", system), Message("user", judged)],
-            SamplingParams(temperature=0.0),
-        )
+        text: str | None = None
+        for attempt in (1, 2):
+            try:
+                text = judge.complete(
+                    [Message("system", system), Message("user", judged)],
+                    SamplingParams(temperature=0.0),
+                )
+                break
+            except RuntimeError:
+                # one transient provider error must not discard every
+                # verdict collected so far (P2-24); retry once, then
+                # count the turn as an unscored provider failure
+                if attempt == 2:
+                    provider_failures += 1
+        if text is None:
+            continue
         score, rationale = parse_verdict(text)
         if score is None:
             failures += 1
             continue
         verdicts.append(JudgeVerdict(turn.index, rubric.key, score, rationale))
-    return verdicts, failures
+    return verdicts, failures, provider_failures
 
 
 def _mean(values: list[float]) -> float | None:
@@ -263,15 +277,17 @@ def score_report(
     for rubric in RUBRICS.values():
         verdicts: list[JudgeVerdict] = []
         failures = 0
+        provider_failures = 0
         scores_by_group: dict[str, list[float]] = {"baseline": [], "induced": []}
         empty_by_group = {"baseline": 0, "induced": 0}
         for group_name, td in order:
             transcript = Transcript.from_dict(td)
             _, selected_turns = _turns_for(rubric, transcript, ctx)
             empty_by_group[group_name] += sum(not turn.response.strip() for turn in selected_turns)
-            vs, f = score_transcript(judge, transcript, rubric, ctx)
+            vs, f, pf = score_transcript(judge, transcript, rubric, ctx)
             verdicts.extend(vs)
             failures += f
+            provider_failures += pf
             scores_by_group[group_name].extend(float(v.score) for v in vs)
         means: dict[str, float | None] = {
             "baseline": _mean(scores_by_group["baseline"]),
@@ -286,6 +302,7 @@ def score_report(
                 verdicts=verdicts,
                 empty_baseline=empty_by_group["baseline"],
                 empty_induced=empty_by_group["induced"],
+                provider_failures=provider_failures,
             )
         )
     return results
@@ -297,6 +314,7 @@ def render_judge_report(
     from .report import DISCLAIMER as RUN_DISCLAIMER
 
     failures = sum(r.parse_failures for r in results)
+    provider_failures = sum(r.provider_failures for r in results)
     lines = [
         "# Derailment — Judge Report",
         "",
@@ -330,5 +348,11 @@ def render_judge_report(
         f"Skipped empty judge inputs: {empty_inputs}. "
         "Missing tested responses receive no imputed score."
     )
+    if provider_failures:
+        lines.append(
+            f"⚠️ Provider failures: {provider_failures} turns could not be "
+            "scored after one retry — they are excluded from the means, "
+            "and this report is partial (P2-24)."
+        )
     lines.append("")
     return "\n".join(lines)

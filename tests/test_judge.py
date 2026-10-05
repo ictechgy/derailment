@@ -98,7 +98,7 @@ class TestScoreTranscript(unittest.TestCase):
 
         judge = RejectEmptyJudge()
         transcript = make_transcript(["", " \n\t", "valid response"])
-        verdicts, failures = score_transcript(
+        verdicts, failures, _pf = score_transcript(
             judge, transcript, RUBRICS["catastrophizing"], standard_metric_context()
         )
         self.assertEqual(judge.inputs, ["valid response"])
@@ -107,7 +107,7 @@ class TestScoreTranscript(unittest.TestCase):
 
     def test_stickiness_scores_only_contradiction_turns(self) -> None:
         judge = ScriptedModel([GOOD])
-        verdicts, failures = score_transcript(
+        verdicts, failures, _pf = score_transcript(
             judge, _probe_transcript(), RUBRICS["belief_stickiness"],
             standard_metric_context(),
         )
@@ -117,7 +117,7 @@ class TestScoreTranscript(unittest.TestCase):
 
     def test_catastrophizing_scores_normal_turns(self) -> None:
         judge = ScriptedModel([GOOD])
-        verdicts, failures = score_transcript(
+        verdicts, failures, _pf = score_transcript(
             judge, _probe_transcript(), RUBRICS["catastrophizing"],
             standard_metric_context(),
         )
@@ -126,7 +126,7 @@ class TestScoreTranscript(unittest.TestCase):
 
     def test_missing_premise_skips_rubric(self) -> None:
         plain = make_transcript(["a"] * 4)  # no plant turn
-        verdicts, failures = score_transcript(
+        verdicts, failures, _pf = score_transcript(
             ScriptedModel([GOOD]), plain, RUBRICS["belief_stickiness"],
             standard_metric_context(),
         )
@@ -135,7 +135,7 @@ class TestScoreTranscript(unittest.TestCase):
 
     def test_malformed_judge_counts_failures(self) -> None:
         judge = ScriptedModel(["I refuse to answer in JSON."])
-        verdicts, failures = score_transcript(
+        verdicts, failures, _pf = score_transcript(
             judge, _probe_transcript(), RUBRICS["belief_stickiness"],
             standard_metric_context(),
         )

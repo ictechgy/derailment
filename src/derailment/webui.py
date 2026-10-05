@@ -19,6 +19,7 @@ import json
 import os
 import secrets
 import threading
+import time
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -219,9 +220,22 @@ def serve(
                     exclusive = True
                 else:
                     # operator-configured path (from --save-transcripts) or
-                    # the default: trusted, may include directories
-                    out_path = state["save_path"] or f"chat_{profile_key}.json"
-                    exclusive = state["save_path"] is None
+                    # a per-session default: trusted, may include
+                    # directories. The default is minted once per session
+                    # and may be overwritten within it — an exclusive
+                    # default meant every save after the first 409'd and
+                    # later turns were lost on exit (P2-12)
+                    if state["save_path"] is None:
+                        if not state.get("default_save_name"):
+                            stamp = time.strftime("%Y%m%d-%H%M%S")
+                            state["default_save_name"] = (
+                                f"chat_{profile_key}_{stamp}.json"
+                            )
+                        out_path = state["default_save_name"]
+                        exclusive = False
+                    else:
+                        out_path = state["save_path"]
+                        exclusive = False
                 with state["lock"]:
                     transcript = Transcript(
                         profile=profile_key,
@@ -237,6 +251,13 @@ def serve(
                     except FileExistsError:
                         self._json(
                             {"error": "file already exists (overwrite refused)"}, 409
+                        )
+                        return
+                    except OSError as exc:
+                        # the session stays alive; operator can pick another
+                        # filename (P2-10)
+                        self._json(
+                            {"error": f"save failed: {exc.strerror or exc}"}, 500
                         )
                         return
                     n = len(state["turns"])

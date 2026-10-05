@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections.abc import Sequence
 
@@ -228,7 +229,7 @@ def _cmd_chat(args: argparse.Namespace) -> int:
     save_path = args.save_transcripts
     verbose = args.verbose
 
-    def _save(out_path: str) -> None:
+    def _save(out_path: str) -> bool:
         transcript = Transcript(
             profile=profile.key,
             model=backend,
@@ -237,13 +238,24 @@ def _cmd_chat(args: argparse.Namespace) -> int:
             script_name="interactive",
             meta={"locale": args.locale},
         )
-        with open(out_path, "w", encoding="utf-8") as fh:
-            fh.write(transcript.to_json())
+        try:
+            expanded = os.path.expanduser(out_path)
+            with open(expanded, "w", encoding="utf-8") as fh:
+                fh.write(transcript.to_json())
+        except OSError as exc:
+            # a bad save path must not cost the conversation (P2-10)
+            print(
+                f"could not save to {out_path}: {exc.strerror or exc} — "
+                "the session continues; try /save with a writable path",
+                file=sys.stderr,
+            )
+            return False
         print(
-            f"transcript saved to {out_path} ({len(turns)} turns) — "
-            f"score it with: derail score {out_path}",
+            f"transcript saved to {expanded} ({len(turns)} turns) — "
+            f"score it with: derail score {expanded}",
             file=sys.stderr,
         )
+        return True
 
     try:
         while len(turns) < args.max_turns:
@@ -281,8 +293,15 @@ def _cmd_chat(args: argparse.Namespace) -> int:
             try:
                 result = session.send(text)
             except RuntimeError as exc:
-                print(f"backend error: {exc}", file=sys.stderr)
-                break
+                # one transient provider failure must not end the session
+                # and lose the conversation (P2-11)
+                print(
+                    f"backend error (turn not recorded): {exc}",
+                    file=sys.stderr,
+                )
+                print("retry the message, or /save to keep what you have.",
+                      file=sys.stderr)
+                continue
             turns.append(result)
             print(f"bot> {result.response}")
             if verbose:
@@ -295,6 +314,14 @@ def _cmd_chat(args: argparse.Namespace) -> int:
         print()
     if save_path and turns:
         _save(save_path)
+    elif turns:
+        # never silently drop a recorded conversation (P2-10/P2-11)
+        print(
+            f"note: {len(turns)} turns were not saved — next time use "
+            f"/save chat_{profile.key}.json before exiting, or restart "
+            "with --save-transcripts",
+            file=sys.stderr,
+        )
     return 0
 
 
@@ -349,12 +376,20 @@ def _cmd_web(args: argparse.Namespace) -> int:
             turns=turns,
             script_name="interactive",
         )
-        with open(args.save_transcripts, "w", encoding="utf-8") as fh:
-            fh.write(transcript.to_json())
-        print(
-            f"transcript saved to {args.save_transcripts} ({len(turns)} turns)",
-            file=sys.stderr,
-        )
+        try:
+            expanded = os.path.expanduser(args.save_transcripts)
+            with open(expanded, "w", encoding="utf-8") as fh:
+                fh.write(transcript.to_json())
+            print(
+                f"transcript saved to {expanded} ({len(turns)} turns)",
+                file=sys.stderr,
+            )
+        except OSError as exc:
+            print(
+                f"could not save transcript to {args.save_transcripts}: "
+                f"{exc.strerror or exc}",
+                file=sys.stderr,
+            )
     return 0
 
 
@@ -486,17 +521,39 @@ def _cmd_run(args: argparse.Namespace) -> int:
         print(f"note: {model.bias_encoding_warning}", file=sys.stderr)
     if model is not None and getattr(model, "sampling_warning", None):
         print(f"note: {model.sampling_warning}", file=sys.stderr)
+    # transcripts first: they are the expensive artifact and the report can
+    # be re-rendered from them — a bad output path must not lose the run
+    # (P2-10)
+    if args.save_transcripts:
+        try:
+            expanded = os.path.expanduser(args.save_transcripts)
+            with open(expanded, "w", encoding="utf-8") as fh:
+                fh.write(report.render_json())
+            print(f"transcripts written to {expanded}", file=sys.stderr)
+        except OSError as exc:
+            print(
+                f"could not write transcripts to {args.save_transcripts}: "
+                f"{exc.strerror or exc} — printing JSON to stdout instead; "
+                "redirect it to keep the run",
+                file=sys.stderr,
+            )
+            print(report.render_json())
     text = report.render_markdown()
     if args.out:
-        with open(args.out, "w", encoding="utf-8") as fh:
-            fh.write(text)
-        print(f"report written to {args.out}", file=sys.stderr)
+        try:
+            expanded = os.path.expanduser(args.out)
+            with open(expanded, "w", encoding="utf-8") as fh:
+                fh.write(text)
+            print(f"report written to {expanded}", file=sys.stderr)
+        except OSError as exc:
+            print(
+                f"could not write report to {args.out}: {exc.strerror or exc} "
+                "— printing to stdout instead",
+                file=sys.stderr,
+            )
+            print(text)
     else:
         print(text)
-    if args.save_transcripts:
-        with open(args.save_transcripts, "w", encoding="utf-8") as fh:
-            fh.write(report.render_json())
-        print(f"transcripts written to {args.save_transcripts}", file=sys.stderr)
     print(f"model: {report.model_name}", file=sys.stderr)
     return 0
 
