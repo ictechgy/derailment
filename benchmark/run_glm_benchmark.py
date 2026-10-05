@@ -41,7 +41,7 @@ class GlmModel(OpenAICompatModel):
     sent here — tiktoken's cl100k ids would be garbage for GLM's
     tokenizer)."""
 
-    DEFAULT_MAX_TOKENS = 1024
+    DEFAULT_MAX_TOKENS = 2048
 
     def build_payload(self, messages, params):
         payload = super().build_payload(messages, params)

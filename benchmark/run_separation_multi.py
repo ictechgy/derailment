@@ -43,9 +43,19 @@ class RelayModel:
 
 
 class OpenCodeModel:
-    BINARY = os.path.join(
-        os.path.expanduser("~"), ".opencode", "bin", "opencode"
-    )
+    @staticmethod
+    def _binary() -> str:
+        import shutil
+
+        candidates = [
+            os.environ.get("OPENCODE_BIN", ""),
+            shutil.which("opencode") or "",
+            os.path.join(os.path.expanduser("~"), ".opencode", "bin", "opencode"),
+        ]
+        for candidate in candidates:
+            if candidate and os.path.exists(candidate):
+                return candidate
+        return candidates[-1]
 
     def __init__(self, model_id: str, timeout: float = 180.0):
         self.model_id = model_id
@@ -56,7 +66,7 @@ class OpenCodeModel:
         prompt = "\n\n".join(f"{m.role.capitalize()}: {m.content}" for m in messages)
         prompt += "\n\nAssistant:"
         result = subprocess.run(
-            [self.BINARY, "run", "-m", self.model_id, "-"],
+            [self._binary(), "run", "-m", self.model_id, "-"],
             input=prompt, text=True, capture_output=True,
             timeout=self.timeout, cwd=tempfile.gettempdir(),
         )

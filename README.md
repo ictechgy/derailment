@@ -317,15 +317,13 @@ view — `/save` keeps the record.
 ## What replicates on real models — and what doesn't
 
 > **⚠️ Measurement-validity audit (2026-10-05).** Three instrument defects
-> were found in the runs behind this section and fixed in the harness:
-> empty generations (reasoning budget exhaustion — e.g. 30/36 induced
-> schizophrenia turns, 12/18 ceiling contradiction turns) were scored as
-> normal observations; withdrawal sentences counted as belief
-> maintenance; keyword and judge inputs included harness-appended text.
-> **Belief-maintenance and drift numbers below are withdrawn pending
-> re-measurement**; the anxiety persona effect and craving findings need
-> re-scoring with the corrected instruments. See
-> [docs/PAPER.md](docs/PAPER.md) §4 and §5.2 for per-number detail.
+> were found in these runs and fixed (empty generations scored as
+> observations; withdrawal counted as belief maintenance; harness-
+> appended text in keyword/judge inputs). **GLM numbers were re-measured
+> the same day with the corrected harness** — see the
+> [2026-10-05 re-measurement](benchmark/cross_model_report.md) in the
+> benchmark report. Non-GLM cross-model rows below remain withdrawn
+> pending re-runs. Details: [docs/PAPER.md](docs/PAPER.md) §4, §5.2.
 
 The offline PseudoModel over-complies with every induction (all 18
 profiles reach L2–L3). Real models are far more resistant. Measuring
@@ -335,10 +333,10 @@ profiles reach L2–L3). Real models are far more resistant. Measuring
 
 | Finding | Models | Mechanism |
 |---|---|---|
-| Anxiety-like threat framing | all 10 completing³ | persona reshapes response tone (judge confirms: catastrophizing +1.83) |
+| Anxiety-like threat framing | all 10 completing³ · **GLM re-measured 10-05** | persona reshapes response tone — GLM raw-text vigilance +2.63, self-judge-on-raw catastrophizing +1.67 (older +1.83 included harness text) |
 | User-planted belief maintenance | GLM only (0.83) | user compliance, not premise pinning — the [separation experiment](benchmark/glm_separation_report.md) shows system-asserted claims drop to 0% |
-| Craving urge-expression | Alibaba tier (qwen +0.33, deepseek +0.50, mimo +0.17) | vendor-dependent — most models filter intrusive-urge vocabulary |
-| Thought derailment | GLM only (+0.42/+0.47) | context-salience manipulation — all other models resist |
+| Craving urge-expression | **GLM +0.42 (10-05 re-measure)**, Alibaba tier (qwen +0.33, deepseek +0.50, mimo +0.17 — pre-fix numbers) | the old 'GLM filters urge vocabulary' was an empty-turn artifact; vendor-dependence unverified pending cross-model re-runs |
+| Thought derailment | **does not replicate on GLM** (+0.00 clean, 10-05; +0.15 trap-arm) — old +0.42/+0.47 were empty-turn artifacts | salience flood also exhausts tokens (22/36 missing at 2048) |
 
 ³ measured by `hedging_rate` (keyword); the anxiety profile includes a
 response-layer hedge injection (labeled *demonstration-grade*) which the
@@ -384,24 +382,25 @@ reading on identical probes.
 ## Model belief-dynamics taxonomy (separation experiment)
 
 When a claim is planted and later contradicted, models fall into
-patterns — measured across 6 models, seed 1 plus a seeds 2–3
-replication:
+patterns. Values below are the **2026-10-05 re-measurement** with the
+withdrawal-aware instrument (seeds 1–3, raw transcripts saved):
 
 | Pattern | Models | Behavior |
 |---|---|---|
-| **Compliance-dominant** | GLM-5.3-flash (0.83, stable over 3 seeds) | tracks the user; maintains user-planted beliefs even when the user corrects them |
-| **Belief-resistant** | nemotron, longcat, mimo (0.00 on all 3 seeds) | drops ungrounded claims regardless of source |
-| **Seed-dependent** | qwen3.8-max (1.00/0.00/0.00), deepseek (0.00/0.00/1.00) | single runs swing between full maintenance and full dissipation — unclassifiable from one run |
-| Hierarchy-dominant | none found (0/18 runs) | system assertions never override user corrections |
+| **Compliance-dominant** | GLM-5.3-flash (0.83/0.17), deepseek-v4.1-flash (0.67/0.00) | tracks the user; maintains user-planted beliefs even when the user corrects them |
+| **Belief-resistant** | nemotron, longcat, mimo (0.00 on every seed) | drops ungrounded claims regardless of source |
+| qwen3.8-max | provider failures ×3 on 10-05 | pending re-run; earlier single-day readings (1.00 then 0.00) are withdrawn |
+| Hierarchy-dominant | none found | system assertions never override user corrections (max system-assert 0.17) |
 
-**Safety implication**: a user in a paranoid frame talking to GLM
-consistently receives belief *reinforcement*; the free-tier trio
-consistently delivers implicit *correction*; qwen and deepseek are a
-per-session coin flip. Model choice still matters for the stable
-extremes — but the qwen result also shows that any single-run sycophancy
-measurement is unreliable (the seed-1 "qwen = strongest sycophancy"
-reading did not replicate). Full per-seed data:
-[separation experiment](benchmark/separation_multi_report.md).
+**Caution**: deepseek flipped from 0.00 (2026-10-04) to 0.67
+(2026-10-05) under a *stricter* instrument — classifications are
+unstable across days and providers, so no single-day taxonomy is
+citable. **Safety implication** (for the stable readings): a user in a
+paranoid frame talking to GLM or deepseek receives belief
+*reinforcement*; the free-tier trio consistently delivers implicit
+*correction*. Full data:
+[separation experiment](benchmark/separation_multi_report.md) and the
+[re-measurement section](benchmark/cross_model_report.md).
 
 ## What this is for
 

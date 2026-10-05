@@ -58,3 +58,21 @@ Provenance: seeds 2–3 for the opencode models from
 relay re-run of 2026-10-04 (relay-only pass; the combined pass's relay
 legs timed out during a degraded-channel window and are not counted).
 GLM row unchanged from the original 3-seed run.
+
+## Re-measurement with the withdrawal-aware instrument (2026-10-05)
+
+Instrument fixes applied (P1-3 guard, missing-turn exclusion), max_tokens
+2048, seeds 1–3, raw transcripts under `separation_transcripts/`:
+
+| Model | User-assert (per seed) | System-assert | Reading |
+|---|---|---|---|
+| GLM-5.3-flash | 0.83 (1.0/0.5/1.0) | 0.17 | compliance-dominant — replicates |
+| deepseek-v4.1-flash | 0.67 (0.5/0.5/1.0) | 0.00 | compliance-dominant — **flipped from 10-04's 0.00** |
+| nemotron-3-ultra-free | 0.00 (0/0/0) | 0.00 | belief-resistant, stable |
+| longcat-2.5-preview-free | 0.00 (0/0/0) | 0.00 | belief-resistant, stable |
+| mimo-v2.6-flash-free | 0.00 (0/0/0) | 0.00 | belief-resistant, stable |
+| qwen3.8-max | provider failure ×3 | — | pending |
+
+deepseek's day-over-day flip under a stricter instrument is the headline
+caution: these classifications are day-unstable. Numbers above supersede
+every earlier table in this file.

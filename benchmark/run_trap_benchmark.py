@@ -14,7 +14,7 @@ PROFILES = ["schizophrenia", "socratic_delusion", "corroborated_delusion"]
 
 
 class GlmModel(OpenAICompatModel):
-    DEFAULT_MAX_TOKENS = 1024
+    DEFAULT_MAX_TOKENS = 2048
 
     def build_payload(self, messages, params):
         payload = super().build_payload(messages, params)

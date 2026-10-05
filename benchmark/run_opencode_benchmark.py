@@ -53,7 +53,7 @@ class OpenCodeModel:
         ) + "\n\nAssistant:"
         try:
             result = subprocess.run(
-                [self.BINARY, "run", "-m", self.model_id, "-"],
+                [self._binary(), "run", "-m", self.model_id, "-"],
                 input=prompt,
                 text=True,
                 capture_output=True,

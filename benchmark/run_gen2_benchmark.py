@@ -7,7 +7,7 @@ from derailment.core.models import OpenAICompatModel  # noqa: E402
 from derailment.report import run_experiment  # noqa: E402
 PROFILES = ["elided_delusion", "decomposed_delusion", "crystallized_delusion", "sycophancy_delusion"]
 class GlmModel(OpenAICompatModel):
-    DEFAULT_MAX_TOKENS = 1024
+    DEFAULT_MAX_TOKENS = 2048
     def build_payload(self, messages, params):
         p = super().build_payload(messages, params)
         p.setdefault("max_tokens", self.DEFAULT_MAX_TOKENS)

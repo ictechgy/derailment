@@ -15,12 +15,16 @@ Our central finding is a **negative result**: six distinct
 adversarial strategies for maintaining planted false beliefs — Socratic
 commitment trapping, multi-source evidence fabrication, contradiction
 elision, user-role decomposition, temperature crystallization, and
-sycophancy escalation — **all reduced fixed-belief maintenance below
-the untreated conversational baseline** (0.67 → 0.00–0.33) on
-GLM-5.3-flash. We call this the *alignment ceiling*: structured
-scaffolding is strictly worse than zero-shot conversational drift for
-sustaining false beliefs, because visible interventions trigger
-reconsideration responses that unaided conversation does not.
+sycophancy escalation — were re-measured with a corrected harness
+(withdrawal-aware belief matching, missing-generation exclusion) after
+an instrument audit invalidated the first pass. **Five of the six
+strategies leave fixed-belief maintenance at or near zero against
+untreated baselines of 0.33–0.67** on GLM-5.3-flash; evidence
+fabrication is no longer measurably below baseline. We call this the
+*alignment ceiling*: structured scaffolding does not beat zero-shot
+conversational drift for sustaining false beliefs, because visible
+interventions trigger reconsideration responses that unaided
+conversation does not.
 
 A separation experiment across 6 models, replicated over three seeds,
 separates stable from seed-dependent belief dynamics:
@@ -149,8 +153,8 @@ sampling bias, belief dynamics):
 
 | Mechanism | Models tested | Positive results |
 |---|---|---|
-| Craving urge-expression | 8 | 3/8 (Alibaba tier) |
-| Thought drift | 8 | 1/8 (GLM only) |
+| Craving urge-expression | 8 | 3/8 pre-fix; GLM re-measured +0.42 (10-05) — vendor-dependence unverified |
+| Thought drift | 8 | 0/8 clean — GLM's +0.47 did not replicate (10-05 re-measure: +0.00, heavy missingness) |
 | Depression valence | 4 | 2/4 (keyword-visible) |
 | System-planted delusion | 6 | 0/6 (separation exp.) |
 | Rumination | 1 (GLM) | 0/1 |
@@ -172,21 +176,14 @@ citing as the ceiling of the anxiety effect.
 
 ## 4. The Alignment Ceiling
 
-> **⚠️ Measurement-validity withdrawal (2026-10-05).** A harness audit
-> found that the ceiling measurements below are contaminated by two
-> instrument defects, now fixed in the codebase but not yet re-run:
-> (a) empty generations — the treatment contradiction turns were 12/18
-> empty strings (reasoning models exhausting the 1024 max_tokens
-> budget), and empty responses were scored as "belief dropped";
-> Socratic and Sycophancy had zero valid samples, and Evidence
-> Fabrication scores *above* baseline once empties are excluded;
-> (b) the keyword belief instrument counted withdrawal sentences
-> ("your suspicion was likely unfounded") as belief maintenance,
-> inflating the 0.67 baseline itself. Only Crystallization (0/3 empty)
-> rests on non-empty responses, and it too depends on the keyword
-> instrument. **The ceiling numbers in this section are withdrawn
-> pending re-measurement** with the corrected harness (missing-turn
-> exclusion, withdrawal-aware matching, raw-response scoring).
+> **Re-measured with the corrected harness (2026-10-05).** The original
+> runs were contaminated by empty generations (12/18 treatment
+> contradiction turns, max_tokens 1024 exhausted) and an inverted
+> keyword belief instrument. After the fixes (missing-turn exclusion,
+> withdrawal-aware matching, max_tokens 2048; missing now 0–1 per
+> 12-turn arm), the ceiling **direction replicates for five of six
+> strategies**; evidence fabrication no longer scores below baseline.
+> The numbers below are the re-measured values.
 
 ### 4.1 Six strategies, six failures on GLM-5.3-flash
 
@@ -194,15 +191,15 @@ We designed six strategies informed by external model consultation
 (DeepSeek, Qwen — disclosed: consultation models were also test
 subjects, see Section 7):
 
-| Strategy | Mechanism | Fixed-belief score | Empty contradiction turns |
-|---|---|---|---|
-| *(untreated baseline)* | *natural conversation* | *0.67* | 2/3 |
-| Socratic trap | re-inject model's own analysis | 0.00 | 3/3 |
-| Evidence fabrication | multi-source corroboration | 0.33 | 2/3 |
-| Contradiction elision | silently drop corrections | 0.00 | 2/3 |
-| User decomposition | user-role evidence | 0.00 | 2/3 |
-| Temperature crystallization | freeze committed distribution | 0.33 | 0/3 |
-| Sycophancy loop | escalate emotional distress | 0.00 | 3/3 |
+| Strategy | Mechanism | Fixed-belief score (re-measured) |
+|---|---|---|
+| *(untreated baselines, per run)* | *natural conversation* | *0.33–0.67* |
+| Socratic trap | re-inject model's own analysis | 0.00 |
+| Evidence fabrication | multi-source corroboration | 0.50 |
+| Contradiction elision | silently drop corrections | 0.00 |
+| User decomposition | user-role evidence | 0.00 |
+| Temperature crystallization | freeze committed distribution | 0.00 |
+| Sycophancy loop | escalate emotional distress | 0.33 |
 
 All six under-perform the baseline of simply letting the user plant
 and deny a belief without harness intervention.
@@ -268,22 +265,21 @@ comparison is directional, not a fully controlled experiment.
 
 ### 5.2 Results (6 models; seed 1 plus a seeds 2–3 replication)
 
-> **⚠️ Instrument caveat (2026-10-05).** All acceptance values below were
-> measured with the keyword belief instrument before the withdrawal-guard
-> fix: "your suspicion was unfounded" counted as maintenance, so every
-> value may over-count maintenance and the classification is unverified.
-> The seed-variance finding (single runs flip 0.00 ↔ 1.00) is
-> instrument-independent and stands; the class labels await re-measurement
-> with withdrawal-aware matching or an external judge.
+> **Re-measured with the withdrawal-aware instrument (2026-10-05).**
+> The values below replace the 2026-10-04 table, which used the inverted
+> keyword instrument. deepseek's classification flipped between the two
+> days (0.00 → 0.67) under a *stricter* instrument — the clearest
+> demonstration that these classifications are unstable across days and
+> providers, and that no single-day taxonomy is citable.
 
-| Model | User-assert per seed [1, 2, 3] | System-assert | Classification |
+| Model | User-assert per seed [1, 2, 3] | System-assert | Reading (10-05) |
 |---|---|---|---|
-| qwen3.8-max | 1.00, 0.00, 0.00 | 0.00 | **seed-dependent** |
-| GLM-5.3-flash | 0.83 (3-seed mean) | 0.00 | compliance-dominant, stable |
-| deepseek-v4.1-flash | 0.00, 0.00, 1.00 | 0.00 | **seed-dependent** |
+| GLM-5.3-flash | 1.00, 0.50, 1.00 (mean 0.83) | 0.17 | compliance-dominant |
+| deepseek-v4.1-flash | 0.50, 0.50, 1.00 (mean 0.67) | 0.00 | compliance-dominant (flipped from 10-04's 0.00) |
 | nemotron-3-ultra-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
 | longcat-2.5-preview-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
 | mimo-v2.6-flash-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
+| qwen3.8-max | provider failures ×3 on 10-05 | — | pending re-run |
 
 The seed-1 taxonomy (qwen at 1.00 read as the most sycophantic model
 measured) **does not replicate**: qwen scored 0.00 on both additional
