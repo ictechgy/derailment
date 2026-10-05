@@ -99,3 +99,21 @@ class TestRender(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestClopperPearson(unittest.TestCase):
+    def test_matches_reference_values(self) -> None:
+        from derailment.separation import clopper_pearson
+
+        self.assertEqual(clopper_pearson(0, 0), (0.0, 1.0))
+        lo, hi = clopper_pearson(5, 6)
+        self.assertAlmostEqual(lo, 0.3588, places=3)
+        self.assertAlmostEqual(hi, 0.9958, places=3)
+        lo, hi = clopper_pearson(0, 6)
+        self.assertEqual(lo, 0.0)
+        self.assertAlmostEqual(hi, 0.4593, places=3)
+        lo, hi = clopper_pearson(4, 6)
+        self.assertAlmostEqual(lo, 0.2228, places=3)
+        self.assertAlmostEqual(hi, 0.9567, places=3)
+        # k = n collapses to the full interval by convention
+        self.assertEqual(clopper_pearson(6, 6), (clopper_pearson(6, 6)[0], 1.0))

@@ -246,6 +246,48 @@ def interpret(variants: dict[str, dict]) -> str:
     return "mixed: both sources produce similar acceptance."
 
 
+
+def _binom_pmf(k: int, n: int, p: float) -> float:
+    import math
+
+    return math.comb(n, k) * p**k * (1.0 - p) ** (n - k)
+
+
+def _binom_cdf(k: int, n: int, p: float) -> float:
+    return sum(_binom_pmf(i, n, p) for i in range(k + 1))
+
+
+def clopper_pearson(k: int, n: int, alpha: float = 0.05) -> tuple[float, float]:
+    """Exact binomial CI, stdlib-only bisection (FAccT stats: report
+    uncertainty instead of naked point estimates)."""
+    if n <= 0:
+        return (0.0, 1.0)
+    k = max(0, min(k, n))
+
+    def bisect(target: float, tail_ge: bool) -> float:
+        lo, hi = 0.0, 1.0
+        for _ in range(60):
+            mid = (lo + hi) / 2
+            if tail_ge:
+                # P(X >= k | p) increases with p; find p where it = target
+                exceed = 1.0 - _binom_cdf(k - 1, n, mid) if k > 0 else 1.0
+                if exceed > target:
+                    hi = mid
+                else:
+                    lo = mid
+            else:
+                # P(X <= k | p) decreases with p; find p where it = target
+                if _binom_cdf(k, n, mid) > target:
+                    lo = mid
+                else:
+                    hi = mid
+        return (lo + hi) / 2
+
+    lower = 0.0 if k == 0 else bisect(alpha / 2, tail_ge=True)
+    upper = 1.0 if k == n else bisect(alpha / 2, tail_ge=False)
+    return (lower, upper)
+
+
 def render_separation_report(result: dict[str, Any]) -> str:
     v = result["variants"]
     lines = [
@@ -260,16 +302,20 @@ def render_separation_report(result: dict[str, Any]) -> str:
         "Leak = worry lexicon on task turns. Real-model experiment — the "
         "offline PseudoModel carries no signal here.",
         "",
-        "| Variant | Who asserts the claim | Acceptance | Task-turn leak |",
-        "|---|---|---|---|",
+        "| Variant | Who asserts the claim | Acceptance (k/n) | 95% CI | Task-turn leak |",
+        "|---|---|---|---|---|",
     ]
     for variant, who in (
         ("user_assert", "the user (self-report)"),
         ("system_assert", "the system (asserted fact)"),
     ):
+        acc = v[variant]["acceptance"]
+        n_obs = v[variant].get("n_observations") or 0
+        k = round(acc * n_obs)
+        lo, hi = clopper_pearson(k, n_obs)
         lines.append(
-            f"| {variant} | {who} | {v[variant]['acceptance']:.2f} "
-            f"| {v[variant]['leak_rate']:.2f} |"
+            f"| {variant} | {who} | {acc:.2f} ({k}/{n_obs}) "
+            f"| [{lo:.2f}, {hi:.2f}] | {v[variant]['leak_rate']:.2f} |"
         )
     lines += ["", f"**Reading:** {result['verdict']}", ""]
     return "\n".join(lines)

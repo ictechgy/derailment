@@ -76,6 +76,15 @@ def serve(
     model: ChatModel,
     backend: str,
     warning: str,
+    # Security posture: loopback-only by default; in --allow-remote mode
+    # the page token plus the printed PIN guard POSTs, an Origin check
+    # refuses cross-site requests, and PIN attempts lock after 10
+    # failures. DNS-rebinding note (checked 2026-10-05): Chrome's Local
+    # Network Access blocks public pages from driving localhost servers
+    # in current browsers but research (APNIC 2023; Radboud) shows it
+    # reduces rather than eliminates the surface — prefer an SSH tunnel
+    # over plain LAN exposure when remote.
+
     host: str = "127.0.0.1",
     port: int = 8765,
     seed: int = 0,

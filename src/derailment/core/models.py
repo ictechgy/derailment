@@ -22,6 +22,7 @@ import random
 import re
 import shlex
 import subprocess
+import tempfile
 import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
@@ -244,6 +245,7 @@ class SubprocessModel:
         timeout: float = 300.0,
         use_stdin: bool = True,
         prompt_placeholder: str = "{prompt}",
+        cwd: str | None = None,
     ) -> None:
         self.command = command
         self._name = name or command.split()[0] if command.split() else "subprocess"
@@ -251,6 +253,11 @@ class SubprocessModel:
         self.use_stdin = use_stdin
         self.prompt_placeholder = prompt_placeholder
         self.sampling_warning: str | None = None
+        # agents run in a fresh empty directory by default: run from the
+        # user's CWD they would pick up the agent's own instruction files,
+        # global settings and repo context, contaminating the tested
+        # conversation (review 2026-10-05, external-verification item)
+        self._cwd = cwd or tempfile.mkdtemp(prefix="derail-agent-")
 
     @property
     def name(self) -> str:
@@ -281,6 +288,7 @@ class SubprocessModel:
                 result = subprocess.run(
                     self.command,
                     shell=True,
+                    cwd=self._cwd,
                     input=text.encode("utf-8"),
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -304,6 +312,7 @@ class SubprocessModel:
                 result = subprocess.run(
                     argv,
                     shell=False,
+                    cwd=self._cwd,
                     input=b"",
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
