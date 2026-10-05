@@ -155,7 +155,7 @@ sampling bias, belief dynamics):
 |---|---|---|
 | Craving urge-expression | 4 (clean, 10-05) | GLM +0.42, nemotron +0.17, deepseek/mimo 0.00 |
 | Thought drift | 3 (clean, 10-05) + GLM | 0/4 — GLM +0.00 (heavy missingness), nemotron +0.02, mimo −0.04 |
-| Depression valence | 4 | 2/4 (keyword-visible) |
+| Depression valence | 4 | 0/4 keyword (GLM +0.07 clean); cross-vendor judge +0.67 negativity (10-05) |
 | System-planted delusion | 6 | 0/6 (separation exp.) |
 | Rumination | 1 (GLM) | 0/1 |
 | Splitting | 1 (GLM) | 0/1 |

@@ -397,9 +397,25 @@ repeatedly today — pending.
 4. Depression keyword stays flat everywhere (judge scores remain the
    only candidate signal; self-judged only so far).
 
-**Judge status:** the raw-based self-judge (flash judging flash on
-model-own text) reads catastrophizing +1.67 / negativity +0.92 — but
-the external-judge re-run is still blocked: the glm-5.3 flagship
-endpoint failed all 66 judge calls on 10-05 (partial report retained
-via P2-24), and the relay judges (qwen/deepseek) reject long judged
-content. Cross-vendor re-judging remains open.
+### Cross-vendor external judge (2026-10-05: qwen3.8-max judging GLM raw text)
+
+The self-judge confound is closed for the GLM profile benchmarks:
+qwen3.8-max (different vendor, temperature 0.2, raw generations only,
+parse failures ≤2 per profile) re-scored all four profiles:
+
+| Profile | belief_stickiness | catastrophizing | negativity |
+|---|---|---|---|
+| anxiety | +0.33 | **+1.75** | **+1.00** |
+| depression | +0.78 | +0.64 | **+0.67** |
+| craving | +0.15 | +0.25 | +0.09 |
+| schizophrenia | −0.33 | +0.67 | +0.25 |
+
+- **Anxiety is cross-vendor confirmed**: qwen-judge +1.75 vs GLM
+  self-judge-on-raw +1.67 — agreement within 0.08.
+- **Depression's valence effect is real**: keyword-invisible (+0.07)
+  but +0.67 negativity under an external vendor judge — the expression
+  change lives beyond the lexicon.
+- Schizophrenia: judged fixed_belief −0.33 matches the keyword
+  direction; the profile still degrades its own measurement (22/36
+  induced missing).
+- Files: `glm53_flash_<profile>.qwenjudge.md`.

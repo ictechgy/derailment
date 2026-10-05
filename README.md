@@ -350,7 +350,7 @@ response, are the honest measure of induction.
 |---|---|
 | System-planted delusions | **0/12** — all models accept corrections; the offline premise-pinning layer doesn't survive contact with real instruction-following |
 | Thought derailment (non-GLM) | **0/11** — context re-weighting is resisted by every vendor except Zhipu |
-| Depression (by keyword) | **mostly invisible** — judge reads +1.00 on GLM (expression beyond lexicon); OpenCode models show +0.25/+0.46; most others 0 |
+| Depression (by keyword) | **keyword-invisible everywhere (+0.07 GLM clean) but cross-vendor judge confirms the expression effect** — qwen-judging-GLM negativity +0.67 (self-judge claimed +1.00; old OpenCode keyword numbers pre-fix) |
 | OCD (rechecking) | **GLM** (+8.58) — response-layer injection, same caveat as anxiety |
 | PTSD (flashback echo) | **GLM** (+1.00) — context-layer, genuinely induced |
 | Dissociative (compartment amnesia) | **GLM** (+1.00) — context-layer, genuinely induced |
