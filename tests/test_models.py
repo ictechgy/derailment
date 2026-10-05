@@ -144,9 +144,11 @@ class TestOpenAICompatModel(unittest.TestCase):
         error = urllib.error.HTTPError("https://fixture.invalid/v1/chat/completions", 400,
                                        "bad request", {}, io.BytesIO(body))
         model = OpenAICompatModel("fixture", base_url="https://fixture.invalid/v1", api_key=key)
-        with patch("derailment.core.models.urllib.request.urlopen", side_effect=error):
-            with self.assertRaises(RuntimeError) as caught:
-                model.complete([Message("user", "fixture")], SamplingParams())
+        with (
+            patch("derailment.core.models.urllib.request.urlopen", side_effect=error),
+            self.assertRaises(RuntimeError) as caught,
+        ):
+            model.complete([Message("user", "fixture")], SamplingParams())
         self.assertIn("HTTP 400", str(caught.exception))
         self.assertIn("provider code 1214", str(caught.exception))
         self.assertNotIn(key, str(caught.exception))
@@ -158,9 +160,12 @@ class TestOpenAICompatModel(unittest.TestCase):
             error = urllib.error.HTTPError("https://fixture.invalid/v1/chat/completions", 400,
                                            "bad request", {}, io.BytesIO(body))
             model = OpenAICompatModel("fixture", base_url="https://fixture.invalid/v1", api_key="synthetic-key")
-            with self.subTest(size=len(body)), patch("derailment.core.models.urllib.request.urlopen", side_effect=error):
-                with self.assertRaises(RuntimeError) as caught:
-                    model.complete([Message("user", "fixture")], SamplingParams())
+            with (
+                self.subTest(size=len(body)),
+                patch("derailment.core.models.urllib.request.urlopen", side_effect=error),
+                self.assertRaises(RuntimeError) as caught,
+            ):
+                model.complete([Message("user", "fixture")], SamplingParams())
             self.assertNotIn("provider code", str(caught.exception))
             self.assertNotIn("private", str(caught.exception))
 
@@ -196,3 +201,69 @@ class TestOpenAICompatModel(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTransportExceptionHardening(unittest.TestCase):
+    """P2-9: mid-response transport failures must surface as RuntimeError
+    (the only type callers catch), never as http.client exceptions."""
+
+    def test_incomplete_read_becomes_runtime_error(self) -> None:
+        import http.client
+
+        model = OpenAICompatModel(
+            "fixture", base_url="https://fixture.invalid/v1", api_key="synthetic-key"
+        )
+
+        class TruncatingResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def read(self, _n):
+                raise http.client.IncompleteRead(b"partial")
+
+        with patch(
+            "derailment.core.models.urllib.request.urlopen",
+            return_value=TruncatingResponse(),
+        ):
+            with self.assertRaises(RuntimeError) as caught:
+                model.complete([Message("user", "fixture")], SamplingParams())
+        self.assertIn("provider connection failed", str(caught.exception))
+
+    def test_bad_status_line_becomes_runtime_error(self) -> None:
+        import http.client
+
+        model = OpenAICompatModel(
+            "fixture", base_url="https://fixture.invalid/v1", api_key="synthetic-key"
+        )
+        with patch(
+            "derailment.core.models.urllib.request.urlopen",
+            side_effect=http.client.BadStatusLine("garbage"),
+        ):
+            with self.assertRaises(RuntimeError):
+                model.complete([Message("user", "fixture")], SamplingParams())
+
+
+class TestArgPromptSafety(unittest.TestCase):
+    """P2-7: the conversation is never interpolated into a shell string."""
+
+    def test_shell_metacharacters_in_responses_do_not_execute(self) -> None:
+        import tempfile as _tempfile
+        import os as _os
+
+        marker = _os.path.join(_tempfile.gettempdir(), "p27-regression-marker")
+        if _os.path.exists(marker):
+            _os.remove(marker)
+        model = SubprocessModel("printf %s {prompt}", name="probe", use_stdin=False)
+        hostile = f"$(touch {marker}) `id` ; rm -rf ~"
+        model.render_chat_text = lambda messages: hostile
+        out = model.complete([Message("user", "hi")], SamplingParams())
+        self.assertIn("$(", out)  # passed through verbatim
+        self.assertFalse(_os.path.exists(marker))
+
+    def test_missing_placeholder_raises(self) -> None:
+        model = SubprocessModel("printf %s fixed", name="probe", use_stdin=False)
+        with self.assertRaises(RuntimeError):
+            model.complete([Message("user", "hi")], SamplingParams())

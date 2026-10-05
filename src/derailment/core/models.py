@@ -14,6 +14,7 @@ Three implementations share one protocol:
 
 from __future__ import annotations
 
+import http.client
 import json
 import math
 import os
@@ -112,36 +113,57 @@ class OpenAICompatModel:
                 "non-loopback host; use an https:// base URL"
             )
         payload = self.build_payload(messages, params)
-        req = urllib.request.Request(
-            f"{self.base_url}/chat/completions",
-            data=json.dumps(payload).encode("utf-8"),
-            headers=(
-                {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {self.api_key}",
-                }
-                if self.api_key
-                else {"Content-Type": "application/json"}
-            ),
-            method="POST",
-        )
+        try:
+            req = urllib.request.Request(
+                f"{self.base_url}/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers=(
+                    {
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {self.api_key}",
+                    }
+                    if self.api_key
+                    else {"Content-Type": "application/json"}
+                ),
+                method="POST",
+            )
+        except ValueError as exc:  # malformed base URL (InvalidURL et al.)
+            raise RuntimeError(
+                f"invalid base URL for provider request: {self.base_url}"
+            ) from exc
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 raw = resp.read(MAX_RESPONSE_BYTES + 1)
-            if len(raw) > MAX_RESPONSE_BYTES:
-                raise RuntimeError("provider response exceeded the size limit")
+        except urllib.error.HTTPError as exc:
+            detail = ""
             try:
-                data = json.loads(raw.decode("utf-8"))
-            except (UnicodeDecodeError, ValueError) as exc:
-                raise RuntimeError(
-                    "provider response was not valid UTF-8 JSON"
-                ) from exc
-        except urllib.error.HTTPError as exc:  # pragma: no cover - requires network
+                raw_error = exc.read(8193)
+                error_data = json.loads(raw_error) if len(raw_error) <= 8192 else {}
+                error_object = error_data.get("error", error_data) if isinstance(error_data, dict) else {}
+                code = error_object.get("code") if isinstance(error_object, dict) else None
+                if type(code) in (int, str) and re.fullmatch(r"[0-9]{3,6}", str(code)):
+                    detail = f" (provider code {code})"
+            except (OSError, ValueError, TypeError, http.client.HTTPException):
+                pass  # Provider bodies are untrusted; never echo message or input text.
             raise RuntimeError(
-                f"provider returned HTTP {exc.code} for {self.base_url}"
+                f"provider returned HTTP {exc.code} for {self.base_url}{detail}"
+            ) from exc
+        except http.client.HTTPException as exc:
+            # truncated chunked bodies, bad status lines, overlong headers —
+            # callers catch RuntimeError, so these must not leak (P2-9)
+            raise RuntimeError(
+                f"provider connection failed mid-response for {self.base_url}"
             ) from exc
         except OSError as exc:  # URLError and raw socket failures (offline, denied)
             raise RuntimeError(f"cannot reach {self.base_url}: {exc}") from exc
+        try:
+            if len(raw) > MAX_RESPONSE_BYTES:
+                raise RuntimeError("provider response exceeded the size limit")
+            data = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError) as exc:
+            raise RuntimeError(
+                "provider response was not valid UTF-8 JSON"
+            ) from exc
         try:
             content = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
@@ -220,12 +242,23 @@ class SubprocessModel:
                     timeout=self.timeout,
                 )
             else:
-                cmd = self.command.replace(
-                    self.prompt_placeholder, shlex.quote(text)
-                )
+                # Never interpolate the conversation into a shell string:
+                # model responses routinely contain backticks and $(...)
+                # which the shell would execute (P2-7). Parse the template
+                # once and pass the prompt as a single argv element.
+                argv = shlex.split(self.command)
+                if self.prompt_placeholder not in argv:
+                    raise RuntimeError(
+                        f"--cli-arg-prompt template must contain the token "
+                        f"{self.prompt_placeholder} as its own argument — "
+                        "without it the conversation never reaches the agent"
+                    )
+                argv = [
+                    text if tok == self.prompt_placeholder else tok for tok in argv
+                ]
                 result = subprocess.run(
-                    cmd,
-                    shell=True,
+                    argv,
+                    shell=False,
                     input=b"",
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,

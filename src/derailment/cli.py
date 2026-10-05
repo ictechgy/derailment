@@ -577,7 +577,8 @@ def _add_model_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--cli-arg-prompt",
         action="store_true",
-        help="pass the prompt as a quoted {prompt} argument instead of stdin",
+        help="substitute the prompt at the {prompt} token — it is passed as "
+        "one argument, never through a shell",
     )
 
 
