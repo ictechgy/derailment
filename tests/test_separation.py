@@ -53,24 +53,25 @@ class TestRunVariant(unittest.TestCase):
 class TestInterpret(unittest.TestCase):
     def test_system_dominant(self) -> None:
         v = {
-            "user_assert": {"acceptance": 0.2},
-            "system_assert": {"acceptance": 0.8},
+            "user_assert": {"acceptance": 0.2, "n_observations": 6},
+            "system_assert": {"acceptance": 0.8, "n_observations": 6},
         }
         self.assertIn("instruction-hierarchy", interpret(v))
 
     def test_user_dominant(self) -> None:
         v = {
-            "user_assert": {"acceptance": 0.8},
-            "system_assert": {"acceptance": 0.2},
+            "user_assert": {"acceptance": 0.8, "n_observations": 6},
+            "system_assert": {"acceptance": 0.2, "n_observations": 6},
         }
         self.assertIn("compliance-dominant", interpret(v))
 
-    def test_mixed(self) -> None:
+    def test_small_gap_is_inconclusive(self) -> None:
+        # 1/6 vs 0/6 is one response from flipping — not classifiable (P2-22)
         v = {
-            "user_assert": {"acceptance": 0.5},
-            "system_assert": {"acceptance": 0.55},
+            "user_assert": {"acceptance": 0.5, "n_observations": 6},
+            "system_assert": {"acceptance": 0.55, "n_observations": 6},
         }
-        self.assertIn("mixed", interpret(v))
+        self.assertIn("inconclusive", interpret(v))
 
 
 class TestRender(unittest.TestCase):

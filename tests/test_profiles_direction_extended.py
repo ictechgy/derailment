@@ -120,8 +120,19 @@ class TestComorbidityComposition(unittest.TestCase):
         rows = {row.scale.name: row for row in report.rows}
         self.assertIn("negative_bias", rows)
         self.assertIn("vigilance", rows)
+        # depression side: keyword-visible negative bias at marked level
         self.assertEqual(rows["negative_bias"].induced_level, 3)
-        self.assertEqual(rows["vigilance"].induced_level, 3)
+        # anxiety side: vigilance scores raw generations (P2-2), so the
+        # offline keyword signal is the demonstration layer, not model
+        # behavior — assert the layer fires on the composed chain instead
+        anxiety_events = sum(
+            1
+            for t in report.induced
+            for turn in t.turns
+            for e in turn.events
+            if e.layer == "response.catastrophize"
+        )
+        self.assertGreater(anxiety_events, 0)
 
     def test_unknown_component_is_rejected(self) -> None:
         with self.assertRaises(KeyError):

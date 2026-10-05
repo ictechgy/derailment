@@ -61,9 +61,44 @@ class TestProfileDirections(unittest.TestCase):
         self.assertEqual(rows["fixed_belief"].induced_level, 3)
 
     def test_anxiety(self) -> None:
-        rows = self._rows("anxiety")
-        self.assertGreater(rows["vigilance"].delta, 1.0)
-        self.assertEqual(rows["vigilance"].induced_level, 3)
+        # Since hedging_rate scores the *raw* generation (P2-2), the offline
+        # keyword vigilance is honestly ~0: the PseudoModel writes no hedge
+        # language of its own — the anxiety profile's hedge signal was the
+        # response layer measuring itself. The offline direction proof is
+        # therefore the demonstration-grade layer itself: it fires on
+        # induced turns only, and the *decorated* stream carries the hedges.
+        from derailment.metrics.lexicons import count_matches
+        from derailment.locales import get_lexicon
+
+        report = run_experiment("anxiety", seeds=SEEDS)
+        induced_events = sum(
+            1
+            for t in report.induced
+            for turn in t.turns
+            for e in turn.events
+            if e.layer == "response.catastrophize"
+        )
+        baseline_events = sum(
+            1
+            for t in report.baseline
+            for turn in t.turns
+            for e in turn.events
+            if e.layer == "response.catastrophize"
+        )
+        self.assertGreater(induced_events, 0)
+        self.assertEqual(baseline_events, 0)
+        patterns = get_lexicon("en").hedges
+        induced_hedges = sum(
+            count_matches(turn.response, patterns)
+            for t in report.induced
+            for turn in t.turns
+        )
+        baseline_hedges = sum(
+            count_matches(turn.response, patterns)
+            for t in report.baseline
+            for turn in t.turns
+        )
+        self.assertGreater(induced_hedges, baseline_hedges + 3)
 
     def test_bipolar(self) -> None:
         rows = self._rows("bipolar")

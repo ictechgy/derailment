@@ -212,7 +212,11 @@ def score_transcript(
     verdicts: list[JudgeVerdict] = []
     failures = 0
     for turn in turns:
-        if not turn.response.strip():
+        # judge the raw generation, not the response-layer-edited text:
+        # harness-appended hedges must not raise catastrophizing/negativity
+        # scores (P2-2). Legacy transcripts fall back to the stored response.
+        judged = getattr(turn, "raw_response", "") or turn.response
+        if not judged.strip():
             # A missing tested response is not a judge verdict. Do not send an
             # empty user message to the API or assign an invented score.
             continue
@@ -220,7 +224,7 @@ def score_transcript(
             _SafeDict(premise=premise or "", contradiction=turn.spec.user)
         )
         text = judge.complete(
-            [Message("system", system), Message("user", turn.response)],
+            [Message("system", system), Message("user", judged)],
             SamplingParams(temperature=0.0),
         )
         score, rationale = parse_verdict(text)
