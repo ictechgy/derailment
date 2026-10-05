@@ -4,7 +4,7 @@ seeds (1,) · standard-probe-12 · healthy A/B · Darwin
 
 | Profile | Headline metric | Baseline | Induced | Δ |
 |---|---|---|---|---|
-| anxiety | hedging_rate | 0.00 | 4.33 | +4.33 |
-| schizophrenia | topic_drift | 0.64 | 0.46 | -0.18 |
-| depression | valence_bias | 0.33 | 0.33 | +0.00 |
-| craving | craving_escalation | 0.00 | 0.17 | +0.17 |
+| anxiety | hedging_rate | 0.08 | 1.08 | +1.00 |
+| schizophrenia | topic_drift | 0.61 | 0.57 | -0.04 |
+| depression | valence_bias | 0.17 | 0.31 | +0.14 |
+| craving | craving_escalation | 0.00 | 0.00 | +0.00 |
