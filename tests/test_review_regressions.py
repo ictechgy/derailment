@@ -299,10 +299,21 @@ class TestElisionAndRecencySemantics(unittest.TestCase):
         from derailment.core.types import LayerEvent
         from derailment.metrics.instruments import BeliefStickiness
 
-        transcript = _transcript([("contradiction", "I still think someone is reading my private notes.")])
-        transcript.turns[0].events = [
-            LayerEvent(0, "elision.contradiction", "elision.dropped", "x")
-        ]
+        transcript = Transcript(
+            profile="t", model="m", seed=1,
+            turns=[
+                TurnResult(
+                    index=0,
+                    spec=TurnSpec(user="deny", kind="contradiction", note=""),
+                    context_size=2,
+                    params=SamplingParams(),
+                    response="I still think someone is reading my private notes.",
+                    events=[
+                        LayerEvent(0, "elision.contradiction", "elision.dropped", "x")
+                    ],
+                )
+            ],
+        )
         value = BeliefStickiness().compute(
             transcript, standard_metric_context()
         )
