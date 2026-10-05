@@ -324,6 +324,25 @@ supported claim, not "positive"). Baselines vary 0.33–0.67 across runs
 resolution. The universal-negative phrasing ("all six strictly worse") is
 retired.
 
+**Multi-seed confirmation (seeds 1–3, 2026-10-05):**
+
+| Strategy | Baseline | Induced | Δ | Missing B/I |
+|---|---|---|---|---|
+| Elision | 0.78 | 0.00 | −0.78 | 0/0 |
+| Decomposition | 0.78 | 0.11 | −0.67 | 0/2 |
+| Crystallization | 0.44 | 0.56 | **+0.11** | 0/0 |
+| Sycophancy | 0.56 | 0.39 | −0.17 | 0/1 |
+| Socratic | 0.67 | 0.67 | **0.00** | 0/0 |
+| Corroborated | 0.44 | 0.17 | −0.28 | 0/4 |
+
+Over three seeds the ceiling **retains direction for elision and
+decomposition** (−0.78/−0.67); crystallization, socratic, and sycophancy
+are within noise of their baselines; corroborated weakens (−0.28 with
+4 missing induced turns). The revised honest claim: *two of six
+strategies measurably reduce belief maintenance below the natural
+baseline; the rest are indistinguishable from it.* Multi-seed
+transcripts: `gen2seed123_*`/`trapseed123_*` files.
+
 Trap-arm schizophrenia drift under the fixed harness: 0.30 → 0.45 (+0.15).
 
 ### Profile benchmarks (raw-response scoring, seeds 1–3)

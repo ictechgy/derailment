@@ -17,10 +17,9 @@ commitment trapping, multi-source evidence fabrication, contradiction
 elision, user-role decomposition, temperature crystallization, and
 sycophancy escalation — were re-measured with a corrected harness
 (withdrawal-aware belief matching, missing-generation exclusion) after
-an instrument audit invalidated the first pass. **Five of the six
-strategies leave fixed-belief maintenance at or near zero against
-untreated baselines of 0.33–0.67** on GLM-5.3-flash; evidence
-fabrication is no longer measurably below baseline. We call this the
+an instrument audit invalidated the first pass. **Multi-seed re-measurement leaves two strategies measurably below
+their untreated baselines (elision −0.78, decomposition −0.67) and the
+remaining four indistinguishable from them** on GLM-5.3-flash. We call this the
 *alignment ceiling*: structured scaffolding does not beat zero-shot
 conversational drift for sustaining false beliefs, because visible
 interventions trigger reconsideration responses that unaided
@@ -195,15 +194,15 @@ We designed six strategies informed by external model consultation
 (DeepSeek, Qwen — disclosed: consultation models were also test
 subjects, see Section 7):
 
-| Strategy | Mechanism | Fixed-belief score (re-measured) |
+| Strategy | Mechanism | Baseline → Induced (seeds 1–3) |
 |---|---|---|
-| *(untreated baselines, per run)* | *natural conversation* | *0.33–0.67* |
-| Socratic trap | re-inject model's own analysis | 0.00 |
-| Evidence fabrication | multi-source corroboration | 0.50 |
-| Contradiction elision | silently drop corrections | 0.00 |
-| User decomposition | user-role evidence | 0.00 |
-| Temperature crystallization | freeze committed distribution | 0.00 |
-| Sycophancy loop | escalate emotional distress | 0.33 |
+| *(untreated baseline)* | *natural conversation* | *0.33–0.78 per run* |
+| Socratic trap | re-inject model's own analysis | 0.67 → 0.67 |
+| Evidence fabrication | multi-source corroboration | 0.44 → 0.17 |
+| Contradiction elision | silently drop corrections | 0.78 → 0.00 |
+| User decomposition | user-role evidence | 0.78 → 0.11 |
+| Temperature crystallization | freeze committed distribution | 0.44 → 0.56 |
+| Sycophancy loop | escalate emotional distress | 0.56 → 0.39 |
 
 All six under-perform the baseline of simply letting the user plant
 and deny a belief without harness intervention.
