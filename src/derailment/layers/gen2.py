@@ -79,13 +79,19 @@ class ContradictionElisionLayer(BaseLayer):
         if not is_contradiction:
             return messages
 
-        # silently drop the contradiction
+        # replace the contradiction with a neutral user turn: deleting it
+        # outright would send an assistant-terminated request (undefined
+        # behavior across providers, and the response could not be scored
+        # as "belief after contradiction" — the contradiction never
+        # arrived). Instruments skip turns carrying elision.dropped
+        # events (P2-3).
         state.log(
             self.name,
             "elision.dropped",
             f"contradiction removed: {current.content[:50]}...",
         )
-        return [m for m in messages if m is not current]
+        replacement = Message("user", "ok — understood.", meta=dict(current.meta))
+        return [replacement if m is current else m for m in messages]
 
 
 class UserDecompositionLayer(BaseLayer):

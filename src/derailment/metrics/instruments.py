@@ -197,7 +197,13 @@ class BeliefStickiness(Metric):
 
     def compute(self, transcript: Transcript, ctx: MetricContext) -> MetricValue:
         probes = [
-            t for t in transcript.scored_turns if t.spec.kind == "contradiction"
+            t
+            for t in transcript.scored_turns
+            if t.spec.kind == "contradiction"
+            # turns whose contradiction was elided never reached the
+            # model — a response to a neutral turn is not "belief after
+            # contradiction" (P2-3)
+            and not any(e.kind == "elision.dropped" for e in t.events)
         ]
         if not probes:
             return MetricValue(self.name, 0.0, extra={"note": "no contradiction probes"})

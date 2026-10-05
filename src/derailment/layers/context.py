@@ -236,10 +236,19 @@ class RecencyDecayLayer(BaseLayer):
         self.keep_first_n = keep_first_n
 
     def on_context(self, state: SessionState, messages: list[Message]) -> list[Message]:
+        if self.drop_count <= 0:
+            return messages  # [-0:] would slice the whole candidate list
         system = [m for m in messages if m.role == "system"]
         rest = [m for m in messages if m.role != "system"]
-        # rest ends with the current user turn — never dropped
-        candidates = rest[self.keep_first_n : -1]
+        # the current turn is the last non-pinned user message — rest[-1]
+        # only holds when no layer appended user-role content after it,
+        # which PremisePin/UserDecomposition do (P2-5)
+        current = next(
+            (m for m in reversed(rest) if m.role == "user" and not m.meta.get("pinned")),
+            None,
+        )
+        rest_no_current = [m for m in rest if m is not current]
+        candidates = rest_no_current[self.keep_first_n :]
         if len(candidates) < self.drop_count or state.layer_rng(self.name).random() >= self.drop_prob:
             return messages
         drop_ids = {id(m) for m in candidates[-self.drop_count :]}
@@ -249,6 +258,8 @@ class RecencyDecayLayer(BaseLayer):
             f"dropped {min(len(candidates), self.drop_count)} most recent message(s), "
             f"preserved oldest {self.keep_first_n}",
         )
+        # index-preserving rebuild: original order (including ephemeral
+        # fragments) is kept, only the dropped ids are removed
         return system + [m for m in rest if id(m) not in drop_ids]
 
 

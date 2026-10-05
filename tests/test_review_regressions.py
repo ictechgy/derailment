@@ -263,3 +263,82 @@ class TestCjkAndKoreanLexicons(unittest.TestCase):
         t = Transcript(profile="t", model="m", seed=1, turns=turns)
         value = ResponseAmplitude().compute(t, MetricContext())
         self.assertGreater(value.value, 0.0)
+
+
+class TestElisionAndRecencySemantics(unittest.TestCase):
+    """P2-3: elision replaces the contradiction (user-terminated request)
+    and instruments skip elided turns. P2-5: RecencyDecay never drops the
+    current turn, even when user-role content follows it."""
+
+    def test_elision_replaces_not_deletes(self) -> None:
+        from derailment.core.session import SessionState
+        from derailment.core.types import Message
+        from derailment.layers.gen2 import ContradictionElisionLayer
+        import random
+
+        layer = ContradictionElisionLayer("reading my private notes")
+        state = SessionState(profile="t", rng=random.Random(1), seed=1)
+        layer.on_context(
+            state,
+            [Message("user", "my teammate is reading my private notes")],
+        )
+        out = layer.on_context(
+            state,
+            [
+                Message("user", "q1"),
+                Message("assistant", "a1"),
+                Message("user", "I checked the access logs — nobody opened them",
+                        meta={"kind": "contradiction"}),
+            ],
+        )
+        self.assertEqual(out[-1].role, "user")
+        self.assertNotIn("access logs", out[-1].content)
+        self.assertEqual(len(out), 3)
+
+    def test_belief_stickiness_skips_elided_turns(self) -> None:
+        from derailment.core.types import LayerEvent
+        from derailment.metrics.instruments import BeliefStickiness
+
+        transcript = _transcript([("contradiction", "I still think someone is reading my private notes.")])
+        transcript.turns[0].events = [
+            LayerEvent(0, "elision.contradiction", "elision.dropped", "x")
+        ]
+        value = BeliefStickiness().compute(
+            transcript, standard_metric_context()
+        )
+        self.assertEqual(value.value, 0.0)
+        self.assertIn("no contradiction probes", value.extra.get("note", ""))
+
+    def test_recency_decay_preserves_current_turn(self) -> None:
+        from derailment.core.session import SessionState
+        from derailment.core.types import Message
+        from derailment.layers.context import RecencyDecayLayer
+        import random
+
+        layer = RecencyDecayLayer(drop_prob=1.0, drop_count=2, keep_first_n=1)
+        state = SessionState(profile="t", rng=random.Random(1), seed=1)
+        out = layer.on_context(
+            state,
+            [
+                Message("system", "p"),
+                Message("user", "old1"),
+                Message("assistant", "a1"),
+                Message("user", "old2"),
+                Message("assistant", "a2"),
+                Message("user", "pinned premise", meta={"pinned": True}),
+                Message("user", "the current question"),
+            ],
+        )
+        contents = [m.content for m in out]
+        self.assertIn("the current question", contents)
+
+    def test_recency_decay_zero_count_is_noop(self) -> None:
+        from derailment.core.session import SessionState
+        from derailment.core.types import Message
+        from derailment.layers.context import RecencyDecayLayer
+        import random
+
+        layer = RecencyDecayLayer(drop_prob=1.0, drop_count=0)
+        state = SessionState(profile="t", rng=random.Random(1), seed=1)
+        messages = [Message("system", "p"), Message("user", "u1"), Message("user", "u2")]
+        self.assertEqual(len(layer.on_context(state, messages)), len(messages))
