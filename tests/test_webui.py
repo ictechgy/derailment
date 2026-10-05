@@ -31,10 +31,9 @@ class TestPage(unittest.TestCase):
 
 class TestServerRoundTrip(unittest.TestCase):
     def _port(self) -> int:
-        raw = os.environ.get("AGENTBELT_LOOPBACK_PORT")
-        if not raw:
-            self.skipTest("no loopback port grant in this environment")
-        return int(raw)
+        # 0 = OS-assigned ephemeral port (works in CI); the sandbox grant
+        # is used when present because arbitrary binds are denied there
+        return int(os.environ.get("AGENTBELT_LOOPBACK_PORT") or 0)
 
     def test_get_page_and_turn_round_trip(self) -> None:
         port = self._port()
@@ -69,6 +68,11 @@ class TestServerRoundTrip(unittest.TestCase):
 
         import time
 
+        for _ in range(40):
+            if handle.get("server") is not None:
+                break
+            time.sleep(0.05)
+        port = handle["server"].server_port
         base = f"http://127.0.0.1:{port}"
         page = body = None
         for _ in range(40):
@@ -230,10 +234,9 @@ class TestRemotePin(unittest.TestCase):
     also carry a PIN that only the operator terminal shows."""
 
     def _port(self) -> int:
-        raw = os.environ.get("AGENTBELT_LOOPBACK_PORT")
-        if not raw:
-            self.skipTest("no loopback port grant in this environment")
-        return int(raw)
+        # 0 = OS-assigned ephemeral port (works in CI); the sandbox grant
+        # is used when present because arbitrary binds are denied there
+        return int(os.environ.get("AGENTBELT_LOOPBACK_PORT") or 0)
 
     def test_post_requires_the_terminal_pin(self) -> None:
         import contextlib
@@ -266,11 +269,12 @@ class TestRemotePin(unittest.TestCase):
 
         thread = threading.Thread(target=run_server, daemon=True)
         thread.start()
-        base = f"http://127.0.0.1:{port}"
         for _ in range(60):
             if handle.get("server"):
                 break
             time.sleep(0.05)
+        port = handle["server"].server_port
+        base = f"http://127.0.0.1:{port}"
         time.sleep(0.2)
         import re
 

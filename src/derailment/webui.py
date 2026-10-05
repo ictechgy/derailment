@@ -107,6 +107,7 @@ def serve(
         "turns": [],
         "max_turns": max_turns,
         "save_path": save_path,
+        "pin_failures": 0,
     }
 
     class Handler(BaseHTTPRequestHandler):
@@ -130,6 +131,7 @@ def serve(
                     warning,
                     token=token,
                     max_turns=state["max_turns"],
+                    remote=pin is not None,  # page must ask for the PIN (P2-13)
                 ).encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -156,12 +158,23 @@ def serve(
             if self.headers.get("X-Derailment-Session") != token:
                 self._json({"error": "missing or bad session token"}, 401)
                 return
-            if pin is not None and self.headers.get("X-Derailment-Pin") != pin:
-                self._json(
-                    {"error": "missing or bad remote PIN (see the terminal)"},
-                    401,
-                )
-                return
+            if pin is not None:
+                if state["pin_failures"] >= 10:
+                    # a 6-digit PIN must not be brute-forceable within a
+                    # server lifetime (P2-14); restart to get a new PIN
+                    self._json(
+                        {"error": "too many wrong PIN attempts — server "
+                                  "locked (restart to get a new PIN)"},
+                        429,
+                    )
+                    return
+                if self.headers.get("X-Derailment-Pin") != pin:
+                    state["pin_failures"] += 1
+                    self._json(
+                        {"error": "missing or bad remote PIN (see the terminal)"},
+                        401,
+                    )
+                    return
             length = int(self.headers.get("Content-Length", 0) or 0)
             if length > MAX_BODY:
                 self._json({"error": "body too large"}, 413)

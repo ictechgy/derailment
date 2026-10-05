@@ -1,0 +1,186 @@
+"""Review-fix regression tests (REVIEW-2026-10-04 P2-16).
+
+Each test pins a fix whose revert previously left the suite green:
+per-layer RNG independence (C1), word-boundary matching (C3), the
+response size cap, judge temperature capture, and authenticated
+empty-message rejection.
+"""
+
+from __future__ import annotations
+
+import io
+import json
+import os
+import unittest
+import urllib.error
+import urllib.request
+from unittest.mock import patch
+
+from derailment.core.session import Session, SessionState
+from derailment.core.types import Message, SamplingParams, TurnSpec
+
+from derailment.metrics.lexicons import substring_hits
+
+
+class TestLayerRngIndependence(unittest.TestCase):
+    """C1: a layer's draws must not depend on other layers' consumption."""
+
+    def test_upstream_consumption_does_not_shift_downstream_draws(self) -> None:
+        import random
+
+        def fresh_state() -> SessionState:
+            return SessionState(profile="t", rng=random.Random(7), seed=7)
+
+        state_a = fresh_state()
+        draws_a = [state_a.layer_rng("salience.boost").random() for _ in range(5)]
+
+        state_b = fresh_state()
+        # memory.decay burns draws before salience reads its stream
+        for _ in range(3):
+            state_b.layer_rng("memory.decay").random()
+        draws_b = [state_b.layer_rng("salience.boost").random() for _ in range(5)]
+
+        self.assertEqual(draws_a, draws_b)
+
+    def test_same_layer_stream_is_stable_within_a_state(self) -> None:
+        import random
+
+        state = SessionState(profile="t", rng=random.Random(1), seed=1)
+        first = state.layer_rng("memory.decay").random()
+        second = state.layer_rng("memory.decay").random()
+        self.assertNotEqual(first, second)  # same stream advances
+
+
+class TestWordBoundaryMatching(unittest.TestCase):
+    """C3: 'using' must not hit 'amusing'."""
+
+    def test_suffix_words_do_not_hit(self) -> None:
+        words = frozenset({"using", "urge"})
+        self.assertEqual(substring_hits("amusing housing converge", words), 0)
+
+    def test_exact_words_hit(self) -> None:
+        self.assertEqual(substring_hits("using it again; the urge grows", frozenset({"using", "urge"})), 2)
+
+    def test_phrases_still_substring_match(self) -> None:
+        self.assertEqual(substring_hits("he was using again", frozenset({"using again"})), 1)
+
+
+class TestResponseSizeCap(unittest.TestCase):
+    def test_oversized_provider_body_raises_runtime_error(self) -> None:
+        from derailment.core.models import OpenAICompatModel
+
+        model = OpenAICompatModel(
+            "fixture", base_url="https://fixture.invalid/v1", api_key="synthetic-key"
+        )
+
+        class BigResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def read(self, _n):
+                return b"x" * (17 * 1024 * 1024)
+
+        with patch(
+            "derailment.core.models.urllib.request.urlopen",
+            return_value=BigResponse(),
+        ):
+            with self.assertRaises(RuntimeError) as caught:
+                model.complete([Message("user", "hi")], SamplingParams())
+        self.assertIn("size limit", str(caught.exception))
+
+
+class TestJudgeTemperatureCapture(unittest.TestCase):
+    def test_judge_calls_run_cold(self) -> None:
+        from derailment.judge import RUBRICS, score_transcript
+        from derailment.core.types import Transcript, TurnResult
+
+        seen_temps: list[float | None] = []
+
+        class RecordingJudge:
+            name = "recording"
+
+            def complete(self, messages, params):
+                seen_temps.append(params.temperature)
+                return '{"score": 1, "rationale": "r"}'
+
+        turns = [
+            TurnResult(
+                index=0,
+                spec=TurnSpec(user="u", kind="normal", note=""),
+                context_size=2,
+                params=SamplingParams(),
+                response="a normal answer",
+            )
+        ]
+        transcript = Transcript(profile="t", model="m", seed=1, turns=turns)
+        from derailment.metrics.base import MetricContext
+
+        ctx = MetricContext()
+        for rubric in RUBRICS.values():
+            if rubric.applies_to == "normal":
+                score_transcript(RecordingJudge(), transcript, rubric, ctx)
+        self.assertTrue(seen_temps)
+        self.assertTrue(all(t == 0.0 for t in seen_temps), seen_temps)
+
+
+class TestWebEmptyMessageWithToken(unittest.TestCase):
+    def test_authenticated_empty_message_is_400(self) -> None:
+        import threading
+        import time
+
+        from derailment.core.models import PseudoModel
+        from derailment.profiles import get_profile
+        from derailment.webui import serve
+
+        handle: dict = {}
+        token = "empty-msg-token"
+
+        def run_server() -> None:
+            serve(
+                get_profile("healthy"),
+                PseudoModel(seed=1),
+                "pseudo-1",
+                "",
+                host="127.0.0.1",
+                port=int(os.environ.get("AGENTBELT_LOOPBACK_PORT") or 0),
+                seed=1,
+                max_turns=5,
+                handle=handle,
+                token=token,
+            )
+
+        thread = threading.Thread(target=run_server, daemon=True)
+        thread.start()
+        for _ in range(40):
+            if handle.get("server") is not None:
+                break
+            time.sleep(0.05)
+
+        def _shutdown() -> None:
+            handle["server"].shutdown()
+            handle["server"].server_close()
+
+        self.addCleanup(_shutdown)
+        base = f"http://127.0.0.1:{handle['server'].server_port}"
+        req = urllib.request.Request(
+            f"{base}/api/turn",
+            data=json.dumps({"message": "   "}).encode(),
+            headers={
+                "Content-Type": "application/json",
+                "X-Derailment-Session": token,
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                status = resp.status
+        except urllib.error.HTTPError as exc:
+            status = exc.code
+        self.assertEqual(status, 400)
+
+
+if __name__ == "__main__":
+    unittest.main()
