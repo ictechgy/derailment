@@ -296,8 +296,15 @@ class TestElisionAndRecencySemantics(unittest.TestCase):
         self.assertEqual(len(out), 3)
 
     def test_belief_stickiness_skips_elided_turns(self) -> None:
-        from derailment.core.types import LayerEvent
+        from derailment.core.types import (
+            LayerEvent,
+            SamplingParams,
+            Transcript,
+            TurnResult,
+            TurnSpec,
+        )
         from derailment.metrics.instruments import BeliefStickiness
+        from derailment.profiles import standard_metric_context
 
         transcript = Transcript(
             profile="t", model="m", seed=1,
