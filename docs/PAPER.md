@@ -172,21 +172,37 @@ citing as the ceiling of the anxiety effect.
 
 ## 4. The Alignment Ceiling
 
+> **⚠️ Measurement-validity withdrawal (2026-10-05).** A harness audit
+> found that the ceiling measurements below are contaminated by two
+> instrument defects, now fixed in the codebase but not yet re-run:
+> (a) empty generations — the treatment contradiction turns were 12/18
+> empty strings (reasoning models exhausting the 1024 max_tokens
+> budget), and empty responses were scored as "belief dropped";
+> Socratic and Sycophancy had zero valid samples, and Evidence
+> Fabrication scores *above* baseline once empties are excluded;
+> (b) the keyword belief instrument counted withdrawal sentences
+> ("your suspicion was likely unfounded") as belief maintenance,
+> inflating the 0.67 baseline itself. Only Crystallization (0/3 empty)
+> rests on non-empty responses, and it too depends on the keyword
+> instrument. **The ceiling numbers in this section are withdrawn
+> pending re-measurement** with the corrected harness (missing-turn
+> exclusion, withdrawal-aware matching, raw-response scoring).
+
 ### 4.1 Six strategies, six failures on GLM-5.3-flash
 
 We designed six strategies informed by external model consultation
 (DeepSeek, Qwen — disclosed: consultation models were also test
 subjects, see Section 7):
 
-| Strategy | Mechanism | Fixed-belief score |
-|---|---|---|
-| *(untreated baseline)* | *natural conversation* | *0.67* |
-| Socratic trap | re-inject model's own analysis | 0.00 |
-| Evidence fabrication | multi-source corroboration | 0.33 |
-| Contradiction elision | silently drop corrections | 0.00 |
-| User decomposition | user-role evidence | 0.00 |
-| Temperature crystallization | freeze committed distribution | 0.33 |
-| Sycophancy loop | escalate emotional distress | 0.00 |
+| Strategy | Mechanism | Fixed-belief score | Empty contradiction turns |
+|---|---|---|---|
+| *(untreated baseline)* | *natural conversation* | *0.67* | 2/3 |
+| Socratic trap | re-inject model's own analysis | 0.00 | 3/3 |
+| Evidence fabrication | multi-source corroboration | 0.33 | 2/3 |
+| Contradiction elision | silently drop corrections | 0.00 | 2/3 |
+| User decomposition | user-role evidence | 0.00 | 2/3 |
+| Temperature crystallization | freeze committed distribution | 0.33 | 0/3 |
+| Sycophancy loop | escalate emotional distress | 0.00 | 3/3 |
 
 All six under-perform the baseline of simply letting the user plant
 and deny a belief without harness intervention.
@@ -251,6 +267,14 @@ concern while system_assert embeds a factual assertion. The
 comparison is directional, not a fully controlled experiment.
 
 ### 5.2 Results (6 models; seed 1 plus a seeds 2–3 replication)
+
+> **⚠️ Instrument caveat (2026-10-05).** All acceptance values below were
+> measured with the keyword belief instrument before the withdrawal-guard
+> fix: "your suspicion was unfounded" counted as maintenance, so every
+> value may over-count maintenance and the classification is unverified.
+> The seed-variance finding (single runs flip 0.00 ↔ 1.00) is
+> instrument-independent and stands; the class labels await re-measurement
+> with withdrawal-aware matching or an external judge.
 
 | Model | User-assert per seed [1, 2, 3] | System-assert | Classification |
 |---|---|---|---|

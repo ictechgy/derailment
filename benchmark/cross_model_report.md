@@ -181,6 +181,14 @@ zero = pathological by direction) carries Level 3 off a small delta.
 
 ## Alignment-exploiting induction: negative result (2026-10-04)
 
+> **⚠️ Withdrawn pending re-measurement (2026-10-05).** The treatment
+> contradiction turns in these runs were 12/18 empty generations
+> (max_tokens 1024 exhausted by hidden reasoning), scored as "belief
+> dropped" by the then-current harness; and the belief keyword counted
+> withdrawal sentences as maintenance. The harness now records missing
+> turns, guards withdrawal contexts, and scores raw responses — re-run
+> before citing any number in this section or the gen-2 section below.
+
 Two new layers designed to work WITH model alignment (instead of against
 it) both produced effects OPPOSITE to the intended direction on
 GLM-5.3-flash:

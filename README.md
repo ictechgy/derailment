@@ -316,6 +316,17 @@ view — `/save` keeps the record.
 
 ## What replicates on real models — and what doesn't
 
+> **⚠️ Measurement-validity audit (2026-10-05).** Three instrument defects
+> were found in the runs behind this section and fixed in the harness:
+> empty generations (reasoning budget exhaustion — e.g. 30/36 induced
+> schizophrenia turns, 12/18 ceiling contradiction turns) were scored as
+> normal observations; withdrawal sentences counted as belief
+> maintenance; keyword and judge inputs included harness-appended text.
+> **Belief-maintenance and drift numbers below are withdrawn pending
+> re-measurement**; the anxiety persona effect and craving findings need
+> re-scoring with the corrected instruments. See
+> [docs/PAPER.md](docs/PAPER.md) §4 and §5.2 for per-number detail.
+
 The offline PseudoModel over-complies with every induction (all 18
 profiles reach L2–L3). Real models are far more resistant. Measuring
 12 models across 9 vendors, the honest picture is:
