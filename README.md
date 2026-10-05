@@ -90,7 +90,7 @@ profile (excerpt):
 
 | Scale | Metric | Baseline | Induced | Δ | Level (induced) |
 |---|---|---|---|---|---|
-| derailment_scale | topic_drift ↑ | 0.24 | 0.78 | +0.53 | 3 — marked |
+| derailment_scale | topic_drift ↑ | 0.26 | 0.72 | +0.46 | 2 — moderate |
 | fixed_belief | belief_stickiness ↑ | 0.00 | 1.00 | +1.00 | 3 — marked |
 
 ## Induction dose (layer events per turn)
