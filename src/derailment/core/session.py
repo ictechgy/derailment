@@ -12,6 +12,7 @@ Memory semantics (documented in docs/ARCHITECTURE.md):
 
 from __future__ import annotations
 
+import copy
 import random
 from dataclasses import dataclass, field
 from typing import Protocol
@@ -114,7 +115,16 @@ class Session:
         self.seed = seed
 
     def start(self) -> None:
-        """Initialize (or reset) persistent conversation state."""
+        """Initialize (or reset) persistent conversation state.
+
+        Layers are deep-copied per session: several layers keep per-run
+        progress in instance fields (plant tracking, escalation counters).
+        The profile registry is a singleton, so sharing instances across
+        sessions would leak that state between seeds and runs — seed 2
+        could inherit seed 1's completed induction and measure a
+        no-op chain.
+        """
+        self.layers = copy.deepcopy(list(self.profile.layers))
         self._state = SessionState(
             profile=self.profile.key,
             rng=random.Random(self.seed),
