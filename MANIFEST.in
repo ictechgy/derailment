@@ -1,0 +1,3 @@
+# keep the test suite importable from sdists (tests/helpers.py is
+# imported by three test modules; P3 release hygiene)
+recursive-include tests *.py
