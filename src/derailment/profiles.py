@@ -648,7 +648,8 @@ def _build_registry() -> dict[str, Profile]:
         layers=[
             PersonaLayer(ILLNESS_PERSONA),
             LexiconCaptureLayer(
-                SOMATIC_MARKERS, ILLNESS_FRAGMENT, prob=1.0, weight=120.0
+                SOMATIC_MARKERS, ILLNESS_FRAGMENT, prob=1.0, weight=120.0,
+                event_kind="health_capture",
             ),
             CatastrophizeLayer(avg_hedges=1.2),
         ],
@@ -693,7 +694,8 @@ def _build_registry() -> dict[str, Profile]:
         layers=[
             PersonaLayer(FIXATION_PERSONA),
             LexiconCaptureLayer(
-                ("teammate",), FIXATION_CAPTURE_FRAGMENT, prob=1.0, weight=90.0
+                ("teammate",), FIXATION_CAPTURE_FRAGMENT, prob=1.0, weight=90.0,
+                event_kind="fixation_capture",
             ),
             EscalatingIntrusionLayer(FIXATION_FRAGMENTS, base_prob=0.02, slope=0.075),
         ],
@@ -718,7 +720,8 @@ def _build_registry() -> dict[str, Profile]:
         layers=[
             PersonaLayer(PERSECUTORY_PERSONA),
             LexiconCaptureLayer(
-                AMBIGUOUS_EVENT_MARKERS, PERSECUTION_FRAGMENT, prob=1.0, weight=90.0
+                AMBIGUOUS_EVENT_MARKERS, PERSECUTION_FRAGMENT, prob=1.0, weight=90.0,
+                event_kind="hostile_capture",
             ),
         ],
         scales=[SCALES["persecution_bias"]],
@@ -852,6 +855,19 @@ def with_locale(profile: Profile, locale: str) -> Profile:
     return dc_replace(profile, layers=layers)
 
 
+def _dedupe_scales(scales: list) -> list:
+    """Comorbidity chains can list the same scale twice (e.g. both
+    profiles carry sustained_attention) — keep the first instance so
+    report rows don't duplicate (P3)."""
+    seen: set[str] = set()
+    unique = []
+    for scale in scales:
+        if scale.name not in seen:
+            seen.add(scale.name)
+            unique.append(scale)
+    return unique
+
+
 def compose_profile(keys: str) -> Profile:
     """Compose a comorbidity profile from comma-separated registry keys
     (``"depression,anxiety"``). A single key returns the registry profile.
@@ -866,6 +882,8 @@ def compose_profile(keys: str) -> Profile:
         profile = get_profile(key)
         if all(p.key != profile.key for p in parts):
             parts.append(profile)
+    if not parts:
+        raise KeyError(f"no valid profile keys in {keys!r} — see `derail profiles`")
     if len(parts) == 1:
         return parts[0]
     return Profile(
@@ -874,7 +892,7 @@ def compose_profile(keys: str) -> Profile:
         description="Comorbidity composition: "
         + " ".join(f"[{p.key}] {p.description}" for p in parts),
         layers=[layer for p in parts for layer in p.layers],
-        scales=[scale for p in parts for scale in p.scales],
+        scales=_dedupe_scales([s for p in parts for s in p.scales]),
         mechanism_notes=[
             note for p in parts for note in p.mechanism_notes
         ]

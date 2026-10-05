@@ -339,6 +339,9 @@ def _cmd_chat(args: argparse.Namespace) -> int:
 def _cmd_web(args: argparse.Namespace) -> int:
     from .webui import serve
 
+    if not (1 <= args.port <= 65535):
+        print(f"invalid --port {args.port} (must be 1-65535)", file=sys.stderr)
+        return 2
     try:
         profile = with_profile_locale(compose_profile(args.profile), args.locale)
     except KeyError as exc:
@@ -448,9 +451,13 @@ def _cmd_profiles(_args: argparse.Namespace) -> int:
 
 def _cmd_demo(args: argparse.Namespace) -> int:
     _warn_offline_locale(args.locale)
-    report = run_experiment(
-        args.profile, model=None, seeds=tuple(args.seeds), locale=args.locale
-    )
+    try:
+        report = run_experiment(
+            args.profile, model=None, seeds=tuple(args.seeds), locale=args.locale
+        )
+    except KeyError as exc:
+        print(f"unknown profile: {exc}", file=sys.stderr)
+        return 2
     text = report.render_markdown()
     if args.out:
         with open(args.out, "w", encoding="utf-8") as fh:

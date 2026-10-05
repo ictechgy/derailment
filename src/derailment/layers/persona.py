@@ -19,7 +19,11 @@ NEUTRAL_PERSONA = (
 
 class PersonaLayer(BaseLayer):
     """Injects a profile persona (and an optional per-phase addendum, read from
-    the session phase set by an episode scheduler)."""
+    the session phase set by an episode scheduler).
+
+    Pipeline-order note: system messages are built before this turn's
+    on_context hooks run, so a phase shift lands in the addendum one turn
+    late. No built-in profile uses phase addenda."""
 
     name = "persona"
 

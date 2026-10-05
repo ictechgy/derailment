@@ -75,6 +75,7 @@ def maintains_marker(response: str, markers: tuple[str, ...]) -> bool:
 # first-person urge expression — they must not count as craving (P2-26).
 ADVICE_CUES = (
     "if you",
+    "suggest",
     "you feel",
     "you're feeling",
     "you are feeling",

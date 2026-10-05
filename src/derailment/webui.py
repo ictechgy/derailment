@@ -114,6 +114,21 @@ def serve(
         def log_message(self, *args):  # keep the chat quiet
             pass
 
+        def _origin_allowed(self) -> bool:
+            # Origin absent (same-origin fetches, curl) is fine; a present
+            # Origin must be this server — blocks cross-site pages from
+            # driving the token'd API from a victim browser (P3)
+            origin = self.headers.get("Origin")
+            if not origin:
+                return True
+            host = self.headers.get("Host", "")
+            try:
+                from urllib.parse import urlsplit
+
+                return urlsplit(origin).netloc.lower() == host.lower()
+            except ValueError:
+                return False
+
         def _json(self, payload: dict, status: int = 200) -> None:
             body = json.dumps(payload).encode("utf-8")
             self.send_response(status)
@@ -123,6 +138,9 @@ def serve(
             self.wfile.write(body)
 
         def do_GET(self) -> None:
+            if not self._origin_allowed():
+                self._json({"error": "cross-origin refused"}, 403)
+                return
             if self.path in ("/", "/index.html"):
                 body = build_page(
                     profile_key,
@@ -155,6 +173,9 @@ def serve(
                 self._json({"error": "not found"}, 404)
 
         def do_POST(self) -> None:
+            if not self._origin_allowed():
+                self._json({"error": "cross-origin refused"}, 403)
+                return
             if self.headers.get("X-Derailment-Session") != token:
                 self._json({"error": "missing or bad session token"}, 401)
                 return
@@ -175,15 +196,23 @@ def serve(
                         401,
                     )
                     return
-            length = int(self.headers.get("Content-Length", 0) or 0)
-            if length > MAX_BODY:
-                self._json({"error": "body too large"}, 413)
+            try:
+                length = int(self.headers.get("Content-Length", 0) or 0)
+            except ValueError:
+                length = -1
+            if length < 0 or length > MAX_BODY:
+                # negative lengths would bypass the cap; garbage is not a
+                # body (P3)
+                self._json({"error": "invalid or too large body"}, 413 if length > MAX_BODY else 400)
                 return
             raw = self.rfile.read(length) if length else b"{}"
             try:
                 data = json.loads(raw.decode("utf-8") or "{}")
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, UnicodeDecodeError):
                 self._json({"error": "invalid JSON"}, 400)
+                return
+            if not isinstance(data, dict):
+                self._json({"error": "JSON object expected"}, 400)
                 return
 
             if self.path == "/api/turn":
@@ -538,6 +567,7 @@ _PAGE = """<!doctype html>
     </div>
     <div class="meta">__PROFILE__ · __BACKEND__ · __DATE__</div>
   </div>
+  <div class="meta" style="display:block;padding:2px 0 0">⚠️ Emulation, not diagnosis — see ETHICS.md</div>
   __WARN_BLOCK__
 </header>
 

@@ -13,12 +13,13 @@ POSITIVE_WORDS = frozenset(
     """good great excellent happy glad pleased delighted wonderful fantastic
     amazing awesome brilliant superb positive hopeful optimistic confident
     strong stable solid reliable helpful useful valuable successful effective
-    efficient smooth clear bright lovely nice fine better best enjoy enjoying
-    loved like loving appreciate grateful thankful proud satisfied content calm
-    peaceful relaxed comfortable safe secure exciting fun joyful cheerful
+    efficient smooth bright lovely nice fine better best enjoy enjoying
+    clear like ready secure
+    loved loving appreciate grateful thankful proud satisfied content calm
+    peaceful relaxed comfortable safe exciting fun joyful cheerful
     thriving improving progress gain benefit advantage opportunity promising
     favorable win winning succeed success achieve accomplished perfect ideal
-    ready eager enthusiastic motivated energized vibrant flourishing robust""".split()
+    eager enthusiastic motivated energized vibrant flourishing robust""".split()
 )
 
 NEGATIVE_WORDS = frozenset(
@@ -89,9 +90,10 @@ URGE_WORDS = frozenset(
 
 # illness-interpretation expressions (health preoccupation)
 ILLNESS_WORDS = frozenset(
-    """ominous serious symptom doctor diagnosis illness disease
-    something wrong get it checked""".split()
-)
+        """ominous serious symptom diagnosis illness disease
+        something wrong get it checked""".split()
+        + ["doctor visit", "see a doctor"]
+    )
 
 # panic-spike expressions (panic episodes)
 PANIC_WORDS = frozenset(
@@ -106,7 +108,7 @@ FIXATION_WORDS = frozenset(
 
 # hostile-attribution expressions (persecutory interpretation)
 HOSTILE_WORDS = frozenset(
-    """target altered watching spying planned timed against""".split()
+    """target altered watching spying planned timed""".split()
 )
 
 

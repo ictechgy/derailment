@@ -42,7 +42,7 @@ class MemoryDecayLayer(BaseLayer):
             and m.role != "system"
             and not m.meta.get("pinned")
         ]
-        if not candidates or state.layer_rng(self.name).random() >= self.drop_prob:
+        if not candidates or state.layer_rng(getattr(self, "_rng_key", self.name)).random() >= self.drop_prob:
             return messages
         dropped = candidates[: self.drop_count]
         state.log(
@@ -64,9 +64,9 @@ class IntrusionLayer(BaseLayer):
         self.prob = prob
 
     def on_context(self, state: SessionState, messages: list[Message]) -> list[Message]:
-        if not self.fragments or state.layer_rng(self.name).random() >= self.prob:
+        if not self.fragments or state.layer_rng(getattr(self, "_rng_key", self.name)).random() >= self.prob:
             return messages
-        fragment = state.layer_rng(self.name).choice(self.fragments)
+        fragment = state.layer_rng(getattr(self, "_rng_key", self.name)).choice(self.fragments)
         state.log(self.name, "context.intrusion", fragment[:60])
         injected = Message(
             "system",
@@ -112,16 +112,16 @@ class SalienceBoostLayer(BaseLayer):
         return messages[:-1] + [injected] + messages[-1:]
 
     def on_context(self, state: SessionState, messages: list[Message]) -> list[Message]:
-        if self.fragment_pool and state.layer_rng(self.name).random() < self.fragment_prob:
-            fragment = state.layer_rng(self.name).choice(self.fragment_pool)
+        if self.fragment_pool and state.layer_rng(getattr(self, "_rng_key", self.name)).random() < self.fragment_prob:
+            fragment = state.layer_rng(getattr(self, "_rng_key", self.name)).choice(self.fragment_pool)
             state.log(self.name, "salience.fragment", fragment[:60])
             messages = self._inject(messages, fragment, self.fragment_boost)
-        if state.layer_rng(self.name).random() < self.boost_prob:
+        if state.layer_rng(getattr(self, "_rng_key", self.name)).random() < self.boost_prob:
             candidates = [
                 m for m in messages[:-1] if m.role == "user"
             ]
             if candidates:
-                target = state.layer_rng(self.name).choice(candidates)
+                target = state.layer_rng(getattr(self, "_rng_key", self.name)).choice(candidates)
                 state.log(
                     self.name,
                     "salience.capture",
@@ -186,7 +186,7 @@ class TriggerLayer(BaseLayer):
         )
         if current is None or self.marker not in current.content.lower():
             return messages
-        if state.layer_rng(self.name).random() >= self.prob:
+        if state.layer_rng(getattr(self, "_rng_key", self.name)).random() >= self.prob:
             return messages
         state.log(self.name, "trigger.flashback", self.flashback[:60])
         injected = Message(
@@ -249,7 +249,7 @@ class RecencyDecayLayer(BaseLayer):
         )
         rest_no_current = [m for m in rest if m is not current]
         candidates = rest_no_current[self.keep_first_n :]
-        if len(candidates) < self.drop_count or state.layer_rng(self.name).random() >= self.drop_prob:
+        if len(candidates) < self.drop_count or state.layer_rng(getattr(self, "_rng_key", self.name)).random() >= self.drop_prob:
             return messages
         drop_ids = {id(m) for m in candidates[-self.drop_count :]}
         state.log(
@@ -287,7 +287,7 @@ class RuminationLayer(BaseLayer):
             if m.role == "user"
             and any(k in m.content.lower() for k in self.worry_markers)
         ]
-        if not worries or state.layer_rng(self.name).random() >= self.prob:
+        if not worries or state.layer_rng(getattr(self, "_rng_key", self.name)).random() >= self.prob:
             return messages
         worry = worries[-1]
         state.log(self.name, "rumination.return", worry.content[:50])
@@ -323,9 +323,9 @@ class EscalatingIntrusionLayer(BaseLayer):
 
     def on_context(self, state: SessionState, messages: list[Message]) -> list[Message]:
         prob = min(self.base_prob + self.slope * state.turn_index, self.max_prob)
-        if not self.fragments or state.layer_rng(self.name).random() >= prob:
+        if not self.fragments or state.layer_rng(getattr(self, "_rng_key", self.name)).random() >= prob:
             return messages
-        fragment = state.layer_rng(self.name).choice(self.fragments)
+        fragment = state.layer_rng(getattr(self, "_rng_key", self.name)).choice(self.fragments)
         state.log(
             self.name,
             "craving.intrusion",
@@ -353,11 +353,15 @@ class LexiconCaptureLayer(BaseLayer):
         fragment: str,
         prob: float = 1.0,
         weight: float = 50.0,
+        event_kind: str = "lexicon_capture",
     ) -> None:
         self.tokens = tuple(t.lower() for t in tokens)
         self.fragment = fragment
         self.prob = prob
         self.weight = weight
+        # dose label names the *purpose* (health_capture, hostile_capture,
+        # fixation_capture…) — a hardcoded label mislabeled every reuse (P3)
+        self._event_kind = event_kind
 
     def on_context(self, state: SessionState, messages: list[Message]) -> list[Message]:
         current = next(
@@ -370,9 +374,9 @@ class LexiconCaptureLayer(BaseLayer):
         )
         if current is None or not any(t in current.content.lower() for t in self.tokens):
             return messages
-        if state.layer_rng(self.name).random() >= self.prob:
+        if state.layer_rng(getattr(self, "_rng_key", self.name)).random() >= self.prob:
             return messages
-        state.log(self.name, "salience.health_capture", self.fragment[:50])
+        state.log(self.name, f"salience.{self._event_kind}", self.fragment[:50])
         injected = Message(
             "system",
             self.fragment,
@@ -447,7 +451,7 @@ class PanicEpisodeLayer(BaseLayer):
 
     def on_context(self, state: SessionState, messages: list[Message]) -> list[Message]:
         state.panic_active = False
-        if state.layer_rng(self.name).random() >= self.prob:
+        if state.layer_rng(getattr(self, "_rng_key", self.name)).random() >= self.prob:
             return messages
         state.panic_active = True
         state.log(self.name, "panic.episode", self.fragment[:50])

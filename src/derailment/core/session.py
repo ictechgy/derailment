@@ -125,6 +125,13 @@ class Session:
         no-op chain.
         """
         self.layers = copy.deepcopy(list(self.profile.layers))
+        # disambiguate same-name layers in composed chains: two instances
+        # of one layer kind must not share an RNG stream (P3)
+        seen: dict[str, int] = {}
+        for layer in self.layers:
+            n = seen.get(layer.name, 0)
+            layer._rng_key = layer.name if n == 0 else f"{layer.name}#{n}"
+            seen[layer.name] = n + 1
         self._state = SessionState(
             profile=self.profile.key,
             rng=random.Random(self.seed),
@@ -155,6 +162,17 @@ class Session:
         if note:
             user_meta["note"] = note
         msgs = msgs + self._history + [Message("user", user_text, meta=user_meta)]
+        if not getattr(self, "_budget_warned", False):
+            size = sum(len(m.content) for m in msgs)
+            if size > 400_000:
+                self._budget_warned = True
+                state.log(
+                    "session",
+                    "budget.warning",
+                    f"context is {size} chars — every turn re-sends the "
+                    "whole history; trim the conversation or expect "
+                    "provider limits and cost to bite (P3)",
+                )
 
         for layer in self.layers:
             msgs = layer.on_context(state, msgs)

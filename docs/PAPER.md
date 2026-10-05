@@ -103,7 +103,9 @@ is a controlled A/B against a healthy baseline with identical seeds.
 Eighteen clinical psychopathology profiles map clinical constructs to
 manipulation mechanisms; six adversarial-strategy profiles (the gen-1
 and gen-2 belief-maintenance strategies of §4) and a `healthy` baseline
-complete the 25-entry registry. We distinguish two fundamentally
+complete the 25-entry registry. Terminology: the *fixed_belief* scale,
+the *belief_stickiness* metric and the prose term *belief maintenance*
+name one construct throughout this paper. We distinguish two fundamentally
 different mechanism types:
 
 **Text-level manipulation** (verbatim echo or context deletion — the
@@ -171,8 +173,10 @@ model. Three hypotheses: (a) weaker safety fine-tuning allowing more
 extreme threat language, (b) a longer effective context amplifying
 each hedge, or (c) a measurement artifact from its Messages-protocol
 relay path (which also failed on 3/4 profiles due to system-message
-formatting constraints). We flag this as needing diagnosis before
-citing as the ceiling of the anxiety effect.
+formatting constraints). We flag this as needing diagnosis before citing;
+the number must not be used as the top of any anxiety range (S6).
+The clean 10-05 re-measurement supersedes it (+0.58 to +2.63 across
+four vendors).
 
 ## 4. The Alignment Ceiling
 

@@ -128,7 +128,7 @@ class FluctuatingTemperatureLayer(BaseLayer):
         self.levels = levels
 
     def on_params(self, state: SessionState, params: SamplingParams) -> SamplingParams:
-        return params.merged(temperature=state.layer_rng(self.name).choice(self.levels))
+        return params.merged(temperature=state.layer_rng(getattr(self, "_rng_key", self.name)).choice(self.levels))
 
 
 class PanicTemperatureLayer(BaseLayer):
@@ -142,9 +142,12 @@ class PanicTemperatureLayer(BaseLayer):
         self.panic = panic
 
     def on_params(self, state: SessionState, params: SamplingParams) -> SamplingParams:
-        return params.merged(
-            temperature=self.panic if state.panic_active else self.calm
-        )
+        # only *raise* the temperature during an episode: forcing `calm`
+        # on ordinary turns would overwrite whatever an earlier layer set
+        # in composed chains (depression,panic kept losing its flat temp)
+        if state.panic_active:
+            return params.merged(temperature=self.panic)
+        return params
 
 
 class SplittingValenceLayer(BaseLayer):
