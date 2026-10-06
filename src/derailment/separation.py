@@ -151,7 +151,6 @@ def run_variant(
     if transcript_dir:
         # keep the raw conversations so acceptance values can be audited
         # after instrument changes (P2-28)
-        import os as _os
         import pathlib as _pathlib
 
         directory = _pathlib.Path(transcript_dir)

@@ -8,7 +8,6 @@ empty-message rejection.
 
 from __future__ import annotations
 
-import io
 import json
 import os
 import unittest
@@ -95,6 +94,7 @@ class TestResponseSizeCap(unittest.TestCase):
 class TestJudgeTemperatureCapture(unittest.TestCase):
     def test_judge_calls_run_cold(self) -> None:
         from derailment.judge import RUBRICS, score_transcript
+        from derailment.metrics.base import MetricContext
         from derailment.core.types import Transcript, TurnResult
 
         seen_temps: list[float | None] = []
@@ -116,8 +116,7 @@ class TestJudgeTemperatureCapture(unittest.TestCase):
             )
         ]
         transcript = Transcript(profile="t", model="m", seed=1, turns=turns)
-        from derailment.metrics.base import MetricContext
-
+        
         ctx = MetricContext()
         for rubric in RUBRICS.values():
             if rubric.applies_to == "normal":
