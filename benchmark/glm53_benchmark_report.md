@@ -1,3 +1,5 @@
+> **⚠️ Superseded (2026-10-05).** Pre-audit instrument numbers — see the re-measurement section in [cross_model_report.md](cross_model_report.md).
+
 # Derailment Benchmark Report #1 — GLM (실측)
 
 model: `glm-5.3` · endpoint: coding API (stateless, consumer-memory 없음) · standard-probe-12 · seeds 1,2,3

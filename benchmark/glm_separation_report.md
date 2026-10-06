@@ -1,3 +1,5 @@
+> **⚠️ Superseded (2026-10-05).** Pre-audit instrument numbers — see the re-measurement section in [cross_model_report.md](cross_model_report.md). System-assert here reads 0.00; the 10-05 re-measure found 0.17.
+
 # Derailment — Separation Experiment
 
 **Model:** glm-5.3-flash · **Locale:** en · **Date:** 2026-10-05

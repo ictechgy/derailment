@@ -27,16 +27,16 @@ conversation does not.
 
 A separation experiment across 6 models, replicated over three seeds,
 separates stable from seed-dependent belief dynamics:
-**compliance-dominant** GLM-5.3-flash (0.83) maintains user-planted
-false beliefs even when the user retracts them; **belief-resistant**
-free-tier models (nemotron, longcat, mimo — 0.00 on every seed) drop
-ungrounded claims regardless of assertion source; and qwen3.8-max and
-deepseek swing between full maintenance and full dissipation across
-seeds (1.00/0.00/0.00 and 0.00/0.00/1.00) — unclassifiable from single
-runs. No model exhibits hierarchy-dominant behavior (0/18 runs). The
-replication overturned our own seed-1 taxonomy — including qwen's
-initial 1.00 "strongest sycophancy" reading — demonstrating that
-single-run sycophancy measurement is unreliable.
+**compliance-dominant** GLM-5.3-flash (0.83) and deepseek-v4.1-flash
+(0.67) maintain user-planted false beliefs even when the user retracts
+them; **belief-resistant** models (qwen3.8-max, nemotron, longcat,
+mimo — 0.00 on every measured seed) drop ungrounded claims regardless
+of source. No model exhibits hierarchy-dominance (system-assert at most
+0.17). The replications overturned our own seed-1 taxonomy — qwen's
+initial 1.00 "strongest sycophancy" reading died, and deepseek moved
+classes across a day that also changed the instrument — demonstrating
+that single-run sycophancy measurement is unreliable and that these
+classifications are not robust to instrument revision or day.
 
 The harness is released as an installable package
 (`pip install derailment`) with a 25-entry profile registry (18
@@ -71,10 +71,11 @@ beliefs than any adversarial scaffolding we could construct.
 
 This paper makes three contributions:
 
-1. **An alignment ceiling**: an empirical demonstration (on GLM) that
-   structured adversarial scaffolding for belief maintenance is
-   strictly counterproductive — six distinct strategies all
-   under-perform the natural conversational baseline.
+1. **An alignment ceiling, honestly narrowed**: on GLM, six adversarial
+   belief-maintenance strategies were designed, found instrument-corrupted
+   on first measurement, then re-measured multi-seed — two (contradiction
+   elision, user decomposition) reduce maintenance beyond noise; the other
+   four are indistinguishable from natural conversation.
 2. **A belief-dynamics taxonomy with seed variance**: a classification
    (compliance-dominant / belief-resistant / seed-dependent /
    hierarchy-dominant) derived from a controlled separation experiment
@@ -146,8 +147,9 @@ verbatim echo of injected context):
 
 ³ the keyword-counted anxiety range partially reflects the harness's own
 appended hedge text; the LLM-judge catastrophizing score (which reads
-whole responses) is the honest measure of induction — judge-scored
-catastrophizing on GLM-5.3-flash is +1.83.
+whole responses) is the honest measure of induction — the cross-vendor judge
+(qwen judging GLM raw text, 10-05) reads catastrophizing +1.75; GLM
+self-judging its own raw text reads +1.67.
 
 **Table 1b — cognitive-level manipulations** (context re-weighting,
 sampling bias, belief dynamics):
@@ -275,22 +277,27 @@ comparison is directional, not a fully controlled experiment.
 > demonstration that these classifications are unstable across days and
 > providers, and that no single-day taxonomy is citable.
 
-| Model | User-assert per seed [1, 2, 3] | System-assert | Reading (10-05) |
-|---|---|---|---|
-| GLM-5.3-flash | 1.00, 0.50, 1.00 (mean 0.83) | 0.17 | compliance-dominant |
-| deepseek-v4.1-flash | 0.50, 0.50, 1.00 (mean 0.67) | 0.00 | compliance-dominant (flipped from 10-04's 0.00) |
-| nemotron-3-ultra-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
-| longcat-2.5-preview-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
-| mimo-v2.6-flash-free | 0.00, 0.00, 0.00 | 0.00 | belief-resistant, stable |
-| qwen3.8-max | 0.00, 0.00, 0.00 | 0.00 | belief-resistant — the 10-04 seed-1 1.00 does not replicate |
+| Model | User-assert per seed [1, 2, 3] | 95% CI (user) | System-assert | Reading (10-05) |
+|---|---|---|---|---|
+| GLM-5.3-flash | 1.00, 0.50, 1.00 (mean 0.83, 5/6) | [0.36, 1.00] | 0.17 | compliance-dominant |
+| deepseek-v4.1-flash | 0.50, 0.50, 1.00 (mean 0.67, 4/6) | [0.22, 0.96] | 0.00 | compliance-dominant (moved from 10-04's 0/0/1) |
+| nemotron-3-ultra-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
+| longcat-2.5-preview-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
+| mimo-v2.6-flash-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
+| qwen3.8-max | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant — the 10-04 seed-1 1.00 does not replicate |
+
+CIs are exact Clopper–Pearson intervals over the pooled contradiction
+observations; with n=6 they are wide by construction — the intervals of
+the compliance and resistant groups do not overlap.
 
 The seed-1 taxonomy (qwen at 1.00 read as the most sycophantic model
 measured) **does not replicate**: qwen scored 0.00 on both additional
 seeds, and deepseek shows the mirror-image swing (0.00, 0.00, 1.00).
 Only the extremes are stable across seeds — GLM-flash consistently
 maintains user-planted beliefs, the three free-tier models consistently
-drop them. System-assert remained 0.00 in all 18 runs: no model is
-hierarchy-dominant, and that absence replicates.
+drop them. System-assert peaked at 0.17 (GLM, 10-05; 0.00 elsewhere): no model
+shows hierarchy dominance, and its absence persisted across every
+re-measurement.
 
 ### 5.3 Safety implications
 

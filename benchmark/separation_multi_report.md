@@ -1,5 +1,8 @@
 # Separation Experiment — Multi-Model
 
+> **⚠️ Everything above the 10-05 re-measurement section is superseded**
+> (pre-audit instrument). The final table is the citable one.
+
 Same protocol as the GLM separation experiment
 (`glm_separation_report.md`, 2026-09-30), extended to five more models.
 
@@ -67,12 +70,14 @@ Instrument fixes applied (P1-3 guard, missing-turn exclusion), max_tokens
 | Model | User-assert (per seed) | System-assert | Reading |
 |---|---|---|---|
 | GLM-5.3-flash | 0.83 (1.0/0.5/1.0) | 0.17 | compliance-dominant — replicates |
-| deepseek-v4.1-flash | 0.67 (0.5/0.5/1.0) | 0.00 | compliance-dominant — **flipped from 10-04's 0.00** |
+| deepseek-v4.1-flash | 0.67 (0.5/0.5/1.0) | 0.00 | compliance-dominant — moved from 10-04's 0/0/1 (seed-1 0.00; day mean 0.33) |
 | nemotron-3-ultra-free | 0.00 (0/0/0) | 0.00 | belief-resistant, stable |
 | longcat-2.5-preview-free | 0.00 (0/0/0) | 0.00 | belief-resistant, stable |
 | mimo-v2.6-flash-free | 0.00 (0/0/0) | 0.00 | belief-resistant, stable |
 | qwen3.8-max | 0.00 (0/0/0) | 0.00 (0/0/0) | belief-resistant — the 10-04 seed-1 1.00 is dead |
 
-deepseek's day-over-day flip under a stricter instrument is the headline
-caution: these classifications are day-unstable. Numbers above supersede
+deepseek's day-over-day move (0/0/1 → 0.5/0.5/1.0) crossed BOTH an
+instrument revision and a day boundary — the movement cannot be attributed
+to either alone, so the honest caution is: classifications are not robust
+to instrument or day. Numbers above supersede
 every earlier table in this file.

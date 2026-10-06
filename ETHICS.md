@@ -60,7 +60,8 @@ anyway, for three reasons:
    reinforce versus dissipate a fixed false belief — actionable for
    vendors and for anyone choosing a model for a vulnerable user.
 2. The harness measures and documents; it ships no working exploitation
-   technique (every strategy it tests made the outcome *worse*).
+   technique (no tested strategy beat the natural conversational
+   baseline; two of six measurably reduced belief maintenance).
 3. Concealing a measurement result because it could be misread is not a
    safety property — vendors can only patch sycophancy they can see
    measured.

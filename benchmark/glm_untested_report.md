@@ -1,3 +1,5 @@
+> **⚠️ Superseded (2026-10-05).** Pre-audit instrument numbers — see the re-measurement section in [cross_model_report.md](cross_model_report.md). The anhedonia 'Level 3' row is a threshold artifact — see the marginal note in the cross-model report.
+
 # Untested profiles on GLM-5.3-flash
 
 seeds (1,) · standard-probe-12 · healthy A/B

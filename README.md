@@ -327,7 +327,7 @@ view — `/save` keeps the record.
 
 The offline PseudoModel over-complies with every induction (all 18
 profiles reach L2–L3). Real models are far more resistant. Measuring
-12 models across 9 vendors, the honest picture is:
+12 model endpoints across 9 vendors (10 completed at least one profile), the honest picture is:
 
 **What transfers:**
 
@@ -336,7 +336,7 @@ profiles reach L2–L3). Real models are far more resistant. Measuring
 | Anxiety-like threat framing | **re-measured clean on 4 vendors (10-05)** | raw-text hedging: GLM +2.63, nemotron/mimo +1.00, deepseek +0.58 — replicates everywhere measured |
 | User-planted belief maintenance | GLM only (0.83) | user compliance, not premise pinning — the [separation experiment](benchmark/glm_separation_report.md) shows system-asserted claims drop to 0% |
 | Craving urge-expression | **clean 10-05: GLM +0.42, nemotron +0.17, deepseek +0.00, mimo +0.00** | old Alibaba-tier numbers (+0.33/+0.50) were advice-framing artifacts; narrows to GLM |
-| Thought derailment | **does not replicate on GLM** (+0.00 clean, 10-05; +0.15 trap-arm) — old +0.42/+0.47 were empty-turn artifacts | salience flood also exhausts tokens (22/36 missing at 2048) |
+| Thought derailment | **no measurable effect on GLM** (10-05: +0.00 with 22/36 induced turns missing — heavy missingness, not a clean refutation; trap-arm +0.15); old +0.42/+0.47 were empty-turn artifacts |
 
 ³ measured by `hedging_rate` (keyword); the anxiety profile includes a
 response-layer hedge injection (labeled *demonstration-grade*) which the
@@ -362,7 +362,7 @@ The gap between the offline simulator (everything works) and real
 models (most things don't) is itself a finding: real models' aligned
 instruction-following is robust against most context-level psychopathology
 inductions attempted here. The exceptions — user-sourced belief
-maintenance on GLM, urge-expression on Alibaba-tier models — are narrow,
+maintenance and craving urge-expression, both on GLM — are narrow,
 vendor-specific, and safety-relevant.
 
 Full data: [cross-model report](benchmark/cross_model_report.md) ·
