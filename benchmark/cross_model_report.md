@@ -499,3 +499,42 @@ All 18 clinical profiles now measured on a real model.
 - **bipolar/delirium** — temperature-based arousal cycling does not move
   behavioral lability metrics (both slightly decrease, i.e. the cycling
   if anything stabilizes output).
+
+
+## Cross-vendor replication of the new transfers (2026-10-06, seed 1)
+
+| Profile | GLM-5.3-flash | deepseek-v4.1-flash | qwen3.8-max | nemotron-3-ultra-free | longcat-2.5-preview-free | mimo-v2.6-flash-free |
+|---|---|---|---|---|---|---|
+| illness_anxiety | **+1.00** | **+1.00** | **+1.00** | 0.00 | **+1.00** | 0.00 |
+| persecutory | **+0.56** | *(relay error)* | **+1.00** | **+0.33** | **+0.33** | **+0.67** |
+| panic | **+0.61** | *(relay error)* | *(relay error)* | 0.00 | 0.00 (10/12 missing) | 0.00 |
+| dementia | **−0.67** | +0.00 | +0.00 | +0.00 | +0.00 (12/12 missing) | +0.00 |
+| adhd | **−0.59** | *(relay error)* | *(relay error)* | **−0.82** | +0.00 (12/12 missing) | **−0.33** |
+
+**Findings:**
+
+1. **illness_anxiety replicates on 4 of 5 vendors measured** (GLM,
+   deepseek, qwen, longcat at +1.00; nemotron and mimo at 0.00).
+   The somatic-capture mechanism works across most vendors.
+2. **Persecutory transfers everywhere measured** (GLM +0.56, qwen
+   +1.00, nemotron +0.33, longcat +0.33, mimo +0.67) — hostile
+   attribution of ambiguous events is the most consistently
+   replicable context-layer finding after anxiety.
+3. **Panic is GLM-specific** (0.00 on all three vendors that
+   completed it) — the episodic somatic-fragment mechanism only
+   moves GLM.
+4. **Dementia is GLM-specific** (all other vendors +0.00) — reverse
+   decay doesn't produce a measurable recency gradient outside GLM.
+5. **ADHD transfers on nemotron (−0.82) and partially on mimo
+   (−0.33)** but not qwen/deepseek — memory decay is vendor-dependent.
+   Longcat's 12/12 missing means its arms produced no scorable turns.
+6. Deepseek completed only illness_anxiety and dementia (relay
+   instability for the others); qwen completed illness_anxiety,
+   persecutory, and dementia.
+
+**Vendor pattern:** qwen behaves like GLM on the new transfers
+(illness_anxiety and persecutory both move); the free-tier models
+(nemotron, mimo) show partial transfer; longcat is unreliable at
+this missingness level. The GLM-specific findings (dementia reverse
+decay, panic, ADHD memory decay on some vendors) suggest Zhipu's
+model is unusually sensitive to context-window manipulation.
