@@ -224,12 +224,14 @@ class TestTransportExceptionHardening(unittest.TestCase):
             def read(self, _n):
                 raise http.client.IncompleteRead(b"partial")
 
-        with patch(
-            "derailment.core.models.OpenAICompatModel._open",
-            return_value=TruncatingResponse(),
+        with (
+            patch(
+                "derailment.core.models.OpenAICompatModel._open",
+                return_value=TruncatingResponse(),
+            ),
+            self.assertRaises(RuntimeError) as caught,
         ):
-            with self.assertRaises(RuntimeError) as caught:
-                model.complete([Message("user", "fixture")], SamplingParams())
+            model.complete([Message("user", "fixture")], SamplingParams())
         self.assertIn("provider connection failed", str(caught.exception))
 
     def test_bad_status_line_becomes_runtime_error(self) -> None:

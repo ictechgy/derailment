@@ -371,7 +371,6 @@ class TestSchizophreniaAttribution(unittest.TestCase):
 
     def _drift(self, layers) -> float:
         from derailment.core.models import PseudoModel
-        from derailment.core.session import Session
         from derailment.layers.persona import PersonaLayer
         from derailment.profiles import (
             SCHIZOPHRENIA_PERSONA,

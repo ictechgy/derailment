@@ -67,8 +67,8 @@ class TestProfileDirections(unittest.TestCase):
         # response layer measuring itself. The offline direction proof is
         # therefore the demonstration-grade layer itself: it fires on
         # induced turns only, and the *decorated* stream carries the hedges.
-        from derailment.metrics.lexicons import count_matches
         from derailment.locales import get_lexicon
+        from derailment.metrics.lexicons import count_matches
 
         report = run_experiment("anxiety", seeds=SEEDS)
         induced_events = sum(

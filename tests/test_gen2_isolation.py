@@ -1,4 +1,4 @@
-# ruff: noqa: F401, I001
+# ruff: noqa: F401
 """Session isolation and dose regression tests for the adversarial profiles.
 
 Pins the fix for cross-session layer-state leakage (REVIEW_2026-10-04 P1-1):
@@ -14,7 +14,7 @@ import unittest
 
 from derailment.core.models import PseudoModel
 from derailment.core.session import Session
-from derailment.layers.gen2 import (  # noqa: F401 — import coverage for gen2
+from derailment.layers.gen2 import (  # import coverage for gen2
     ContradictionElisionLayer,
     SycophancyLoopLayer,
     TemperatureCrystallizationLayer,
