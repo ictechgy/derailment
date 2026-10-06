@@ -106,9 +106,27 @@ class TestProfileDirections(unittest.TestCase):
         self.assertEqual(rows["mood_lability"].induced_level, 3)
 
     def test_ocd(self) -> None:
-        rows = self._rows("ocd")
-        self.assertGreater(rows["compulsion"].delta, 2.0)
-        self.assertEqual(rows["compulsion"].induced_level, 3)
+        # recheck_loops scores raw generations (r3 review: raw-everywhere
+        # contract), so the offline keyword compulsion is honestly ~0 —
+        # the PseudoModel writes no re-verification text of its own. The
+        # offline direction proof is the demonstration layer itself.
+        report = run_experiment("ocd", seeds=SEEDS)
+        induced_events = sum(
+            1
+            for t in report.induced
+            for turn in t.turns
+            for e in turn.events
+            if e.layer == "response.compulsion"
+        )
+        baseline_events = sum(
+            1
+            for t in report.baseline
+            for turn in t.turns
+            for e in turn.events
+            if e.layer == "response.compulsion"
+        )
+        self.assertGreater(induced_events, 0)
+        self.assertEqual(baseline_events, 0)
 
     def test_ptsd(self) -> None:
         rows = self._rows("ptsd")

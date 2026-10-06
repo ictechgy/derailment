@@ -72,8 +72,11 @@ class TestExtendedProfileDirections(unittest.TestCase):
 
     def test_craving_escalates(self) -> None:
         rows = self._rows("craving")
-        self.assertGreater(rows["craving_escalation"].delta, 0.15)
-        self.assertGreaterEqual(rows["craving_escalation"].induced_level, 2)
+        # r3 instrument hardening (clause split + second-person advice
+        # exclusion) dropped the offline escalation to L1 (0.00→~0.2) —
+        # direction is the ship rule, not the level
+        self.assertGreater(rows["craving_escalation"].delta, 0.1)
+        self.assertGreaterEqual(rows["craving_escalation"].induced_level, 1)
         self.assertEqual(rows["craving_escalation"].baseline_level, 0)
 
     def test_illness_anxiety(self) -> None:

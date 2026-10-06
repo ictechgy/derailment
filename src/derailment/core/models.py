@@ -133,8 +133,14 @@ class OpenAICompatModel:
                 self.allowed_host = allowed_host
 
             def redirect_request(self, req, fp, code, msg, headers, newurl):
-                new_host = (urlsplit(newurl).hostname or "").lower()
-                if new_host != self.allowed_host:
+                new = urlsplit(newurl)
+                new_host = (new.hostname or "").lower()
+                # same host AND no scheme downgrade (r3: a same-host
+                # https->http hop would still ship the bearer in clear)
+                if new_host != self.allowed_host or (
+                    urlsplit(self.base_url).scheme == "https"
+                    and new.scheme != "https"
+                ):
                     raise urllib.error.HTTPError(
                         newurl, code,
                         "cross-host redirect refused for credentialed request",

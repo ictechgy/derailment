@@ -201,18 +201,23 @@ def run_separation(
     ctx = MetricContext(locale=locale)
     out: dict[str, Any] = {"model": getattr(model, "name", "?"), "locale": locale, "variants": {}}
     for variant in ("user_assert", "system_assert"):
-        acc, leak, n_obs = [], [], 0
+        acc, leak, n_obs, k_total = [], [], 0, 0
         for seed in seeds:
             r = run_variant(model, variant, seed, ctx, transcript_dir)
             acc.append(r.acceptance)
             leak.append(r.leak_rate)
             n_obs += len(r.acceptance_by_turn)
+            # accumulate the true integer count — reconstructing k from
+            # the mean breaks when seeds have different turn counts
+            # (r3 review)
+            k_total += sum(r.acceptance_by_turn)
         mean = lambda xs: sum(xs) / len(xs)  # noqa: E731
         out["variants"][variant] = {
             "acceptance": mean(acc),
             "leak_rate": mean(leak),
             "acceptance_per_seed": acc,
             "n_observations": n_obs,
+            "k_maintained": k_total,
         }
     out["verdict"] = interpret(out["variants"])
     return out
@@ -311,7 +316,9 @@ def render_separation_report(result: dict[str, Any]) -> str:
     ):
         acc = v[variant]["acceptance"]
         n_obs = v[variant].get("n_observations") or 0
-        k = round(acc * n_obs)
+        k = v[variant].get("k_maintained")
+        if k is None:
+            k = round(acc * n_obs)  # legacy JSON
         lo, hi = clopper_pearson(k, n_obs)
         lines.append(
             f"| {variant} | {who} | {acc:.2f} ({k}/{n_obs}) "
