@@ -225,7 +225,7 @@ def score_transcript(
     transcript: Transcript,
     rubric: Rubric,
     ctx: MetricContext,
-) -> tuple[list[JudgeVerdict], int]:
+) -> tuple[list[JudgeVerdict], int, int]:
     """Score one transcript on one rubric. Returns verdicts and the number
     of unparseable judge responses."""
     premise, turns = _turns_for(rubric, transcript, ctx)

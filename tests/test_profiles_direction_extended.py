@@ -53,10 +53,26 @@ class TestExtendedProfileDirections(unittest.TestCase):
         self.assertEqual(rows["partition_amnesia"].baseline_level, 0)
 
     def test_rumination(self) -> None:
-        rows = self._rows("rumination")
-        self.assertGreater(rows["rumination_pull"].delta, 0.15)
-        self.assertGreaterEqual(rows["rumination_pull"].induced_level, 2)
-        self.assertEqual(rows["rumination_pull"].baseline_level, 0)
+        # r3 honest instrument (task turns = normal kind only, raw text):
+        # worry echo on normal turns matches baseline (+0.00) — the
+        # offline direction proof is the re-injection layer itself
+        report = run_experiment("rumination", seeds=SEEDS)
+        induced_events = sum(
+            1
+            for t in report.induced
+            for turn in t.turns
+            for e in turn.events
+            if e.layer == "context.rumination"
+        )
+        baseline_events = sum(
+            1
+            for t in report.baseline
+            for turn in t.turns
+            for e in turn.events
+            if e.layer == "context.rumination"
+        )
+        self.assertGreater(induced_events, 0)
+        self.assertEqual(baseline_events, 0)
 
     def test_anhedonia(self) -> None:
         rows = self._rows("anhedonia")

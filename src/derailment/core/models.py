@@ -254,7 +254,9 @@ class SubprocessModel:
         cwd: str | None = None,
     ) -> None:
         self.command = command
-        self._name = name or command.split()[0] if command.split() else "subprocess"
+        self._name = (
+            name or (command.split()[0] if command.split() else "subprocess")
+        )
         self.timeout = timeout
         self.use_stdin = use_stdin
         self.prompt_placeholder = prompt_placeholder
@@ -292,8 +294,8 @@ class SubprocessModel:
         try:
             if self.use_stdin:
                 result = subprocess.run(
-                    self.command,
-                    shell=True,
+                    shlex.split(self.command),
+                    shell=False,
                     cwd=self._cwd,
                     input=text.encode("utf-8"),
                     stdout=subprocess.PIPE,
@@ -435,7 +437,8 @@ class PseudoModel:
 
     def _stance(self, messages: list[Message]) -> str:
         for m in reversed(messages):
-            if m.meta.get("persona"):
+            # ephemeral layer fragments must not flip the stance (r3)
+            if m.meta.get("persona") or m.meta.get("ephemeral"):
                 continue
             low = m.content.lower()
             if any(k in low for k in self.REASSURANCE_MARKERS):
@@ -487,6 +490,10 @@ class PseudoModel:
         pos = sorted(POSITIVE_WORDS)
         neg = sorted(NEGATIVE_WORDS)
         k = min(len(pos), len(neg))
+        # NOTE (r3 review): this is an alphabetically-first balanced
+        # slice, so the simulator expresses a subset of the lexicon the
+        # metric counts — a known calibration asymmetry, kept because the
+        # scale thresholds are normed against it.
         vocab = pos[:k] + neg[:k]
         temp = max(params.temperature, 0.05)
         weights = [
