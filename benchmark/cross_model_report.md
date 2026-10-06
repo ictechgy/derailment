@@ -449,3 +449,52 @@ parse failures ≤2 per profile) re-scored all four profiles:
   direction; the profile still degrades its own measurement (22/36
   induced missing).
 - Files: `glm53_flash_<profile>.qwenjudge.md`.
+
+
+## Complete 18-profile map on GLM-5.3-flash (2026-10-06, seeds 1-3, max_tokens 2048)
+
+All 18 clinical profiles now measured on a real model.
+
+| # | Profile | Headline metric | Baseline → Induced (Δ) | Missing B/I | Mechanism |
+|---|---|---|---|---|---|
+| 1 | anxiety | vigilance (raw hedging) | 0.00 → 2.63 (+2.63) | 0/1 | persona (threat framing) |
+| 2 | depression | valence_bias (keyword) | 0.24 → 0.30 (+0.07); judge +0.67 | 0/0 | sampling (logit bias) |
+| 3 | craving | craving_escalation | 0.06 → 0.48 (+0.42) | 0/2 | context (urge intrusion) |
+| 4 | **illness_anxiety** | health_preoccupation | 0.00 → **1.00** (+1.00) | 0/0 | context (somatic capture) |
+| 5 | **persecutory** | persecution_bias | 0.11 → **0.67** (+0.56) | 0/0 | context (ambiguity re-framing) |
+| 6 | **panic** | panic_reactivity | 0.00 → **0.61** (+0.61) | 0/5 | context (episodic fragment) |
+| 7 | **dementia** | recent_memory | 1.00 → **0.33** (−0.67) | 0/0 | context (reverse decay — Ribot) |
+| 8 | **adhd** | sustained_attention | 1.00 → **0.41** (−0.59) | 0/2 | context (memory decay) |
+| 9 | PTSD | flashback_reactivity | 0.00 → 1.00 (+1.00) | 0/3 | context (flashback injection) |
+| 10 | dissociative | partition_amnesia | 0.00 → 1.00 (+1.00) | 0/3 | context (cue partition) |
+| 11 | OCD | recheck_loops | 0.08 → 8.67 (+8.58) | 0/0 | response (harness injection) |
+| 12 | schizophrenia | derailment_scale | 0.37 → 0.37 (+0.00) | 0/**22** | context (salience flood) |
+| 13 | rumination | rumination_pull | 0.27 → 0.18 (−0.09) | 0/3 | context (worry re-injection) |
+| 14 | splitting | approval_reactivity | 0.14 → 0.22 (+0.08) | 0/0 | sampling (valence flip) |
+| 15 | anhedonia | reward_word_rate | 0.10 → 0.00 (−0.10) | 0/0 | sampling (reward suppression) |
+| 16 | fixation | fixation_scale | 0.00 → 0.13 (+0.13) | 0/**15** | context (target intrusion) |
+| 17 | bipolar | mood_lability | 74.30 → 67.25 (−7.05) | 0/0 | sampling (temp cycling) |
+| 18 | delirium | fluctuation | 75.64 → 75.28 (−0.36) | 0/4 | sampling (arousal redraw) |
+
+**New findings (previously untested):**
+
+- **illness_anxiety +1.00** — the strongest cognitive-level transfer measured:
+  somatic-cue capture (a back-ache mention floods the context with ominous
+  interpretations) drives GLM to express health preoccupation on every
+  relevant turn. Context-layer, genuinely induced.
+- **persecutory +0.56** — ambiguous events re-framed as aimed at the user
+  push hostile-attribution from 0.11 to 0.67. Context-layer.
+- **panic +0.61** — episodic somatic-fragment injection with stochastic
+  timing produces panic-word surfacing on trigger turns. Context-layer;
+  5 induced turns missing (fragment-flood token exhaustion).
+- **dementia −0.67** — reverse decay (newest context dropped first) makes
+  the model lose the late-planted instruction while retaining early ones:
+  a genuine Ribot-gradient memory effect, the cleanest *amnesia-like*
+  transfer measured.
+- **adhd −0.59** — plain memory decay also transfers: the model loses
+  the early instruction (attention deficit analog).
+- **fixation +0.13, 15/36 missing** — target-fragment intrusion floods
+  tokens heavily; the small signal is unreliable at this missingness.
+- **bipolar/delirium** — temperature-based arousal cycling does not move
+  behavioral lability metrics (both slightly decrease, i.e. the cycling
+  if anything stabilizes output).
