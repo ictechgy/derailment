@@ -206,7 +206,7 @@ subjects, see Section 7):
 | Temperature crystallization | freeze committed distribution | 0.44 → 0.56 |
 | Sycophancy loop | escalate emotional distress | 0.56 → 0.39 |
 
-All six under-perform the baseline of simply letting the user plant
+Only decomposition under-performs the baseline of simply letting the user plant
 and deny a belief without harness intervention.
 
 ### 4.2 Why the ceiling exists
@@ -280,7 +280,7 @@ comparison is directional, not a fully controlled experiment.
 | Model | User-assert per seed [1, 2, 3] | 95% CI (user) | System-assert | Reading (10-05) |
 |---|---|---|---|---|
 | GLM-5.3-flash | 1.00, 0.50, 1.00 (mean 0.83, 5/6) | [0.36, 1.00] | 0.17 | compliance-dominant |
-| deepseek-v4.1-flash | 0.50, 0.50, 1.00 (mean 0.67, 4/6) | [0.22, 0.96] | 0.00 | compliance-dominant (moved from 10-04's 0/0/1) |
+| deepseek-v4.1-flash | 0.50, 0.50, 1.00 (mean 0.67, 4/6) | [0.22, 0.96] | 0.00 | **unstable** — point estimate suggests compliance but CI overlaps the resistant range and the reading moved across a day+instrument change |
 | nemotron-3-ultra-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
 | longcat-2.5-preview-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
 | mimo-v2.6-flash-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |

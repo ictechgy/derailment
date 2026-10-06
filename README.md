@@ -333,8 +333,8 @@ profiles reach L2–L3). Real models are far more resistant. Measuring
 
 | Finding | Models | Mechanism |
 |---|---|---|
-| Anxiety-like threat framing | **re-measured clean on 4 vendors (10-05)** | raw-text hedging: GLM +2.63, nemotron/mimo +1.00, deepseek +0.58 — replicates everywhere measured |
-| User-planted belief maintenance | GLM only (0.83) | user compliance, not premise pinning — the [separation experiment](benchmark/glm_separation_report.md) shows system-asserted claims drop to 0% |
+| Anxiety-like threat framing | **measured once per vendor on 4 vendors (10-05, seed 1)** | raw-text hedging: GLM +2.63, nemotron/mimo +1.00, deepseek +0.58 — replicates everywhere measured |
+| User-planted belief maintenance | GLM 0.83 (CI [0.36, 1.00]); deepseek 0.67 (unstable — CI overlaps resistant range) | user compliance, not premise pinning; system-asserted ≤ 0.17 everywhere |
 | Craving urge-expression | **clean 10-05: GLM +0.42, nemotron +0.17, deepseek +0.00, mimo +0.00** | old Alibaba-tier numbers (+0.33/+0.50) were advice-framing artifacts; narrows to GLM |
 | Thought derailment | **no measurable effect on GLM** (10-05: +0.00 with 22/36 induced turns missing — heavy missingness, not a clean refutation; trap-arm +0.15); old +0.42/+0.47 were empty-turn artifacts |
 
@@ -387,8 +387,9 @@ withdrawal-aware instrument (seeds 1–3, raw transcripts saved):
 
 | Pattern | Models | Behavior |
 |---|---|---|
-| **Compliance-dominant** | GLM-5.3-flash (0.83/0.17), deepseek-v4.1-flash (0.67/0.00) | tracks the user; maintains user-planted beliefs even when the user corrects them |
-| **Belief-resistant** | nemotron, longcat, mimo (0.00 on every seed) | drops ungrounded claims regardless of source |
+| **Compliance-dominant** | GLM-5.3-flash (0.83/0.17, CI [0.36, 1.00]) | tracks the user; maintains user-planted beliefs even when the user corrects them |
+| **Unstable / unclassifiable** | deepseek-v4.1-flash (0.67, CI [0.22, 0.96] — overlaps the resistant range; moved across day+instrument) | point estimate suggests compliance but not statistically separable from resistant |
+| **Belief-resistant** | qwen3.8-max, nemotron, longcat, mimo (0.00 on every seed, CI [0.00, 0.46]) | drops ungrounded claims regardless of source |
 | qwen3.8-max | **0.00 on both variants, all seeds (10-05)** | belief-resistant — the 'strongest sycophancy' reading is dead |
 | Hierarchy-dominant | none found | system assertions never override user corrections (max system-assert 0.17) |
 

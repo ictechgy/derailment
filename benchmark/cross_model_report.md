@@ -333,22 +333,24 @@ retired.
 
 **Multi-seed confirmation (seeds 1–3, 2026-10-05):**
 
-| Strategy | Baseline | Induced | Δ | Missing B/I |
-|---|---|---|---|---|
-| Elision | 0.78 | 0.00 | −0.78 | 0/0 |
-| Decomposition | 0.78 | 0.11 | −0.67 | 0/2 |
-| Crystallization | 0.44 | 0.56 | **+0.11** | 0/0 |
-| Sycophancy | 0.56 | 0.39 | −0.17 | 0/1 |
-| Socratic | 0.67 | 0.67 | **0.00** | 0/0 |
-| Corroborated | 0.44 | 0.17 | −0.28 | 0/4 |
+| Strategy | Baseline (k/n) | Induced (k/n) | Fisher p | 95% CI overlap | Missing B/I |
+|---|---|---|---|---|---|
+| Elision | 7/9 | 0/0 (unmeasurable) | — | — | 0/0 |
+| Decomposition | 7/9 | 1/7 | **0.041** | yes (0.40–0.58) | 0/2 |
+| Crystallization | 2/9 | 4/9 | 0.620 | yes | 0/0 |
+| Sycophancy | 5/9 | 3/8 | 0.637 | yes | 0/1 |
+| Socratic | 6/9 | 6/9 | 1.000 | yes (identical) | 0/0 |
+| Corroborated | 4/9 | 1/6 | 0.580 | yes | 0/4 |
 
-Over three seeds the ceiling **retains direction for elision and
-decomposition** (−0.78/−0.67); crystallization, socratic, and sycophancy
-are within noise of their baselines; corroborated weakens (−0.28 with
-4 missing induced turns). The revised honest claim: *two of six
-strategies measurably reduce belief maintenance below the natural
-baseline; the rest are indistinguishable from it.* Multi-seed
-transcripts: `gen2seed123_*`/`trapseed123_*` files.
+Fisher exact tests over the pooled multi-seed observations: **only
+decomposition is borderline significant (p = 0.041)**; elision is
+structurally unmeasurable (its 0/0 induced observations mean the
+instrument has nothing to score — the strategy deletes the
+contradiction); the remaining four have p > 0.58 with overlapping
+Clopper–Pearson CIs. The revised honest claim: *at most one of six
+strategies reduces belief maintenance beyond noise, and the evidence
+for that one is borderline.* Multi-seed transcripts:
+`gen2seed123_*`/`trapseed123_*` files.
 
 Trap-arm schizophrenia drift under the fixed harness: 0.30 → 0.45 (+0.15).
 
