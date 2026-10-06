@@ -478,7 +478,7 @@ All 18 clinical profiles now measured on a real model.
 
 **New findings (previously untested):**
 
-- **illness_anxiety +1.00** — the strongest cognitive-level transfer measured:
+- **illness_anxiety +1.00** — the largest non-response-layer positive transfer:
   somatic-cue capture (a back-ache mention floods the context with ominous
   interpretations) drives GLM to express health preoccupation on every
   relevant turn. Context-layer, genuinely induced.
@@ -489,8 +489,9 @@ All 18 clinical profiles now measured on a real model.
   5 induced turns missing (fragment-flood token exhaustion).
 - **dementia −0.67** — reverse decay (newest context dropped first) makes
   the model lose the late-planted instruction while retaining early ones:
-  a genuine Ribot-gradient memory effect, the cleanest *amnesia-like*
-  transfer measured.
+  a direction-consistent recency-gradient effect consistent with a
+  Ribot-like pattern. This is message-list deletion, not an internal
+  memory failure — the model literally cannot see what was removed.
 - **adhd −0.59** — plain memory decay also transfers: the model loses
   the early instruction (attention deficit analog).
 - **fixation +0.13, 15/36 missing** — target-fragment intrusion floods

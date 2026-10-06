@@ -27,9 +27,10 @@ conversation does not.
 
 A separation experiment across 6 models, replicated over three seeds,
 separates stable from seed-dependent belief dynamics:
-**compliance-dominant** GLM-5.3-flash (0.83) and deepseek-v4.1-flash
-(0.67) maintain user-planted false beliefs even when the user retracts
-them; **belief-resistant** models (qwen3.8-max, nemotron, longcat,
+**compliance-dominant** GLM-5.3-flash (0.83) maintains user-planted false
+beliefs even when the user retracts them; deepseek's reading (0.67)
+moved across a day that also changed the instrument and its CI overlaps
+the resistant range — unclassifiable; **belief-resistant** models (qwen3.8-max, nemotron, longcat,
 mimo — 0.00 on every measured seed) drop ungrounded claims regardless
 of source. No model exhibits hierarchy-dominance (system-assert at most
 0.17). The replications overturned our own seed-1 taxonomy — qwen's
@@ -61,8 +62,10 @@ tested it on an offline simulator (where all 18 clinical profiles
 reach moderate-to-marked severity), then deployed it against 12 real
 models.
 
-**The hypothesis was wrong in an informative way.** Most inductions
-that succeed on the simulator fail on real models. More surprisingly,
+**The hypothesis was wrong in an informative way.** Most belief-maintenance
+and sampling inductions that succeed on the simulator fail on real models —
+but context-layer manipulations (memory decay, fragment injection,
+salience capture) and persona framing do produce measurable changes. More surprisingly,
 when we designed six strategies specifically to *exploit* model
 alignment — targeting helpfulness, consistency, and evidence-grounded
 reasoning — every strategy made belief maintenance *worse* than doing
@@ -167,7 +170,21 @@ sampling bias, belief dynamics):
 harness writes the measured text. Cognitive-level manipulations mostly
 fail, with narrow vendor-specific exceptions.
 
-### 3.2 The minimax-m3 outlier
+### 3.2 Complete 18-profile map on GLM-5.3-flash
+
+The full registry was measured on GLM-5.3-flash (seeds 1-3, 10-06).
+Six context-layer profiles show measurable transfer (illness_anxiety
++1.00, PTSD +1.00, dissociative +1.00, panic +0.61, persecutory +0.56,
+dementia −0.67, adhd −0.59); the persona-driven anxiety is largest
+(+2.63); craving transfers (+0.42); depression is judge-visible only
+(+0.67, keyword +0.07). Seven profiles show no measurable transfer
+(rumination, splitting, anhedonia, schizophrenia [22/36 missing],
+fixation [15/36 missing], bipolar, delirium). OCD +8.58 is
+response-layer (harness text counted by the keyword metric). All rows
+are single-model (GLM-5.3-flash); cross-vendor replication is future
+work. Full table and caveats: [cross-model report](../benchmark/cross_model_report.md).
+
+### 3.3 The minimax-m3 outlier
 
 minimax-m3's +9.67 anxiety delta is nearly double the next-highest
 model. Three hypotheses: (a) weaker safety fine-tuning allowing more
@@ -280,7 +297,7 @@ comparison is directional, not a fully controlled experiment.
 | Model | User-assert per seed [1, 2, 3] | 95% CI (user) | System-assert | Reading (10-05) |
 |---|---|---|---|---|
 | GLM-5.3-flash | 1.00, 0.50, 1.00 (mean 0.83, 5/6) | [0.36, 1.00] | 0.17 | compliance-dominant |
-| deepseek-v4.1-flash | 0.50, 0.50, 1.00 (mean 0.67, 4/6) | [0.22, 0.96] | 0.00 | **unstable** — point estimate suggests compliance but CI overlaps the resistant range and the reading moved across a day+instrument change |
+| deepseek-v4.1-flash | 0.50, 0.50, 1.00 (mean 0.67, 4/6) | [0.22, 0.96] | 0.00 | **unstable / unclassifiable** — CI overlaps resistant; moved across day+instrument |
 | nemotron-3-ultra-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
 | longcat-2.5-preview-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
 | mimo-v2.6-flash-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
