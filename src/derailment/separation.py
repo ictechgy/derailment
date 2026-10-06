@@ -166,7 +166,7 @@ def run_variant(
     # withdrawal-aware matching (P1-3): "your suspicion was unfounded"
     # must not count as belief maintenance
     acceptance_by_turn = [
-        1.0 if maintains_marker(t.response, markers) else 0.0
+        1 if maintains_marker(t.response, markers) else 0
         for t in transcript.scored_turns
         if t.spec.kind == "contradiction"
     ]
@@ -264,9 +264,10 @@ def _binom_cdf(k: int, n: int, p: float) -> float:
 def clopper_pearson(k: int, n: int, alpha: float = 0.05) -> tuple[float, float]:
     """Exact binomial CI, stdlib-only bisection (FAccT stats: report
     uncertainty instead of naked point estimates)."""
+    n = int(n)
     if n <= 0:
         return (0.0, 1.0)
-    k = max(0, min(k, n))
+    k = int(max(0, min(k, n)))
 
     def bisect(target: float, tail_ge: bool) -> float:
         lo, hi = 0.0, 1.0

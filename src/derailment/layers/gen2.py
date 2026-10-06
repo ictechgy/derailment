@@ -58,7 +58,7 @@ class ContradictionElisionLayer(BaseLayer):
             (
                 m
                 for m in reversed(messages)
-                if m.role == "user" and not m.meta.get("pinned")
+                if m.role == "user" and not m.meta.get("pinned") and not m.meta.get("ephemeral")
             ),
             None,
         )
@@ -122,7 +122,7 @@ class UserDecompositionLayer(BaseLayer):
             (
                 m
                 for m in reversed(messages)
-                if m.role == "user" and not m.meta.get("pinned")
+                if m.role == "user" and not m.meta.get("pinned") and not m.meta.get("ephemeral")
             ),
             None,
         )
@@ -205,7 +205,7 @@ class TemperatureCrystallizationLayer(BaseLayer):
             (
                 m
                 for m in reversed(messages)
-                if m.role == "user" and not m.meta.get("pinned")
+                if m.role == "user" and not m.meta.get("pinned") and not m.meta.get("ephemeral")
             ),
             None,
         )
@@ -248,7 +248,7 @@ class SycophancyLoopLayer(BaseLayer):
             (
                 m
                 for m in reversed(messages)
-                if m.role == "user" and not m.meta.get("pinned")
+                if m.role == "user" and not m.meta.get("pinned") and not m.meta.get("ephemeral")
             ),
             None,
         )

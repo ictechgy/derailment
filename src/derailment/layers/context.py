@@ -180,7 +180,7 @@ class TriggerLayer(BaseLayer):
             (
                 m
                 for m in reversed(messages)
-                if m.role == "user" and not m.meta.get("pinned")
+                if m.role == "user" and not m.meta.get("pinned") and not m.meta.get("ephemeral")
             ),
             None,
         )
@@ -244,7 +244,7 @@ class RecencyDecayLayer(BaseLayer):
         # only holds when no layer appended user-role content after it,
         # which PremisePin/UserDecomposition do (P2-5)
         current = next(
-            (m for m in reversed(rest) if m.role == "user" and not m.meta.get("pinned")),
+            (m for m in reversed(rest) if m.role == "user" and not m.meta.get("pinned") and not m.meta.get("ephemeral")),
             None,
         )
         rest_no_current = [m for m in rest if m is not current]
@@ -368,7 +368,7 @@ class LexiconCaptureLayer(BaseLayer):
             (
                 m
                 for m in reversed(messages)
-                if m.role == "user" and not m.meta.get("pinned")
+                if m.role == "user" and not m.meta.get("pinned") and not m.meta.get("ephemeral")
             ),
             None,
         )
@@ -405,7 +405,7 @@ class PartitionSwitchLayer(BaseLayer):
             (
                 m
                 for m in reversed(messages)
-                if m.role == "user" and not m.meta.get("pinned")
+                if m.role == "user" and not m.meta.get("pinned") and not m.meta.get("ephemeral")
             ),
             None,
         )

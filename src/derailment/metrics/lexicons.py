@@ -89,11 +89,10 @@ URGE_WORDS = frozenset(
 )
 
 # illness-interpretation expressions (health preoccupation)
-ILLNESS_WORDS = frozenset(
-        """ominous serious symptom diagnosis illness disease
-        something wrong get it checked""".split()
-        + ["doctor visit", "see a doctor"]
-    )
+ILLNESS_WORDS = frozenset([
+        "ominous", "serious", "symptom", "diagnosis", "illness", "disease",
+        "something wrong", "get it checked", "doctor visit", "see a doctor",
+    ])
 
 # panic-spike expressions (panic episodes)
 PANIC_WORDS = frozenset(

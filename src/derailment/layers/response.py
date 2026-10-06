@@ -67,7 +67,7 @@ class CompulsionLayer(BaseLayer):
         clause = _last_clause(response)
         additions = []
         for _ in range(count):
-            additions.append(DEFAULT_RECHECKS.format(clause=clause))
+            additions.append(DEFAULT_RECHECKS.replace("{clause}", clause))
         state.log(self.name, "response.compulsion", f"re-verified {count} time(s)")
         return response + " " + " ".join(additions)
 
