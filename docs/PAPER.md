@@ -180,9 +180,13 @@ dementia −0.67, adhd −0.59); the persona-driven anxiety is largest
 (+0.67, keyword +0.07). Seven profiles show no measurable transfer
 (rumination, splitting, anhedonia, schizophrenia [22/36 missing],
 fixation [15/36 missing], bipolar, delirium). OCD +8.58 is
-response-layer (harness text counted by the keyword metric). All rows
-are single-model (GLM-5.3-flash); cross-vendor replication is future
-work. Full table and caveats: [cross-model report](../benchmark/cross_model_report.md).
+response-layer (harness text counted by the keyword metric). Preliminary cross-vendor replication (seed 1, 2026-10-06) of the five
+newest profiles: illness_anxiety replicated on 4 of 6 models (GLM,
+deepseek, qwen, longcat at +1.00); persecutory on all 5 that returned
+data; panic and dementia were GLM-only; ADHD on GLM+nemotron+mimo.
+Several arms are incomplete (relay errors, heavy missingness). These
+are single-seed signals requiring multi-seed confirmation. Full table:
+[cross-model report](../benchmark/cross_model_report.md).
 
 ### 3.3 The minimax-m3 outlier
 
