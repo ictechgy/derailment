@@ -26,7 +26,6 @@ import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
-
 from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 

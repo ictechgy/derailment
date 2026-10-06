@@ -254,8 +254,8 @@ class TestArgPromptSafety(unittest.TestCase):
     """P2-7: the conversation is never interpolated into a shell string."""
 
     def test_shell_metacharacters_in_responses_do_not_execute(self) -> None:
-        import tempfile as _tempfile
         import os as _os
+        import tempfile as _tempfile
 
         marker = _os.path.join(_tempfile.gettempdir(), "p27-regression-marker")
         if _os.path.exists(marker):
