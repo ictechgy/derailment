@@ -196,11 +196,13 @@ class TestVersionConsistency(unittest.TestCase):
         from derailment import __version__
         from derailment.report import run_experiment
 
-        pyproject = open("pyproject.toml", encoding="utf-8").read()
+        with open("pyproject.toml", encoding="utf-8") as fh:
+            pyproject = fh.read()
         match = re.search(r'^version = "([^"]+)"', pyproject, re.MULTILINE)
         self.assertTrue(match)
         self.assertEqual(match.group(1), __version__)
-        citation = open("CITATION.cff", encoding="utf-8").read()
+        with open("CITATION.cff", encoding="utf-8") as fh:
+            citation = fh.read()
         self.assertIn(f"version: {__version__}", citation)
         data = json.loads(run_experiment("adhd", seeds=(1,)).render_json())
         self.assertEqual(data["harness_version"], __version__)

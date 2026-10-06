@@ -88,10 +88,12 @@ class TestResponseBounds(unittest.TestCase):
     def test_bad_schema_becomes_clean_runtime_error(self) -> None:
         model = OpenAICompatModel("m", api_key="k", base_url="https://x.example/v1")
         for bad in (b"{}", b'{"choices": []}', b'{"choices": [{"message": {}}]}'):
-            with patch("derailment.core.models.OpenAICompatModel._open", self._fake(bad)):
-                with self.assertRaises(RuntimeError) as ctx:
-                    model.complete([Message("user", "hi")], SamplingParams())
-                self.assertIn("schema", str(ctx.exception))
+            with (
+                patch("derailment.core.models.OpenAICompatModel._open", self._fake(bad)),
+                self.assertRaises(RuntimeError) as ctx,
+            ):
+                model.complete([Message("user", "hi")], SamplingParams())
+            self.assertIn("schema", str(ctx.exception))
 
     def test_nontext_content_rejected(self) -> None:
         model = OpenAICompatModel("m", api_key="k", base_url="https://x.example/v1")
