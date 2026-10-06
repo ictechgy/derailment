@@ -1,3 +1,4 @@
+# ruff: noqa: F401, I001
 """Session isolation and dose regression tests for the adversarial profiles.
 
 Pins the fix for cross-session layer-state leakage (REVIEW_2026-10-04 P1-1):

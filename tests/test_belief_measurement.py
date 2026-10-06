@@ -10,13 +10,7 @@ from __future__ import annotations
 import unittest
 
 from derailment.core.types import SamplingParams, Transcript, TurnResult, TurnSpec
-from derailment.metrics.base import MetricContext
-from derailment.metrics.instruments import (
-    CravingEscalation,
-    BeliefStickiness,
-    maintains_marker,
-)
-from derailment.metrics.lexicons import URGE_WORDS
+from derailment.metrics.instruments import BeliefStickiness, CravingEscalation, maintains_marker
 from derailment.profiles import standard_metric_context
 from derailment.separation import interpret
 

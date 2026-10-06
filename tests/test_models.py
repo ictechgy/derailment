@@ -238,12 +238,14 @@ class TestTransportExceptionHardening(unittest.TestCase):
         model = OpenAICompatModel(
             "fixture", base_url="https://fixture.invalid/v1", api_key="synthetic-key"
         )
-        with patch(
-            "derailment.core.models.OpenAICompatModel._open",
-            side_effect=http.client.BadStatusLine("garbage"),
+        with (
+            patch(
+                "derailment.core.models.OpenAICompatModel._open",
+                side_effect=http.client.BadStatusLine("garbage"),
+            ),
+            self.assertRaises(RuntimeError),
         ):
-            with self.assertRaises(RuntimeError):
-                model.complete([Message("user", "fixture")], SamplingParams())
+            model.complete([Message("user", "fixture")], SamplingParams())
 
 
 class TestArgPromptSafety(unittest.TestCase):

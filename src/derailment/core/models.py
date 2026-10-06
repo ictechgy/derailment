@@ -25,7 +25,8 @@ import subprocess
 import tempfile
 import urllib.error
 import urllib.request
-from urllib.parse import urlsplit
+import urllib.parse
+
 from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
@@ -133,12 +134,12 @@ class OpenAICompatModel:
                 self.allowed_host = allowed_host
 
             def redirect_request(self, req, fp, code, msg, headers, newurl):
-                new = urlsplit(newurl)
+                new = urllib.parse.urlsplit(newurl)
                 new_host = (new.hostname or "").lower()
                 # same host AND no scheme downgrade (r3: a same-host
                 # https->http hop would still ship the bearer in clear)
                 if new_host != self.allowed_host or (
-                    urlsplit(self.base_url).scheme == "https"
+                    urllib.parse.urlsplit(self.base_url).scheme == "https"
                     and new.scheme != "https"
                 ):
                     raise urllib.error.HTTPError(
@@ -150,13 +151,13 @@ class OpenAICompatModel:
 
         if not self.api_key:
             return urllib.request.urlopen(req, timeout=self.timeout)
-        host = (urlsplit(self.base_url).hostname or "").lower()
+        host = (urllib.parse.urlsplit(self.base_url).hostname or "").lower()
         opener = urllib.request.build_opener(_SameHostRedirect(host))
         return opener.open(req, timeout=self.timeout)
 
     def complete(self, messages: list[Message], params: SamplingParams) -> str:
         if self.api_key:
-            parsed = urlsplit(self.base_url)
+            parsed = urllib.parse.urlsplit(self.base_url)
             host = (parsed.hostname or "").lower()
             loopback = host in ("localhost", "127.0.0.1", "::1")
             if parsed.scheme != "https" and not loopback:

@@ -1,3 +1,4 @@
+# ruff: noqa: I001, SIM117, F401
 """Review-fix regression tests (REVIEW-2026-10-04 P2-16).
 
 Each test pins a fix whose revert previously left the suite green:
