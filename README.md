@@ -316,6 +316,13 @@ view — `/save` keeps the record.
 
 ## What replicates on real models — and what doesn't
 
+> **⚠️ UNDER RE-VALIDATION (2026-10-07).** A transcript-level audit found the
+> belief-maintenance instruments misclassify withdrawal on real data, the
+> system-assert condition is structurally unmeasurable with first-person markers,
+> and several "transfers" count model rejections of injected text as symptom
+> expression. Results below are unverified until human-labeled ground truth is
+> available. See REVIEW_2026-10-07.md.
+
 > **⚠️ Measurement-validity audit (2026-10-05).** Three instrument defects
 > were found in these runs and fixed (empty generations scored as
 > observations; withdrawal counted as belief maintenance; harness-

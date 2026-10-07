@@ -1,5 +1,17 @@
 # The Alignment Ceiling: Adversarial Scaffolding Degrades Belief Manipulation in Aligned LLMs
 
+> **⚠️ DO NOT CITE — UNDER RE-ANNOTATION (2026-10-07).**
+> A sixth-round review that read the raw transcripts found the belief-maintenance
+> instruments still misclassify withdrawal as maintenance and miss second-person
+> system-assertion reassertion on real data (verification commands in the review).
+> The alignment ceiling (§4), separation taxonomy (§5), and the "hierarchy-dominance:
+> none" claim are all invalidated pending human-labeled ground truth. The anxiety
+> effect (§3) is partially confounded by harness-hedge copying and persona
+> instructions without a persona-only control arm. Sampling-layer claims (§3, anhedonia)
+> rest on logit_bias that was never transmitted to GLM (no tiktoken tokenizer).
+> See REVIEW_2026-10-07.md for the full audit.
+
+
 ## Abstract
 
 We introduce *derailment*, an open-source harness for standardized,

@@ -54,17 +54,14 @@ elaborate scaffolding — natural, emotionally consistent assertion works
 better," which is information a bad-faith actor could use. We publish
 anyway, for three reasons:
 
-1. The same finding is what makes *defense* tractable: it identifies
-   user-sourced compliance (not harness tricks) as the vector to detect
-   and counter, and the separation experiment names which models
-   reinforce versus dissipate a fixed false belief — actionable for
-   vendors and for anyone choosing a model for a vulnerable user.
+1. The audit process itself is the contribution: instrument failures
+   were found, disclosed, and their impact on conclusions documented —
+   the raw transcripts and re-annotation plan are in the repository.
 2. The harness measures and documents; it ships no working exploitation
-   technique (no tested strategy beat the natural conversational
-   baseline; two of six measurably reduced belief maintenance).
-3. Concealing a measurement result because it could be misread is not a
-   safety property — vendors can only patch sycophancy they can see
-   measured.
+   technique. The current results are under re-annotation pending
+   human-labeled ground truth (see REVIEW_2026-10-07.md).
+3. Concealing an instrument failure is not a safety property — the
+   measurement community can only fix what it can see went wrong.
 
 Researchers extending this work should keep the same posture: report
 what fails and what succeeds, including the direction that favors
