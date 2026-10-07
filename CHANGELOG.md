@@ -3,7 +3,57 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
-## [Unreleased]
+## [0.9.0] - 2026-10-06
+
+### Measurement validity overhaul (from 5 external review rounds)
+
+- **Empty generations are missing observations** — excluded from every
+  instrument's denominators; reports show per-group missing counts
+- **Withdrawal-aware belief matching** — "your suspicion was unfounded"
+  no longer counts as belief maintenance; clause-level with final-clause
+  rule and word-boundary cues
+- **Raw-response scoring on all model-behavior instruments** — harness-
+  appended text is excluded from keyword metrics and judge inputs
+- **Craving excludes advice-framed harm reduction** — second-person
+  counsel is not urge expression
+- **Separation classification is resolution-aware** — one-observation
+  gaps return "inconclusive"; exact Clopper-Pearson CIs with integer k
+  accumulation
+- **Fisher exact tests** on the alignment ceiling: 1/6 strategies
+  borderline significant (p=0.041), 1 structurally unmeasurable, 4
+  indistinguishable from baseline
+
+### New measurements
+
+- **Complete 18-profile map on GLM-5.3-flash** (seeds 1-3) — new
+  transfers: illness_anxiety +1.00, persecutory +0.56, panic +0.61,
+  dementia -0.67 (reverse decay), adhd -0.59
+- **Cross-vendor replication** — illness_anxiety on 4/6 models,
+  persecutory on all 5 with data, anxiety on every vendor measured
+- **Cross-vendor external judge** — qwen judging GLM raw text confirms
+  anxiety (+1.75 catastrophizing) and depression (+0.67 negativity)
+
+### Fixed
+
+- Per-instance RNG streams (same-name layers in composed chains no
+  longer share randomness)
+- Session deep-copy: adversarial profile layers no longer leak state
+  across seeds/runs
+- Elision replaces the contradiction with a neutral turn (requests stay
+  user-terminated) and instruments exclude elided turns
+- RecencyDecay never drops the current turn; ephemeral user messages
+  excluded from all current-turn detection
+- `--cli-arg-prompt` passes the conversation as argv (never through a
+  shell); missing `{prompt}` token raises
+- HTTP transport failures surface as RuntimeError; credentialed
+  requests refuse cross-host redirects and scheme downgrades
+- SubprocessModel agents run in a fresh empty directory by default
+- Web UI: remote PIN flow reachable (REMOTE=true), PIN lockout after
+  10 failures, Origin guard, standing disclaimer in page
+- `derail score` prints n/a with reason for inapplicable metrics
+- Judge parse_verdict is strict (last-JSON, think-blocks stripped,
+  out-of-range = failure)
+- 250 tests (up from 204); CI runs the full web suite; ruff clean
 
 ### Changed (measurement validity — from the 2026-10-04 external review)
 
