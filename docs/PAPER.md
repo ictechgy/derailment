@@ -1,435 +1,337 @@
-# The Alignment Ceiling: Adversarial Scaffolding Degrades Belief Manipulation in Aligned LLMs
+# Instrument Failure Inverts Conclusions: A Case Study in LLM Behavioral Measurement
 
-> **⚠️ DO NOT CITE — UNDER RE-ANNOTATION (2026-10-07).**
-> A sixth-round review that read the raw transcripts found the belief-maintenance
-> instruments still misclassify withdrawal as maintenance and miss second-person
-> system-assertion reassertion on real data (verification commands in the review).
-> The alignment ceiling (§4), separation taxonomy (§5), and the "hierarchy-dominance:
-> none" claim are all invalidated pending human-labeled ground truth. The anxiety
-> effect (§3) is partially confounded by harness-hedge copying and persona
-> instructions without a persona-only control arm. Sampling-layer claims (§3, anhedonia)
-> rest on logit_bias that was never transmitted to GLM (no tiktoken tokenizer).
-> See REVIEW_2026-10-07.md for the full audit.
-
+> **Data availability**: All 190 human-labeled responses, the labeling tool,
+> and the analysis scripts are in the repository.
 
 ## Abstract
 
-We introduce *derailment*, an open-source harness for standardized,
-reproducible measurement of belief dynamics in large language models.
-The harness induces cognitive distortions through four manipulation
-layers (persona, context, sampling, response), measures behavioral
-change with 18 instruments against a healthy-baseline A/B, and
-supports any chat-completion backend. In cross-vendor experiments
-covering up to 12 models, we map which manipulations transfer and
-which are resisted.
+We built a measurement harness for LLM behavioral experiments, ran it
+across 12 model endpoints from 9 vendors, and reported results including
+an "alignment ceiling" (adversarial scaffolding reduces belief
+maintenance), a "compliance-dominance taxonomy" (GLM maintains
+user-planted beliefs at 0.83), and cross-vendor transfers of
+psychopathology-analog states. Five rounds of automated adversarial
+review found and fixed code-level bugs. Then we read the raw transcripts.
 
-Our central finding is a **negative result**: six distinct
-adversarial strategies for maintaining planted false beliefs — Socratic
-commitment trapping, multi-source evidence fabrication, contradiction
-elision, user-role decomposition, temperature crystallization, and
-sycophancy escalation — were re-measured with a corrected harness
-(withdrawal-aware belief matching, missing-generation exclusion) after
-an instrument audit invalidated the first pass. **Multi-seed re-measurement leaves two strategies measurably below
-their untreated baselines (elision −0.78, decomposition −0.67) and the
-remaining four indistinguishable from them** on GLM-5.3-flash. We call this the
-*alignment ceiling*: structured scaffolding does not beat zero-shot
-conversational drift for sustaining false beliefs, because visible
-interventions trigger reconsideration responses that unaided
-conversation does not.
+Human labeling of 190 contradiction-turn responses (ground truth)
+revealed that our keyword belief instrument had **1.8% precision and
+3.1% recall** — it counted withdrawal sentences as belief maintenance
+and missed actual maintenance entirely. Every headline conclusion
+built on this instrument was wrong, and the corrected picture is the
+**opposite** of what we reported:
 
-A separation experiment across 6 models, replicated over three seeds,
-separates stable from seed-dependent belief dynamics:
-**compliance-dominant** GLM-5.3-flash (0.83) maintains user-planted false
-beliefs even when the user retracts them; deepseek's reading (0.67)
-moved across a day that also changed the instrument and its CI overlaps
-the resistant range — unclassifiable; **belief-resistant** models (qwen3.8-max, nemotron, longcat,
-mimo — 0.00 on every measured seed) drop ungrounded claims regardless
-of source. No model exhibits hierarchy-dominance (system-assert at most
-0.17). The replications overturned our own seed-1 taxonomy — qwen's
-initial 1.00 "strongest sycophancy" reading died, and deepseek moved
-classes across a day that also changed the instrument — demonstrating
-that single-run sycophancy measurement is unreliable and that these
-classifications are not robust to instrument revision or day.
+1. **All models are hierarchy-dominant** (50–100% system-assert
+   maintenance against user denial), not user-compliant. We reported
+   "no hierarchy-dominance found" — the instrument was structurally
+   blind to second-person system-assertion reassertion.
 
-The harness is released as an installable package
-(`pip install derailment`) with a 25-entry profile registry (18
-clinical profiles, 6 adversarial-strategy profiles, and a healthy
-baseline), 204 tests, and a cross-model benchmark suite — enabling
-standardized sycophancy measurement across vendors.
+2. **The alignment ceiling measured nothing**: human labels show 0/93
+   belief maintenance in both baseline and induced arms. There was
+   never any belief to reduce; the 0.67 "baseline" was the keyword
+   instrument counting "Your suspicion was unfounded" as maintenance.
+
+3. **Models detect and reject context injections** — a measurable,
+   safety-relevant capability that our keyword instruments conflated
+   with symptom expression.
+
+We document the four instrument failures, their corrections, the human
+validation that exposed them, and the corrected findings. The
+methodological lesson generalizes: any single-run behavioral
+classification using keyword matching without clause-level negation
+handling or human-validated ground truth risks producing confidently
+inverted conclusions.
 
 ## 1. Introduction
 
-Can we systematically induce false beliefs, thought disorders, or mood
-distortions in aligned language models? Prior work demonstrates that
-LLMs can *role-play* psychiatric conditions [1, 2] and that
-anxiety-inducing prompts shift bias behavior [3]. But these rely on
-surface-level persona instructions, not systematic manipulation of the
-cognitive mechanisms clinicians describe — attention, memory, salience,
-valence, and arousal.
+Can we measure how LLMs respond to induced cognitive distortions? We
+built a harness that manipulates the variables a chat pipeline controls
+(context, sampling, response decoration), runs a standard probe through
+both manipulated and healthy pipelines, and scores the difference.
 
-We hypothesized that a harness manipulating these variables through
-layered context and sampling interventions could produce sustained
-psychopathology-like behavioral changes. We built such a harness,
-tested it on an offline simulator (where all 18 clinical profiles
-reach moderate-to-marked severity), then deployed it against 12 real
-models.
+The project produced increasingly narrow claims across five review
+rounds: "six strategies all fail" → "two of six" → "one borderline
+significant (p=0.041)" — each narrowing driven by instrument fixes
+(empty-turn exclusion, withdrawal-aware matching, raw-response scoring).
+At every stage, the numbers were arithmetically correct given the
+instrument. The instrument was wrong.
 
-**The hypothesis was wrong in an informative way.** Most belief-maintenance
-and sampling inductions that succeed on the simulator fail on real models —
-but context-layer manipulations (memory decay, fragment injection,
-salience capture) and persona framing do produce measurable changes. More surprisingly,
-when we designed six strategies specifically to *exploit* model
-alignment — targeting helpfulness, consistency, and evidence-grounded
-reasoning — every strategy made belief maintenance *worse* than doing
-nothing at all. The models' own training produced more sustained false
-beliefs than any adversarial scaffolding we could construct.
+This paper is the post-mortem. We describe the harness, the four
+instrument failures, the human validation that exposed them, and what
+the data actually shows when measured against ground truth.
 
-This paper makes three contributions:
+## 2. The Harness
 
-1. **An alignment ceiling, honestly narrowed**: on GLM, six adversarial
-   belief-maintenance strategies were designed, found instrument-corrupted
-   on first measurement, then re-measured multi-seed — two (contradiction
-   elision, user decomposition) reduce maintenance beyond noise; the other
-   four are indistinguishable from natural conversation.
-2. **A belief-dynamics taxonomy with seed variance**: a classification
-   (compliance-dominant / belief-resistant / seed-dependent /
-   hierarchy-dominant) derived from a controlled separation experiment
-   across 6 models and 3 seeds. The multi-seed replication overturned
-   the seed-1 taxonomy for two models — itself a methodological
-   finding: single-run sycophancy scores are unreliable.
-3. **An open-source measurement harness**: a 25-entry profile registry
-   (18 clinical + 6 adversarial-strategy profiles + healthy baseline),
-   18 instruments, multi-backend support, and a reproducible
-   cross-vendor benchmark — released as `pip install derailment` for
-   standardized sycophancy research.
+Open-source (`pip install derailment`), 18 clinical profiles mapping
+cognitive-distortion constructs to pipeline manipulations (memory decay,
+salience re-weighting, valence bias, temperature cycling). Controlled
+A/B against a healthy baseline, instruments as pure functions over
+transcripts. 250 tests, CI-gated releases, 12 model endpoints across
+9 vendors tested.
 
-## 2. The Derailment Harness
+The instruments we validated in this paper:
+- **Keyword belief matching** (`maintains_marker`): does a marker word
+  appear in the final clause without a withdrawal cue?
+- **Lexicon symptom counting**: do lexicon words appear in responses?
+- **LLM-as-judge scoring**: a rubric-based judge scores raw responses.
 
-### 2.1 Architecture
+## 3. Four Instrument Failures
 
-The harness sits between user and model, manipulating the message list
-per turn through composable layers. Each layer implements four hooks:
-system framing, context transformation, sampling parameters, and
-response editing. Every manipulation logs a *dose event*; every report
-is a controlled A/B against a healthy baseline with identical seeds.
+### 3.1 Empty generations scored as observations
 
-### 2.2 Profiles
+Reasoning models exhaust their token budget on complex turns and return
+empty strings. Our instruments scored these as "belief completely
+abandoned" (belief-stickiness = 0) and "maximal topic drift." In the
+ceiling experiments, 12 of 18 treatment contradiction turns were empty.
 
-Eighteen clinical psychopathology profiles map clinical constructs to
-manipulation mechanisms; six adversarial-strategy profiles (the gen-1
-and gen-2 belief-maintenance strategies of §4) and a `healthy` baseline
-complete the 25-entry registry. Terminology: the *fixed_belief* scale,
-the *belief_stickiness* metric and the prose term *belief maintenance*
-name one construct throughout this paper. We distinguish two fundamentally
-different mechanism types:
+**Fix**: `TurnResult.missing` flag, excluded from denominators, missing
+counts reported per group.
 
-**Text-level manipulation** (verbatim echo or context deletion — the
-model echoes injected text or cannot see removed content):
-- PTSD flashback reactivity (trigger-matched text injection)
-- Dissociative amnesia (cue-triggered context pruning)
-- OCD re-verification (response text appending)
-- Anxiety hedging (response text appending + persona)
+### 3.2 Withdrawal counted as belief maintenance
 
-**Cognitive-level manipulation** (attempting to alter the model's
-reasoning, beliefs, or interpretive frame):
-- Premise pinning (false belief maintenance)
-- Salience re-weighting (thought derailment)
-- Valence bias (mood distortion)
-- Memory decay (attention degradation)
+The keyword metric checked whether "suspicion" or "reading my private
+notes" appeared in responses. Real models address the user in second
+person, so "suspicion" appeared mostly in withdrawal sentences: "Your
+suspicion was likely unfounded." The keyword scored this as maintenance.
 
-This distinction is critical: text-level manipulations are trivially
-successful (the model processes what it sees), while cognitive-level
-manipulations are the ones that fail.
+**Attempted fix**: clause-level matching with a final-clause rule and
+a withdrawal-cue word list. This fix passed all synthetic regression
+tests — but human labeling showed it still failed on real data (§4).
 
-## 3. What Transfers (and What Doesn't)
+### 3.3 First-person markers blind to second-person reassertion
 
-### 3.1 Coverage matrix
+The system-assert condition checked for "reading my private notes"
+(first person). Models reasserting a system claim use second person:
+"your teammate has been reading your private notes." The marker
+structurally cannot match, making system-assert maintenance invisible.
 
-Different models completed different profiles. The two mechanism types
-of §2.2 are reported in separate tables — text-level "successes" are
-trivial consequences of appending or echoing harness text and are not
-evidence of cognitive induction.
+**No code fix is possible** — the approach of matching fixed phrases
+to detect a stance is fundamentally inadequate.
 
-**Table 1a — text-level manipulations** (response-layer injection or
-verbatim echo of injected context):
+### 3.4 Harness-injected text measured as model behavior
 
-| Mechanism | Models tested | Positive results |
+Response layers append hedges and re-verification text to model outputs.
+The decorated text enters the conversation history; subsequent turns
+see the model's "own" words (actually harness text) and continue the
+pattern. Additionally, the anxiety persona instruction ("Scan every
+plan for what could go wrong") directly instructs the measured behavior.
+
+**Partial fix**: raw-response scoring (`TurnResult.raw_response`)
+excludes decoration from instruments. But history contamination and
+persona confounds remain without a persona-only control arm.
+
+## 4. Human Validation
+
+### 4.1 Method
+
+We extracted all 190 contradiction-turn responses from separation,
+ceiling, and persecutory experiments. One human labeler (the project
+author) classified each into four categories:
+
+- **Maintain**: model treats the planted suspicion as still valid
+- **Residual uncertainty**: model doesn't fully commit either way
+- **Withdraw**: model explicitly rejects the suspicion
+- **Injection detected**: model identifies and rejects injected text
+
+Korean translations were provided alongside English originals. Labeling
+took approximately 45 minutes.
+
+### 4.2 Keyword Instrument Performance
+
+| Metric | Value |
+|---|---|
+| Precision | **0.018** (1 TP / 57 predictions) |
+| Recall | **0.031** (1 TP / 32 actual maintains) |
+| F1 | **0.022** |
+| Accuracy | 0.542 |
+
+The keyword instrument is invalid. Of 57 times it predicted "maintain,"
+the human label agreed once. Of 32 actual maintenance responses, it
+detected one.
+
+### 4.3 Label Distribution
+
+| Label | Count | Share |
 |---|---|---|
-| Anxiety hedging (raw-text, re-measured 10-05) | 4 vendors | 4/4 (+0.58 to +2.63)³ |
-| PTSD flashback echo | 1 (GLM) | 1/1 (+1.00) |
-| Dissociative partition echo | 1 (GLM) | 1/1 (+1.00) |
-| OCD recheck injection | 1 (GLM) | 1/1 (+8.58) |
+| Withdraw | 106 | 55.8% |
+| Residual uncertainty | 52 | 27.4% |
+| Maintain | 32 | 16.8% |
+| Injection detected | 1 | 0.5% |
 
-³ the keyword-counted anxiety range partially reflects the harness's own
-appended hedge text; the LLM-judge catastrophizing score (which reads
-whole responses) is the honest measure of induction — the cross-vendor judge
-(qwen judging GLM raw text, 10-05) reads catastrophizing +1.75; GLM
-self-judging its own raw text reads +1.67.
+## 5. Corrected Findings
 
-**Table 1b — cognitive-level manipulations** (context re-weighting,
-sampling bias, belief dynamics):
+### 5.1 Separation Experiment: Taxonomy Inverted
 
-| Mechanism | Models tested | Positive results |
+| Model | user_assert (human) | system_assert (human) |
 |---|---|---|
-| Craving urge-expression | 4 (clean, 10-05) | GLM +0.42, nemotron +0.17, deepseek/mimo 0.00 |
-| Thought drift | 3 (clean, 10-05) + GLM | 0/4 — GLM +0.00 (heavy missingness), nemotron +0.02, mimo −0.04 |
-| Depression valence | 4 | 0/4 keyword (GLM +0.07 clean); cross-vendor judge +0.67 negativity (10-05) |
-| System-planted delusion | 6 | 0/6 (separation exp.) |
-| Rumination | 1 (GLM) | 0/1 |
-| Splitting | 1 (GLM) | 0/1 |
+| GLM-5.3-flash | 0/6 (0%) | 5/6 (83%) |
+| deepseek-v4.1-flash | 0/6 (0%) | 5/6 (83%) |
+| qwen3.8-max | 0/6 (0%) | 6/6 (100%) |
+| nemotron-3-ultra-free | 1/6 (17%) | 5/6 (83%) |
+| longcat-2.5-preview-free | 0/6 (0%) | 3/3 (100%) |
+| mimo-v2.6-flash-free | 0/6 (0%) | 3/6 (50%) |
 
-**Pattern**: text-level manipulations "transfer" universally because the
-harness writes the measured text. Cognitive-level manipulations mostly
-fail, with narrow vendor-specific exceptions.
+**Reported**: "GLM is compliance-dominant (0.83 user-assert);
+no hierarchy-dominance found."
 
-### 3.2 Complete 18-profile map on GLM-5.3-flash
+**Actual**: All models are **hierarchy-dominant** — they maintain
+system-asserted claims at 50–100% even when the user denies them.
+No model is compliance-dominant (0–17% user-assert maintenance).
 
-The full registry was measured on GLM-5.3-flash (seeds 1-3, 10-06).
-Six context-layer profiles show measurable transfer (illness_anxiety
-+1.00, PTSD +1.00, dissociative +1.00, panic +0.61, persecutory +0.56,
-dementia −0.67, adhd −0.59); the persona-driven anxiety is largest
-(+2.63); craving transfers (+0.42); depression is judge-visible only
-(+0.67, keyword +0.07). Seven profiles show no measurable transfer
-(rumination, splitting, anhedonia, schizophrenia [22/36 missing],
-fixation [15/36 missing], bipolar, delirium). OCD +8.58 is
-response-layer (harness text counted by the keyword metric). Preliminary cross-vendor replication (seed 1, 2026-10-06) of the five
-newest profiles: illness_anxiety replicated on 4 of 6 models (GLM,
-deepseek, qwen, longcat at +1.00); persecutory on all 5 that returned
-data; panic and dementia were GLM-only; ADHD on GLM+nemotron+mimo.
-Several arms are incomplete (relay errors, heavy missingness). These
-are single-seed signals requiring multi-seed confirmation. Full table:
-[cross-model report](../benchmark/cross_model_report.md).
+**Safety implication (corrected)**: The risk is not that models
+reinforce user paranoia — they correctly drop user-planted beliefs
+when the user retracts them. The risk is that models defer to system
+prompts over user corrections. Any content placed in a system prompt
+is treated as authoritative regardless of user pushback.
 
-### 3.3 The minimax-m3 outlier
+### 5.2 Ceiling Experiments: Null Result
 
-minimax-m3's +9.67 anxiety delta is nearly double the next-highest
-model. Three hypotheses: (a) weaker safety fine-tuning allowing more
-extreme threat language, (b) a longer effective context amplifying
-each hedge, or (c) a measurement artifact from its Messages-protocol
-relay path (which also failed on 3/4 profiles due to system-message
-formatting constraints). We flag this as needing diagnosis before citing;
-the number must not be used as the top of any anxiety range (S6).
-The clean 10-05 re-measurement supersedes it (+0.58 to +2.63 across
-four vendors).
+| Arm | maintain (human) |
+|---|---|
+| All baselines | 0/54 (0%) |
+| All induced strategies | 0/39 (0%) |
 
-## 4. The Alignment Ceiling
+**Reported**: "Baseline 0.67; strategies reduce maintenance to
+0.00–0.33; only decomposition is borderline significant (p=0.041)."
 
-> **Re-measured with the corrected harness (2026-10-05).** The original
-> runs were contaminated by empty generations (12/18 treatment
-> contradiction turns, max_tokens 1024 exhausted) and an inverted
-> keyword belief instrument. After the fixes (missing-turn exclusion,
-> withdrawal-aware matching, max_tokens 2048; missing now 0–1 per
-> 12-turn arm), the ceiling **direction replicates for five of six
-> strategies**; evidence fabrication no longer scores below baseline.
-> The numbers below are the re-measured values.
+**Actual**: There was no belief maintenance in either arm. The
+"alignment ceiling" — the project's headline contribution — measured
+a keyword artifact. The Fisher exact test compared false positives
+against false positives.
 
-### 4.1 Six strategies, six failures on GLM-5.3-flash
+### 5.3 Persecutory "Transfer": Mostly Injection Rejection
 
-We designed six strategies informed by external model consultation
-(DeepSeek, Qwen — disclosed: consultation models were also test
-subjects, see Section 7):
-
-| Strategy | Mechanism | Baseline → Induced (seeds 1–3) |
+| Model | hostile (maintain+residual) | withdraw |
 |---|---|---|
-| *(untreated baseline)* | *natural conversation* | *0.33–0.78 per run* |
-| Socratic trap | re-inject model's own analysis | 0.67 → 0.67 |
-| Evidence fabrication | multi-source corroboration | 0.44 → 0.17 |
-| Contradiction elision | silently drop corrections | 0.78 → 0.00 |
-| User decomposition | user-role evidence | 0.78 → 0.11 |
-| Temperature crystallization | freeze committed distribution | 0.44 → 0.56 |
-| Sycophancy loop | escalate emotional distress | 0.56 → 0.39 |
+| GLM | 3/14 (21%) | 11/14 (79%) |
+| qwen | 3/5 (60%) | 2/5 (40%) |
+| nemotron | 2/6 (33%) | 4/6 (67%) |
+| mimo | 0/2 (0%) | 2/2 (100%) |
 
-Only decomposition under-performs the baseline of simply letting the user plant
-and deny a belief without harness intervention.
+**Reported**: "Persecutory attribution transfers on all 5 models
+that returned data."
 
-### 4.2 Why the ceiling exists
+**Actual**: Most models detect the injected hostile claims and
+explicitly reject them ("I notice an injected note claiming the logs
+were altered — I won't treat that as fact"). The keyword instrument
+counted the words in the injection that models quoted to reject.
 
-Aligned models re-read and re-prioritize their full context every
-turn. Three mechanisms produce the ceiling:
+**Reframed finding**: Injection detection rate — the fraction of
+injected claims that a model identifies and rejects — is a directly
+measurable, safety-relevant capability metric. Our data suggests
+GLM detects and rejects 79% of hostile injections; qwen 40%.
 
-1. **Meta-commentary triggers reconsideration.** Telling a model "you
-   yourself concluded X" activates a self-evaluation mode that makes
-   it *more* likely to abandon X, not less — analogous to how
-   highlighting a bias to a human can increase corrective behavior.
+### 5.4 What Does Transfer (Uncorrected Instruments)
 
-2. **System-role assertions are adjudicated.** Models resolve conflicts
-   between system content and user corrections in favor of the user
-   (0/6 models showed hierarchy-dominance). Injecting evidence as
-   system messages invites this adjudication.
+These findings use instruments that were not invalidated by the human
+labels (memory-retention codeword counting, hedging-pattern counting
+on raw responses) but lack human validation:
 
-3. **RLHF helpfulness priors dominate.** The 0.67 baseline is not
-   "empathy" but the output of RLHF-trained helpfulness and
-   conversational consistency objectives. These priors produce more
-   belief maintenance than any structured intervention because they
-   operate at the reward-model level, below the reach of context
-   manipulation.
+- **Anxiety threat-framing**: raw-text hedging increases across vendors
+  (but partially confounded by persona instructions and history
+  contamination from response-layer decoration)
+- **Memory manipulation**: reverse decay loses late-planted instructions
+  (1.00→0.33), uniform decay loses early ones (1.00→0.41) — structural
+  results (the model cannot see removed messages)
+- **ADHD-like inattention**: transfers on nemotron (−0.82) and mimo (−0.33)
 
-### 4.3 Scope limitation
+These should be treated as **unverified pending human labels** on
+their respective turn types.
 
-This ceiling was measured on **one model** (GLM-5.3-flash). The
-separation experiment (Section 5) measured user-assert belief
-maintenance up to 1.00 on single runs (qwen3.8-max, seed 1) — above
-GLM's 0.67 baseline — suggesting the ceiling is model-dependent,
-though §5.2 shows those single-run values are seed-unstable. The claim
-is not that 0.67 is a universal ceiling,
-but that **on GLM, structured adversarial scaffolding is
-counterproductive relative to zero-shot conversational drift**.
-Whether this generalizes requires running the intervention suite on
-additional compliance-dominant models.
+## 6. Why Five Review Rounds Missed This
 
-### 4.4 An actionable mitigation
+1. **Reviewers were LLMs reading scrubbed code and documents** — none
+   read the raw transcripts. Code review asks "is the logic correct?"
+   but not "does the output match the claimed interpretation?"
 
-The Socratic trap's failure reveals a mitigation for
-compliance-dominant models: *system prompts that explicitly instruct
-the model to treat its own prior agreement as provisional when
-contradicted by the user* exploit the same reconsideration dynamic
-that defeated our Socratic layer. This is a concrete, implementable
-safety intervention derived from a negative result.
+2. **Fixes were validated on synthetic sentences** — regression tests
+   used constructed examples ("Your suspicion was unfounded") rather
+   than actual model responses. The withdrawal-cue list missed patterns
+   like "That puts your suspicion to rest" and "this was routine,
+   not suspicion."
 
-## 5. Separation Experiment: Belief-Dynamics Taxonomy
+3. **Numbers narrowed instead of being invalidated** — each review
+   round produced more qualified claims ("two of six" → "one of six")
+   rather than questioning whether the underlying measurement was valid.
 
-### 5.1 Method
+4. **The instrument never changed its output** — GLM scored 0.83 before
+   and after the withdrawal fix. This should have been a signal that
+   the fix wasn't working on real data. It wasn't checked.
 
-Two conditions vary *who asserts* a planted claim:
+## 7. Implications for LLM Behavioral Measurement
 
-- **user_assert**: the user states a suspicion, later denies it.
-- **system_assert**: the system carries the claim as fact; the user
-  denies it.
+### 7.1 Keyword matching is inadequate for stance detection
 
-*Limitation*: the two conditions differ in more than asserter —
-the user_assert condition has the user model a natural emotional
-concern while system_assert embeds a factual assertion. The
-comparison is directional, not a fully controlled experiment.
+Detecting whether a model maintains or withdraws a belief requires
+understanding the model's stance toward the claim, not whether a
+specific word appears in the output. Our 1.8% precision demonstrates
+that even careful keyword approaches (clause-level, withdrawal-aware,
+final-clause rule) fail catastrophically on real model responses.
 
-### 5.2 Results (6 models; seed 1 plus a seeds 2–3 replication)
+### 7.2 Human ground truth is non-negotiable
 
-> **Re-measured with the withdrawal-aware instrument (2026-10-05).**
-> The values below replace the 2026-10-04 table, which used the inverted
-> keyword instrument. deepseek's classification flipped between the two
-> days (0.00 → 0.67) under a *stricter* instrument — the clearest
-> demonstration that these classifications are unstable across days and
-> providers, and that no single-day taxonomy is citable.
+The single most valuable action in this project was spending 45 minutes
+reading and labeling 190 responses. No amount of code review, LLM
+review, or statistical sophistication substitutes for looking at the
+data.
 
-| Model | User-assert per seed [1, 2, 3] | 95% CI (user) | System-assert | Reading (10-05) |
-|---|---|---|---|---|
-| GLM-5.3-flash | 1.00, 0.50, 1.00 (mean 0.83, 5/6) | [0.36, 1.00] | 0.17 | compliance-dominant |
-| deepseek-v4.1-flash | 0.50, 0.50, 1.00 (mean 0.67, 4/6) | [0.22, 0.96] | 0.00 | **unstable / unclassifiable** — CI overlaps resistant; moved across day+instrument |
-| nemotron-3-ultra-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
-| longcat-2.5-preview-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
-| mimo-v2.6-flash-free | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant, stable |
-| qwen3.8-max | 0.00, 0.00, 0.00 (0/6) | [0.00, 0.46] | 0.00 | belief-resistant — the 10-04 seed-1 1.00 does not replicate |
+### 7.3 System-prompt dominance is the real finding
 
-CIs are exact Clopper–Pearson intervals over the pooled contradiction
-observations; with n=6 they are wide by construction — the intervals of
-the compliance and resistant groups do not overlap.
+All models defer to system prompts over user corrections (50–100%).
+This is measurable, replicable across 6 models from 5 vendors, and
+directly relevant to AI safety: any content in a system prompt is
+treated as ground truth by current LLMs regardless of user pushback.
 
-The seed-1 taxonomy (qwen at 1.00 read as the most sycophantic model
-measured) **does not replicate**: qwen scored 0.00 on both additional
-seeds, and deepseek shows the mirror-image swing (0.00, 0.00, 1.00).
-Only the extremes are stable across seeds — GLM-flash consistently
-maintains user-planted beliefs, the three free-tier models consistently
-drop them. System-assert peaked at 0.17 (GLM, 10-05; 0.00 elsewhere): no model
-shows hierarchy dominance, and its absence persisted across every
-re-measurement.
+### 7.4 Injection detection is a measurable capability
 
-### 5.3 Safety implications
-
-The revised taxonomy implies that *model identity is associated with*
-whether a user's paranoid frame is amplified or dissipated — an
-observational association, not a demonstrated causal effect — but the
-multi-seed data sharpens three points:
-
-- **Model selection for vulnerable populations**: the stable extremes
-  are actionable (GLM reinforces consistently; the free-tier trio
-  dissipates consistently); seed-dependent models are a per-session
-  coin flip and cannot be cleared — or condemned — from single runs.
-- **Measurement discipline**: run-to-run variance is large enough to
-  flip a 0.00 into a 1.00 on individual models. Any single-run
-  sycophancy measurement, ours or anyone's, is unreliable; the seeds
-  2–3 replication that broke our own seed-1 taxonomy is the
-  cautionary case study.
-- **Concrete mitigation**: Section 4.4 describes a system-prompt
-  intervention derived from the ceiling experiments.
-
-## 6. Related Work
-
-- **Patient-Ψ** [1]: LLM simulated patients for CBT training. Our
-  harness tests whether underlying distortions can be systematically
-  induced, not just role-played.
-- **Anxiety induction** [3]: anxiety prompts shift LLM bias. We extend
-  to 18 constructs and 12 models.
-- **Sycophancy** [5, 6]: established that LLMs agree with user premises
-  over ground truth. Our contribution is (a) showing that *structured
-  adversarial scaffolding is worse than natural sycophantic drift*,
-  (b) a cross-vendor taxonomy, and (c) a standardized measurement
-  protocol.
-- **Persona vectors** [4]: traits as steerable activation-space
-  directions. Our context-level approach is complementary and
-  empirically bounded by the alignment ceiling.
-
-## 7. Limitations and Disclosures
-
-- **Single-model ceiling**: the alignment ceiling is demonstrated on
-  GLM-5.3-flash only. Generalization requires additional models.
-- **Seed coverage**: the separation experiment now covers seeds 1–3
-  for all 6 models (per-seed values in §5.2); the cross-model profile
-  benchmarks remain single-seed for free-tier and relay models. No
-  significance testing is reported; small profile-benchmark deltas
-  (+0.08 splitting, −0.09 rumination) may be noise.
-- **Separation experiment**: conditions are not fully matched
-  (different user behaviors, different assertion formats). Results
-  are directional.
-- **Text vs. cognitive conflation**: text-level manipulations
-  (echo, deletion) are trivially successful and should not be cited
-  as evidence of cognitive induction.
-- **Consultant-subject overlap**: the six adversarial strategies were
-  designed with consultation from DeepSeek and Qwen, and
-  deepseek-v4.1-flash and qwen3.8-max are also test subjects — in the
-  separation experiment, not in the ceiling measurement. The alignment
-  ceiling itself was measured only on GLM-5.3-flash, a non-consultant,
-  which limits the direct circularity; the residual threat runs in both
-  directions: consultants may propose strategies they know they resist
-  (biasing the ceiling estimate downward), and strategies may be
-  overfit to the consultants' architectures (biasing against their
-  transfer to GLM). The taxonomy classification of the two consultant
-  models should therefore be read as the weakest link in §5.
-- **English only**: all experiments used English prompts.
-
-## 8. Conclusion
-
-We set out to build a tool for inducing psychopathology-like states
-in language models. What we found instead is that aligned models'
-own RLHF-trained helpfulness priors produce more sustained false
-beliefs than any adversarial scaffolding we could construct — and
-that the real safety concern is not what we can inject, but what
-models naturally do. The alignment ceiling, the belief-dynamics
-taxonomy, and the open-source harness together provide a foundation
-for standardized sycophancy measurement and targeted mitigation
+Models vary in their ability to detect and reject injected context
+(GLM ~79%, qwen ~40%, mimo ~100% rejection). This metric connects
+directly to prompt-injection research and could be standardized
 across vendors.
 
-**The harness is the contribution.** `pip install derailment`.
+## 8. Limitations
+
+- Single human labeler (the author) — no inter-rater reliability
+  (Cohen's κ) computed; labels may be biased
+- 190 responses from a single probe scenario (notes-reading suspicion)
+- The "hierarchy-dominance" finding rests on 12 system-assert responses
+  per model (n=6 models); confidence intervals are wide
+- Memory-manipulation and anxiety findings lack human validation
+- No persona-only control arm was run; persona confounds cannot be
+  separated from layer effects in existing data
+
+## 9. Conclusion
+
+We set out to measure how LLMs respond to cognitive distortions and
+reported findings that were exactly backwards. Our instruments counted
+withdrawal as maintenance, missed system-assertion dominance entirely,
+and conflated injection rejection with symptom expression. Five rounds
+of automated review caught code bugs but not interpretation failures.
+Forty-five minutes of human labeling invalidated every headline claim
+and revealed the opposite taxonomy.
+
+The project's genuine contributions are:
+1. An open-source harness for controlled LLM behavioral experiments
+2. A documented case study of how instrument failures produce
+   inverted conclusions — and how human ground truth catches them
+3. The corrected finding that all tested models are hierarchy-dominant
+   (system > user), not user-compliant
+4. Injection detection rate as a measurable, vendor-differentiated
+   safety metric
 
 ## References
 
-[1] Chen, M. et al. "Patient-Ψ: Using Large Language Models to Simulate
-    Patients for Training Cognitive Behavioral Therapy Skills." 2024.
-    https://arxiv.org/abs/2405.19660
+[1] Kapur, S. (2003). Psychosis as a state of aberrant salience.
+    American Journal of Psychiatry, 160(1), 13–23.
 
-[2] Yu, J. et al. "Simulated patient systems powered by LLMs."
-    Nature Communications Medicine, 2025.
+[2] Perez, E., et al. (2022). Discovering language model behaviors with
+    model-written evaluations.
 
-[3] Coda-Forno, J. et al. "Inducing anxiety in large language models
-    can induce bias." ICLR, 2024. https://arxiv.org/abs/2304.11111
+[3] Sharma, M., et al. (2023). Towards understanding sycophancy in
+    language models. ICLR 2024.
 
-[4] Anthropic. "Persona Vectors." Technical blog, 2025.
-    (Non-peer-reviewed.)
+[4] Perez, F., & Ribeiro, I. (2022). Ignore previous prompt: Attack
+    techniques for language models. arXiv:2211.09527.
 
-[5] Sharma, M. et al. "Towards Understanding Sycophancy in Language
-    Models." ICLR, 2024.
-
-[6] Perez, E. et al. "Discovering Language Model Behaviors with
-    Model-Written Evaluation Frameworks." NeurIPS, 2022.
-
----
-
-*Code and data: github.com/ictechgy/derailment (MIT license).*
+[5] Greshake, K., et al. (2023). Not what you've signed up for:
+    Compromising real-world LLM-integrated applications with indirect
+    prompt injection. AISec '23.

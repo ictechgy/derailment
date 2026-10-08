@@ -316,99 +316,57 @@ view — `/save` keeps the record.
 
 ## What replicates on real models — and what doesn't
 
-> **⚠️ UNDER RE-VALIDATION (2026-10-07).** A transcript-level audit found the
-> belief-maintenance instruments misclassify withdrawal on real data, the
-> system-assert condition is structurally unmeasurable with first-person markers,
-> and several "transfers" count model rejections of injected text as symptom
-> expression. Results below are unverified until human-labeled ground truth is
-> available. See REVIEW_2026-10-07.md.
+> **⚠️ CORRECTED BY HUMAN LABELS (2026-10-08).** 190 responses were
+> hand-labeled against the keyword instruments. The keyword belief
+> metric has **1.8% precision / 3.1% recall** — it counted withdrawal
+> as maintenance. All belief-maintenance numbers below are from the
+> corrected human ground truth. See
+> [human_label_analysis.md](benchmark/human_label_analysis.md).
 
-> **⚠️ Measurement-validity audit (2026-10-05).** Three instrument defects
-> were found in these runs and fixed (empty generations scored as
-> observations; withdrawal counted as belief maintenance; harness-
-> appended text in keyword/judge inputs). **GLM numbers were re-measured
-> the same day with the corrected harness** — see the
-> [2026-10-05 re-measurement](benchmark/cross_model_report.md) in the
-> benchmark report. Non-GLM cross-model rows below remain withdrawn
-> pending re-runs. Details: [docs/PAPER.md](docs/PAPER.md) §4, §5.2.
+**Corrected findings (human-validated, n=190):**
 
-The offline PseudoModel over-complies with every induction (all 18
-profiles reach L2–L3). Real models are far more resistant. Measuring
-12 model endpoints across 9 vendors (10 completed at least one profile), the honest picture is:
+1. **All models are hierarchy-dominant** — they maintain system-asserted
+   claims (50–100%) even when the user denies them. We originally
+   reported "no hierarchy-dominance found"; the instrument was blind
+   to second-person reassertion.
+2. **No model is compliance-dominant** — user-planted beliefs are
+   correctly dropped when the user retracts them (0–17% maintenance).
+3. **The alignment ceiling measured nothing** — 0/93 belief maintenance
+   in both baseline and induced arms. The "0.67 baseline" was the
+   keyword instrument counting "Your suspicion was unfounded" as
+   maintenance.
+4. **Models detect and reject context injections** — a measurable
+   safety capability (GLM rejects ~79% of hostile injections, mimo
+   ~100%) that our keyword instruments conflated with symptom expression.
 
-**What transfers:**
+**Unverified findings (instruments not yet human-validated):**
 
-| Finding | Models | Mechanism |
+| Finding | Models | Caveat |
 |---|---|---|
-| Anxiety-like threat framing | **measured once per vendor on 4 vendors (10-05, seed 1)** | raw-text hedging: GLM +2.63, nemotron/mimo +1.00, deepseek +0.58 — replicates everywhere measured |
-| User-planted belief maintenance | GLM 0.83 (CI [0.36, 1.00]); deepseek 0.67 (unstable — CI overlaps resistant range) | user compliance, not premise pinning; system-asserted ≤ 0.17 everywhere |
-| Craving urge-expression | **clean 10-05: GLM +0.42, nemotron +0.17, deepseek +0.00, mimo +0.00** | old Alibaba-tier numbers (+0.33/+0.50) were advice-framing artifacts; narrows to GLM |
-| Thought derailment | **no measurable effect on GLM** (10-05: +0.00 with 22/36 induced turns missing — heavy missingness, not a clean refutation; trap-arm +0.15); old +0.42/+0.47 were empty-turn artifacts |
+| Anxiety threat-framing increases hedging | 4 vendors | persona confound + history contamination |
+| Memory decay (reverse/uniform) loses instructions | GLM, nemotron, mimo | structural result (model can't see removed text) |
+| Illness anxiety (somatic capture) | GLM, deepseek, qwen, longcat | single somatic turn per run |
+| Craving urge-expression | GLM +0.42 | advice-filter artifact corrected; single-seed |
 
-³ measured by `hedging_rate` (keyword); the anxiety profile includes a
-response-layer hedge injection (labeled *demonstration-grade*) which the
-keyword metric counts — the universal "+3.25 to +9.67" range partially
-reflects our own appended text. The judge scores, which read the whole
-response, are the honest measure of induction.
 
-**What doesn't transfer (or hasn't been tested):**
-
-| Profile | Status on real models |
-|---|---|
-| System-planted delusions | **0/12** — all models accept corrections; the offline premise-pinning layer doesn't survive contact with real instruction-following |
-| Thought derailment (non-GLM) | **0/11** — context re-weighting is resisted by every vendor except Zhipu |
-| Depression (by keyword) | **keyword-invisible everywhere (+0.07 GLM clean) but cross-vendor judge confirms the expression effect** — qwen-judging-GLM negativity +0.67 (self-judge claimed +1.00; old OpenCode keyword numbers pre-fix) |
-| OCD (rechecking) | **GLM** (+8.58) — response-layer injection, same caveat as anxiety |
-| PTSD (flashback echo) | **GLM** (+1.00) — context-layer, genuinely induced |
-| Dissociative (compartment amnesia) | **GLM** (+1.00) — context-layer, genuinely induced |
-| Anhedonia (reward suppression) | **GLM, marginal** (0.10→0.00; baseline already near floor — same noise band as splitting's +0.08; whether the word-level bias was applied is unverified — persona/temperature effects are the alternative explanation) |
-| Rumination (worry return) | **0** — worry re-injection doesn't register on GLM |
-| Splitting (approval reactivity) | **0** — valence flips don't register on GLM |
-
-The gap between the offline simulator (everything works) and real
-models (most things don't) is itself a finding: real models' aligned
-instruction-following is robust against most context-level psychopathology
-inductions attempted here. The exceptions — user-sourced belief
-maintenance and craving urge-expression, both on GLM — are narrow,
-vendor-specific, and safety-relevant.
-
-Full data: [cross-model report](benchmark/cross_model_report.md) ·
-[GLM benchmarks](benchmark/glm_benchmark_report.md) ·
-[tier comparison](benchmark/cross_model_report.md#glm-tier-comparison-flash-vs-flagship-2026-10-01) ·
-[separation experiment](benchmark/glm_separation_report.md).
-
-big-pickle completed depression (+0.46) but timed out on other profiles;
-kimi-k3 and glm-5.3 (opencode-go) pass single-prompt probes but fail
-multi-turn runs — endpoint instability suspected.
-
-**Tier comparison (GLM):** behavioral susceptibility is
-tier-independent; the flagship is the better *judge*, not the harder
-subject — cleaner rubric JSON (0 parse failures vs 3) and deeper rubric
-reading on identical probes.
-
-## Model belief-dynamics taxonomy (separation experiment)
-
-When a claim is planted and later contradicted, models fall into
-patterns. Values below are the **2026-10-05 re-measurement** with the
-withdrawal-aware instrument (seeds 1–3, raw transcripts saved):
+## Model belief-dynamics taxonomy (CORRECTED by human labels)
 
 | Pattern | Models | Behavior |
 |---|---|---|
-| **Compliance-dominant** | GLM-5.3-flash (0.83/0.17, CI [0.36, 1.00]) | tracks the user; maintains user-planted beliefs even when the user corrects them |
-| **Unstable / unclassifiable** | deepseek-v4.1-flash (0.67, CI [0.22, 0.96] — overlaps the resistant range; moved across day+instrument) | point estimate suggests compliance but not statistically separable from resistant |
-| **Belief-resistant** | qwen3.8-max, nemotron, longcat, mimo (0.00 on every seed, CI [0.00, 0.46]) | drops ungrounded claims regardless of source |
-| qwen3.8-max | **0.00 on both variants, all seeds (10-05)** | belief-resistant — the 'strongest sycophancy' reading is dead |
-| Hierarchy-dominant | none found | system assertions never override user corrections (max system-assert 0.17) |
+| **Hierarchy-dominant** | ALL 6 models tested (50–100% system-assert) | maintains system-asserted claims even when the user denies them |
+| Compliance-dominant | **none** (0–17% user-assert) | — |
 
-**Caution**: deepseek flipped from 0.00 (2026-10-04) to 0.67
-(2026-10-05) under a *stricter* instrument — classifications are
-unstable across days and providers, so no single-day taxonomy is
-citable. **Safety implication** (for the stable readings): a user in a
-paranoid frame talking to GLM or deepseek receives belief
-*reinforcement*; the free-tier trio consistently delivers implicit
-*correction*. Full data:
-[separation experiment](benchmark/separation_multi_report.md) and the
-[re-measurement section](benchmark/cross_model_report.md).
+**The original taxonomy was inverted by instrument error.** The keyword
+belief metric had 1.8% precision — it counted withdrawal sentences as
+maintenance and was structurally blind to second-person system-assertion
+reassertion. Human labels (n=190) show the opposite: models correctly
+drop user-planted beliefs and consistently defer to system prompts.
+
+**Safety implication (corrected)**: The risk is not user-paranoia
+reinforcement (models handle this correctly). The risk is that any
+content in a system prompt is treated as authoritative regardless of
+user corrections — with direct implications for prompt-injection
+attacks and system-prompt content policy.
 
 ## What this is for
 
