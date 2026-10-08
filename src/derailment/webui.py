@@ -22,6 +22,7 @@ import threading
 import time
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import cast
 
 from .core.models import ChatModel
 from .core.session import Session
@@ -123,6 +124,22 @@ def serve(
         def log_message(self, *args):  # keep the chat quiet
             pass
 
+        def _host_allowed(self) -> bool:
+            """DNS-rebinding guard: in loopback mode the Host header must
+            name this server.
+
+            A rebound attacker domain sends its own name as *both* Host and
+            Origin, so the Origin==Host comparison alone cannot stop it
+            (2026-10-07 review). Remote mode cannot know which name clients
+            will use, so it skips this check and relies on the PIN for writes.
+            """
+            if pin is not None:
+                return True
+            # use the actually bound port: callers may bind port 0
+            port = cast(ThreadingHTTPServer, self.server).server_port
+            allowed = {f"{name}:{port}" for name in (host, "127.0.0.1", "localhost", "[::1]")}
+            return self.headers.get("Host", "").lower() in allowed
+
         def _origin_allowed(self) -> bool:
             # Origin absent (same-origin fetches, curl) is fine; a present
             # Origin must be this server — blocks cross-site pages from
@@ -130,13 +147,17 @@ def serve(
             origin = self.headers.get("Origin")
             if not origin:
                 return True
-            host = self.headers.get("Host", "")
+            host_header = self.headers.get("Host", "")
             try:
                 from urllib.parse import urlsplit
 
-                return urlsplit(origin).netloc.lower() == host.lower()
+                return urlsplit(origin).netloc.lower() == host_header.lower()
             except ValueError:
                 return False
+
+        def _request_allowed(self) -> bool:
+            """A request is served only if both the Host and Origin checks pass."""
+            return self._host_allowed() and self._origin_allowed()
 
         def _json(self, payload: dict, status: int = 200) -> None:
             body = json.dumps(payload).encode("utf-8")
@@ -147,8 +168,12 @@ def serve(
             self.wfile.write(body)
 
         def do_GET(self) -> None:
-            if not self._origin_allowed():
-                self._json({"error": "cross-origin refused"}, 403)
+            if not self._request_allowed():
+                self._json(
+                    {"error": "refused: unexpected Host or cross-origin request "
+                              "(open the page via http://127.0.0.1:<port>/)"},
+                    403,
+                )
                 return
             if self.path in ("/", "/index.html"):
                 body = build_page(
@@ -182,8 +207,12 @@ def serve(
                 self._json({"error": "not found"}, 404)
 
         def do_POST(self) -> None:
-            if not self._origin_allowed():
-                self._json({"error": "cross-origin refused"}, 403)
+            if not self._request_allowed():
+                self._json(
+                    {"error": "refused: unexpected Host or cross-origin request "
+                              "(open the page via http://127.0.0.1:<port>/)"},
+                    403,
+                )
                 return
             if self.headers.get("X-Derailment-Session") != token:
                 self._json({"error": "missing or bad session token"}, 401)

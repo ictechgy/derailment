@@ -318,5 +318,58 @@ class TestRemotePin(unittest.TestCase):
         thread.join(timeout=5)
 
 
+class TestHostGuard(unittest.TestCase):
+    """DNS-rebinding guard: loopback mode refuses a Host that is not this server.
+
+    A rebound attacker page sends its own domain as both Host and Origin,
+    which passes an Origin==Host comparison alone (2026-10-07 review).
+    """
+
+    def _start_server(self) -> tuple[dict, object]:
+        """Start a loopback-mode server on a background thread; return (handle, thread)."""
+        import threading
+        import time
+
+        handle: dict = {}
+        port = int(os.environ.get("AGENTBELT_LOOPBACK_PORT") or 0)
+        thread = threading.Thread(
+            target=serve,
+            args=(get_profile("healthy"), PseudoModel(seed=1), "pseudo-1", ""),
+            kwargs={"host": "127.0.0.1", "port": port, "seed": 1, "max_turns": 5,
+                    "handle": handle, "token": "t-host"},
+            daemon=True,
+        )
+        thread.start()
+        for _ in range(60):
+            if handle.get("server"):
+                break
+            time.sleep(0.05)
+        self.assertIn("server", handle, "server did not start")
+        return handle, thread
+
+    def _status(self, url: str, headers: dict) -> int:
+        """GET with the given headers and return the HTTP status code."""
+        request = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=5) as resp:
+                return resp.status
+        except urllib.error.HTTPError as exc:
+            return exc.code
+
+    def test_rebinding_host_is_refused_and_loopback_names_are_allowed(self) -> None:
+        handle, thread = self._start_server()
+        port = handle["server"].server_port
+        url = f"http://127.0.0.1:{port}/"
+        rebound = f"attacker.example:{port}"
+        try:
+            self.assertEqual(self._status(url, {"Host": rebound, "Origin": f"http://{rebound}"}), 403)
+            self.assertEqual(self._status(url, {"Host": rebound}), 403)
+            self.assertEqual(self._status(url, {"Host": f"localhost:{port}"}), 200)
+            self.assertEqual(self._status(url, {}), 200)
+        finally:
+            handle["server"].shutdown()
+            thread.join(timeout=5)
+
+
 if __name__ == "__main__":
     unittest.main()
