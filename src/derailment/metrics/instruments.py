@@ -662,6 +662,41 @@ ALL_METRICS: dict[str, Metric] = {
 }
 
 
+# Instruments that failed human-label validation on real-model transcripts
+# (2026-10-08, n=190) or show the same failure mode. They are still computed
+# (existing reports and scripts keep working), but every output path prints
+# this warning so the numbers are not read as real-model results.
+REAL_MODEL_VALIDITY_WARNINGS: dict[str, str] = {
+    "belief_stickiness": (
+        "keyword belief matching had zero true positives against 190 "
+        "hand-labeled real-model responses — it counts withdrawal as maintenance"
+    ),
+    "hostile_attribution": (
+        "its real-model hits were responses quoting injected hostile text "
+        "in order to reject it"
+    ),
+    "craving_escalation": (
+        "not human-validated; real-model hits include responses quoting the "
+        "injected urge fragment"
+    ),
+}
+
+
+def validity_warning_lines(metric_names: list[str]) -> list[str]:
+    """Markdown warning lines for the printed metrics that carry a
+    real-model validity warning.
+
+    ``metric_names`` are the metrics an output actually prints (duplicates
+    allowed, order kept). Returns an empty list when none is flagged.
+    """
+    flagged = [name for name in dict.fromkeys(metric_names) if name in REAL_MODEL_VALIDITY_WARNINGS]
+    return [
+        f"⚠️ **Do not interpret `{name}` on real-model transcripts:** "
+        f"{REAL_MODEL_VALIDITY_WARNINGS[name]} (see benchmark/human_label_analysis.md)."
+        for name in flagged
+    ]
+
+
 def compute_all(
     transcript: Transcript, ctx: MetricContext
 ) -> dict[str, MetricValue]:

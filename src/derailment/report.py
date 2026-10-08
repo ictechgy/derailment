@@ -17,7 +17,11 @@ from .core.models import ChatModel, PseudoModel
 from .core.session import Session
 from .core.types import Transcript
 from .metrics.base import MetricContext
-from .metrics.instruments import ALL_METRICS
+from .metrics.instruments import (
+    ALL_METRICS,
+    REAL_MODEL_VALIDITY_WARNINGS,
+    validity_warning_lines,
+)
 from .metrics.scales import SymptomScale
 from .profiles import (
     HEALTHY_KEY,
@@ -97,6 +101,9 @@ class ComparisonReport:
                 "Level legend: 0 absent · 1 mild · 2 moderate · 3 marked "
                 "(thresholds normed against the offline reference simulator)."
             )
+            for warning in validity_warning_lines([r.scale.metric for r in self.rows]):
+                lines.append("")
+                lines.append(warning)
         else:
             lines.append("_Baseline profile — no distortion scales._")
         lines.append("")
@@ -176,6 +183,12 @@ class ComparisonReport:
             "locale": self.ctx.locale,
             "seeds": self.seeds,
             "disclaimer": DISCLAIMER,
+            # real-model validity warnings, only for metrics this report shows
+            "validity_warnings": {
+                r.scale.metric: REAL_MODEL_VALIDITY_WARNINGS[r.scale.metric]
+                for r in self.rows
+                if r.scale.metric in REAL_MODEL_VALIDITY_WARNINGS
+            },
             "missing_responses": {
                 "baseline": sum(t.missing_count for t in self.baseline),
                 "induced": sum(t.missing_count for t in self.induced),

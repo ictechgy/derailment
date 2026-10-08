@@ -105,6 +105,28 @@ class TestCLI(unittest.TestCase):
         self.assertIn("| partition_amnesia | n/a", out)
         self.assertNotIn("| partition_amnesia | 0.000", out)
 
+    def test_score_flags_metrics_invalid_on_real_models(self) -> None:
+        report = run_experiment("depression", seeds=(1,))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = f"{tmp}/report.json"
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(report.render_json())
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                main(["score", path])
+        out = buffer.getvalue()
+        for name in ("belief_stickiness", "hostile_attribution", "craving_escalation"):
+            self.assertIn(f"| {name} ⚠️ |", out)
+            self.assertIn(f"Do not interpret `{name}`", out)
+
+    def test_report_warns_when_a_scale_uses_an_invalidated_metric(self) -> None:
+        report = run_experiment("schizophrenia", seeds=(1,))
+        self.assertIn("Do not interpret `belief_stickiness`", report.render_markdown())
+        self.assertIn("belief_stickiness", json.loads(report.render_json())["validity_warnings"])
+        clean = run_experiment("depression", seeds=(1,))
+        self.assertNotIn("Do not interpret", clean.render_markdown())
+        self.assertEqual(json.loads(clean.render_json())["validity_warnings"], {})
+
     def test_unknown_profile_is_rejected(self) -> None:
         with self.assertRaises(KeyError):
             run_experiment("hysteria", seeds=(1,))
