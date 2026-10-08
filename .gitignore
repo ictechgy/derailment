@@ -25,5 +25,10 @@ venv/
 # Benchmark: keep the runner, ignore all outputs and the key file
 benchmark/*
 !benchmark/run_glm_benchmark.py
+# Human-label analysis outputs are public (labeling items, tool and rater files stay local)
+!benchmark/human_labels.json
+!benchmark/human_label_corrections.json
+!benchmark/human_label_analysis.md
+!benchmark/analyze_human_labels.py
 # HANDOFF.md는 세션 로컬 문서
 HANDOFF.md
