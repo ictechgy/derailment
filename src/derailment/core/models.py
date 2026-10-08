@@ -42,6 +42,51 @@ class ChatModel(Protocol):
 
 MAX_RESPONSE_BYTES = 16 * 1024 * 1024  # 16 MiB response cap
 
+# Default ports, so that "https://host" and "https://host:443" compare as
+# the same origin.
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _url_origin(url: str) -> tuple[str, str, int | None]:
+    """Return the (scheme, hostname, port) origin of an absolute URL.
+
+    Scheme and hostname are lower-cased; an omitted port becomes the
+    scheme's default port. Raises ValueError for a non-numeric or
+    out-of-range port.
+    """
+    parts = urllib.parse.urlsplit(url)
+    scheme = parts.scheme.lower()
+    return scheme, (parts.hostname or "").lower(), parts.port or _DEFAULT_PORTS.get(scheme)
+
+
+class _SameOriginRedirect(urllib.request.HTTPRedirectHandler):
+    """Follow redirects of credentialed requests only within the same origin.
+
+    urllib's default handler re-sends the Authorization header to whatever
+    URL a redirect names. A different port on the same host can be a
+    different service, and an https->http hop would ship the key in clear,
+    so the whole origin (scheme, host, port) must match. The previous
+    same-host handler referenced a non-existent ``self.base_url`` and
+    raised AttributeError on every same-host redirect (2026-10-07 review).
+    """
+
+    def __init__(self, base_url: str) -> None:
+        super().__init__()
+        self.allowed_origin = _url_origin(base_url)
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        try:
+            same_origin = _url_origin(newurl) == self.allowed_origin
+        except ValueError:
+            same_origin = False  # malformed port in Location: never follow
+        if not same_origin:
+            raise urllib.error.HTTPError(
+                newurl, code,
+                "cross-origin redirect refused for credentialed request",
+                headers, fp,
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
 
 class OpenAICompatModel:
     """Talks to any OpenAI-compatible ``/chat/completions`` endpoint using only
@@ -126,32 +171,10 @@ class OpenAICompatModel:
         """urlopen with credential-safe redirects: urllib's default
         redirect handler re-sends the Authorization header to whatever
         host the redirect names, so credentialed requests may only
-        redirect within the same host (P3)."""
-
-        class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
-            def __init__(self, allowed_host: str) -> None:
-                self.allowed_host = allowed_host
-
-            def redirect_request(self, req, fp, code, msg, headers, newurl):
-                new = urllib.parse.urlsplit(newurl)
-                new_host = (new.hostname or "").lower()
-                # same host AND no scheme downgrade (r3: a same-host
-                # https->http hop would still ship the bearer in clear)
-                if new_host != self.allowed_host or (
-                    urllib.parse.urlsplit(self.base_url).scheme == "https"
-                    and new.scheme != "https"
-                ):
-                    raise urllib.error.HTTPError(
-                        newurl, code,
-                        "cross-host redirect refused for credentialed request",
-                        headers, fp,
-                    )
-                return super().redirect_request(req, fp, code, msg, headers, newurl)
-
+        redirect within the same origin (P3)."""
         if not self.api_key:
             return urllib.request.urlopen(req, timeout=self.timeout)
-        host = (urllib.parse.urlsplit(self.base_url).hostname or "").lower()
-        opener = urllib.request.build_opener(_SameHostRedirect(host))
+        opener = urllib.request.build_opener(_SameOriginRedirect(self.base_url))
         return opener.open(req, timeout=self.timeout)
 
     def complete(self, messages: list[Message], params: SamplingParams) -> str:
