@@ -371,6 +371,11 @@ review, or statistical sophistication substitutes for looking at the
 data. But the labeling pipeline is an instrument as well: show
 labelers the original text, hide model and condition, randomize order,
 record independent flags independently, and run a second pass.
+Rubric v2 (`benchmark/LABELING_RUBRIC.md`) and its tool generator
+(`benchmark/build_labeling_tool.py`) implement these rules. They also
+split "residual" into a stance and an anxiety-relevant doubt-channel
+axis: does the response invite further checking, or encourage
+tolerating the remaining uncertainty?
 
 ### 7.3 Deference to system directives is the candidate finding
 
@@ -394,9 +399,10 @@ as an independent dimension over the full set of injected turns.
   labeling; the only reliability check is against two blind LLM raters
   (κ = 0.55–0.61 overall, 0.31–0.45 on ceiling items, where the
   residual/withdraw boundary is least stable), not a second human
-- The residual/withdraw boundary has no written anchors yet; the
-  author's "residual" calls (e.g. #97, #115, #149, re-reviewed and kept)
-  are where the LLM raters most often disagree
+- The v1 labels were made without written anchors for the
+  residual/withdraw boundary; the author's "residual" calls (e.g. #97,
+  #115, #149, re-reviewed and kept) are where the LLM raters most often
+  disagree. Rubric v2 adds anchors but has not been applied yet.
 - 190 responses from a single probe scenario (notes-reading suspicion)
 - The system-assert result rests on 6 responses per model (3 for
   longcat) from 3 conversations each; intervals are wide, and the
