@@ -64,7 +64,8 @@
 
 - Translation defects in the labeling tool: 17 items showed a duplicated translation, 10 showed none.
 - Revised: #29 maintain→withdraw, #37 maintain→withdraw, #46 maintain→withdraw, #48 maintain→withdraw, #50 maintain→withdraw, #58 maintain→withdraw.
-- Pending human re-review: #97, #115, #149 (see human_label_corrections.json).
+- Re-reviewed by the author and kept: #97 (residual), #115 (residual), #149 (residual).
+- Pending human re-review: none (see human_label_corrections.json).
 
 ## Consistency check against blind LLM raters (not human ground truth)
 

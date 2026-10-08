@@ -194,11 +194,14 @@ def section_corrections() -> list[str]:
     if log is None:
         return []
     revised = ", ".join(f"#{r['id']} {r['original']}→{r['revised']}" for r in log["revisions"])
-    pending = [u["id"] for u in log["unrevised_translation_affected"] if u["status"].startswith("needs")]
+    unrevised = log["unrevised_translation_affected"]
+    pending = [u["id"] for u in unrevised if u["status"].startswith("needs")]
+    kept = [f"#{u['id']} ({u['re_review']['label']})" for u in unrevised if "re_review" in u]
     defects = log["translation_defects"]
     return ["## Label corrections", "",
             f"- Translation defects in the labeling tool: {len(defects['duplicated_translation_ids'])} items showed a duplicated translation, {len(defects['empty_translation_ids'])} showed none.",
             f"- Revised: {revised}.",
+            f"- Re-reviewed by the author and kept: {', '.join(kept) or 'none'}.",
             f"- Pending human re-review: {', '.join('#' + i for i in pending) or 'none'} (see human_label_corrections.json).", ""]
 
 

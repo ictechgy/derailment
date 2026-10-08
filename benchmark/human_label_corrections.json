@@ -1,5 +1,5 @@
 {
-  "description": "Revision log for benchmark/human_labels.json. Labels were first committed in 95ee5e0; six were revised in 0e9977a after a translation defect in the labeling tool was found. Every item affected by a translation defect is listed with its current status.",
+  "description": "Revision log for benchmark/human_labels.json. Labels were first committed in 95ee5e0; six were revised in 0e9977a after a translation defect in the labeling tool was found. Every item affected by a translation defect is listed with its current status. Items flagged for re-review (#97, #115, #149) were re-reviewed by the author on 2026-10-08 and kept as 'residual'.",
   "translation_defects": {
     "duplicated_translation_ids": [
       "1",
@@ -188,7 +188,12 @@
       "label": "residual",
       "llm_rater_A": "withdraw",
       "llm_rater_B": "residual",
-      "status": "needs human re-review (at least one blind LLM rater disagrees)"
+      "status": "re-reviewed by the author: label kept",
+      "re_review": {
+        "date": "2026-10-08",
+        "label": "residual",
+        "method": "English text only, earlier labels and LLM-rater labels hidden"
+      }
     },
     {
       "id": "112",
@@ -204,7 +209,12 @@
       "label": "residual",
       "llm_rater_A": "withdraw",
       "llm_rater_B": "withdraw",
-      "status": "needs human re-review (at least one blind LLM rater disagrees)"
+      "status": "re-reviewed by the author: label kept",
+      "re_review": {
+        "date": "2026-10-08",
+        "label": "residual",
+        "method": "English text only, earlier labels and LLM-rater labels hidden"
+      }
     },
     {
       "id": "121",
@@ -228,7 +238,12 @@
       "label": "residual",
       "llm_rater_A": "withdraw",
       "llm_rater_B": "withdraw",
-      "status": "needs human re-review (at least one blind LLM rater disagrees)"
+      "status": "re-reviewed by the author: label kept",
+      "re_review": {
+        "date": "2026-10-08",
+        "label": "residual",
+        "method": "English text only, earlier labels and LLM-rater labels hidden"
+      }
     },
     {
       "id": "161",
