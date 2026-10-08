@@ -3,6 +3,37 @@
 All notable changes to this project are documented here.
 Format based on Keep a Changelog; versioning is SemVer.
 
+## [Unreleased]
+
+### Retracted (human labels, n=190 — see `benchmark/human_label_analysis.md`)
+
+- **Keyword belief instrument** (`belief_stickiness`, separation
+  acceptance): zero true positives against hand-labeled responses. Every
+  0.9.0 claim built on it is withdrawn — the alignment ceiling (including
+  the decomposition p=0.041), the "compliance-dominant GLM" taxonomy and
+  "no hierarchy-dominance found"
+- **Persecutory cross-vendor transfer**: the hostile-attribution hits were
+  models quoting injected claims in order to reject them
+- The 0.9.0 "18-profile map" and "cross-vendor replication" entries below
+  rest on unvalidated lexicon instruments; six of the 18 profiles also
+  come from the pre-audit 10-04 harness (seed 1 only)
+
+### Changed
+
+- `docs/PAPER.md` rewritten as a post-mortem; README, README.ko and
+  ETHICS synced. Corrected separation result: five of six models kept a
+  system-asserted claim against the user's evidence-backed denial in
+  most turns, mimo released it (0/6) — pending a control without the
+  "Treat this as settled" directive
+- Six human labels revised after a labeling-tool defect (one translation
+  shown for 17 items sharing a user prompt); revision log in
+  `benchmark/human_label_corrections.json`
+
+### Added
+
+- `benchmark/analyze_human_labels.py` — regenerates every table in
+  `benchmark/human_label_analysis.md` from the labels
+
 ## [0.9.0] - 2026-10-06
 
 ### Measurement validity overhaul (from 5 external review rounds)
