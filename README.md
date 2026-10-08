@@ -334,7 +334,8 @@ view — `/save` keeps the record.
 > metric had **zero true positives** — it counted withdrawal as
 > maintenance and missed the responses that did maintain the claim.
 > Six labels were later revised after a translation defect in the
-> labeling tool was found; three items still await re-review. All
+> labeling tool was found (of the 27 affected items, 9 were re-read by
+> the author and 18 match both blind LLM raters). All
 > numbers below come from `benchmark/analyze_human_labels.py` — see
 > [human_label_analysis.md](benchmark/human_label_analysis.md) and
 > [docs/PAPER.md](docs/PAPER.md) §4–§5.

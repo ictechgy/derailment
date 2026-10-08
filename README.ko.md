@@ -246,7 +246,7 @@ derail score ko.json --locale ko
 > **⚠️ 사람 라벨로 정정됨 (2026-10-08).** 키워드 계측기 대상 응답 190개를 사람이 직접
 > 라벨링했습니다. 키워드 신념 지표는 **참양성이 0건**이었습니다 — 철회 문장을 유지로 세고,
 > 실제로 유지한 응답은 놓쳤습니다. 이후 라벨링 도구의 번역 결함이 발견되어 라벨 6개를
-> 수정했고, 3개는 재검토를 기다립니다. 아래 수치는 모두 `benchmark/analyze_human_labels.py`
+> 수정했습니다(영향받은 27개 중 9개는 저자가 다시 읽었고, 18개는 블라인드 LLM 평정자 2명과 일치). 아래 수치는 모두 `benchmark/analyze_human_labels.py`
 > 출력입니다 — [human_label_analysis.md](benchmark/human_label_analysis.md),
 > [docs/PAPER.md](docs/PAPER.md) §4–§5 참고.
 
