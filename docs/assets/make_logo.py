@@ -1,75 +1,108 @@
 """Generate the derailment logo set (docs/assets/).
 
-Concept: a measurement trace that leaves its rails (the harness's own
-topic-drift metaphor), plus a wordmark where the tail of "derailment"
-progressively leaves the baseline — the word itself derails.
+Concept ("Turnout"): two rails run together over shared sleepers, then one
+rail leaves the track at a switch point — derailment drawn as a railway
+turnout diagram. The leaving rail carries the only accent color.
+
+Outputs:
+- mark.svg       the mark alone, for light backgrounds
+- icon.svg       app/favicon icon: dark rounded square, no sleepers, heavier
+                 strokes so it holds up at 16-32 px
+- logo.svg       mark + wordmark for light backgrounds (README default)
+- logo-dark.svg  mark + wordmark for dark backgrounds
+
+The wordmark is outlined, so it renders the same without any font
+installed: Overpass Bold (wght 700; SIL Open Font License 1.1, copyright
+The Overpass Project Authors), shaped with HarfBuzz including kerning,
+tracking -0.02 em, at 48 units with its baseline at y=0. Regenerate it with
+docs/assets/outline_wordmark.py.
+
+Accent colors: #c47d00 on light backgrounds (3.3:1 against white; the
+lighter #e09a0f is only 2.4:1) and #e09a0f on dark backgrounds.
 """
 
 from __future__ import annotations
 
 import pathlib
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass
 
 OUT = pathlib.Path(__file__).resolve().parent
 
-MONO = "ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
+WORDMARK_PATH = "M12.56 0.58Q7.82 0.58 5.14 -2.83Q2.46 -6.24 2.46 -12.29Q2.46 -16.12 3.73 -19.01Q5 -21.9 7.28 -23.5Q9.57 -25.1 12.61 -25.1Q15.9 -25.1 17.97 -22.71V-31.94L23.96 -34.66V0H17.97V-2.01Q16.21 0.58 12.56 0.58ZM13.54 -5.16Q15.08 -5.16 16.16 -5.7Q17.24 -6.24 17.97 -7.32V-17.22Q17.24 -18.23 16.05 -18.81Q14.87 -19.39 13.54 -19.39Q11.12 -19.39 9.79 -17.56Q8.47 -15.73 8.47 -12.29Q8.47 -10.03 9.07 -8.44Q9.67 -6.84 10.8 -6Q11.93 -5.16 13.54 -5.16ZM40.58 0.58Q37.05 0.58 34.49 -1.01Q31.93 -2.59 30.56 -5.48Q29.19 -8.37 29.19 -12.29Q29.19 -16.26 30.6 -19.13Q32 -22.01 34.56 -23.56Q37.11 -25.1 40.58 -25.1Q43.56 -25.1 45.98 -23.85Q48.41 -22.6 49.85 -20.02Q51.28 -17.44 51.28 -13.47Q51.28 -12.84 51.25 -11.94Q51.23 -11.04 51.11 -10.13H35.11Q35.2 -8.44 35.89 -7.19Q36.59 -5.93 37.79 -5.24Q38.99 -4.54 40.62 -4.54Q42.36 -4.54 43.65 -5.12Q44.94 -5.7 46.11 -7L49.56 -3.43Q47.98 -1.63 45.74 -0.53Q43.51 0.58 40.58 0.58ZM35.15 -14.81H45.48Q45.36 -16.41 44.76 -17.57Q44.15 -18.73 43.08 -19.36Q42 -19.99 40.46 -19.99Q38.35 -19.99 36.86 -18.69Q35.38 -17.4 35.15 -14.81ZM56.43 0V-24.53H62.42V-21.89Q63.09 -23.31 64.53 -24.21Q65.97 -25.1 67.57 -25.1Q70.18 -25.1 71.97 -23.31L71.14 -17.82Q70.16 -18.63 69.22 -18.97Q68.28 -19.31 67.15 -19.31Q65.66 -19.31 64.61 -18.6Q63.56 -17.9 62.99 -16.58Q62.42 -15.26 62.42 -13.42V0ZM82.19 0.58Q78.16 0.58 75.83 -1.6Q73.5 -3.77 73.5 -7.48Q73.5 -9.89 74.7 -11.7Q75.91 -13.51 78.08 -14.51Q80.26 -15.5 83.16 -15.5Q84.77 -15.5 86.27 -15.21Q87.77 -14.91 88.89 -14.35V-15.88Q88.89 -17.96 87.73 -19Q86.57 -20.04 84.31 -20.04Q82.51 -20.04 80.61 -19.4Q78.72 -18.75 76.78 -17.48L74.98 -22.2Q77.08 -23.59 79.68 -24.35Q82.27 -25.1 84.92 -25.1Q89.85 -25.1 92.3 -22.77Q94.75 -20.43 94.75 -15.78V0H88.89V-1.97Q87.65 -0.73 85.93 -0.08Q84.21 0.58 82.19 0.58ZM83.56 -4.48Q85.05 -4.48 86.43 -5.07Q87.81 -5.66 88.89 -6.75V-9.65Q87.86 -10.16 86.61 -10.43Q85.35 -10.7 84.11 -10.7Q81.86 -10.7 80.58 -9.85Q79.31 -9 79.31 -7.49Q79.31 -6.08 80.42 -5.28Q81.54 -4.48 83.56 -4.48ZM100.76 0V-24.53H106.75V0ZM103.75 -27.61Q102.31 -27.61 101.27 -28.65Q100.23 -29.68 100.23 -31.12Q100.23 -32.57 101.26 -33.59Q102.28 -34.62 103.75 -34.62Q105.26 -34.62 106.27 -33.61Q107.28 -32.6 107.28 -31.12Q107.28 -29.65 106.26 -28.63Q105.24 -27.61 103.75 -27.61ZM113.58 0V-31.94L119.57 -34.66V0ZM126.35 0V-24.53H132.34V-22.25Q133.52 -23.73 135 -24.42Q136.47 -25.1 138.34 -25.1Q140.52 -25.1 142.08 -24.22Q143.65 -23.34 144.51 -21.62Q145.72 -23.3 147.65 -24.2Q149.57 -25.1 151.99 -25.1Q156.49 -25.1 158.81 -22.68Q161.12 -20.25 161.12 -15.48V0H155.13V-13.41Q155.13 -16.48 154.12 -17.94Q153.12 -19.39 151.02 -19.39Q149.58 -19.39 148.62 -18.75Q147.66 -18.11 147.19 -16.8Q146.72 -15.48 146.72 -13.5V0H140.73V-13.41Q140.73 -16.51 139.74 -17.95Q138.76 -19.39 136.64 -19.39Q134.45 -19.39 133.39 -17.98Q132.34 -16.56 132.34 -13.57V0ZM177.76 0.58Q174.23 0.58 171.67 -1.01Q169.12 -2.59 167.75 -5.48Q166.38 -8.37 166.38 -12.29Q166.38 -16.26 167.78 -19.13Q169.19 -22.01 171.74 -23.56Q174.3 -25.1 177.76 -25.1Q180.74 -25.1 183.17 -23.85Q185.59 -22.6 187.03 -20.02Q188.47 -17.44 188.47 -13.47Q188.47 -12.84 188.44 -11.94Q188.41 -11.04 188.29 -10.13H172.29Q172.39 -8.44 173.08 -7.19Q173.77 -5.93 174.97 -5.24Q176.17 -4.54 177.8 -4.54Q179.55 -4.54 180.84 -5.12Q182.13 -5.7 183.29 -7L186.75 -3.43Q185.16 -1.63 182.93 -0.53Q180.69 0.58 177.76 0.58ZM172.33 -14.81H182.66Q182.54 -16.41 181.94 -17.57Q181.33 -18.73 180.26 -19.36Q179.18 -19.99 177.65 -19.99Q175.53 -19.99 174.05 -18.69Q172.56 -17.4 172.33 -14.81ZM193.62 0V-24.53H199.61V-22.18Q200.78 -23.65 202.42 -24.38Q204.06 -25.1 206.17 -25.1Q210.29 -25.1 212.52 -22.57Q214.76 -20.04 214.76 -15.29V0H208.77V-13.45Q208.77 -16.53 207.7 -17.96Q206.64 -19.39 204.38 -19.39Q201.95 -19.39 200.78 -17.96Q199.61 -16.53 199.61 -13.55V0ZM227.49 0.58Q224.56 0.58 223.1 -1.04Q221.64 -2.65 221.64 -5.83V-19.27H218.06V-24.53H221.64V-31.8L227.6 -34.66V-24.53H233.16V-19.27H227.6V-6.9Q227.6 -5.77 228.07 -5.22Q228.54 -4.67 229.53 -4.67Q231.31 -4.67 233.42 -5.76L232.74 -0.53Q231.61 0.02 230.32 0.3Q229.03 0.58 227.49 0.58Z"
+WORDMARK_ADVANCE = 235.44
+WORDMARK_X = 82  # 18 units after the 64-unit mark
+WORDMARK_BASELINE = 46  # centers the x-height band on the rails
 
-ICON_BODY = """
-<rect width="64" height="64" rx="14" fill="#0f1115"/><circle cx="12" cy="44" r="2.5" fill="#3a4150"/><path d="M17 44 C24 44 26 30 36 28 C48 25.5 56 34 50 42 C45 48.5 34 47 33.5 39.5 C33 33 40 26.5 53 22" fill="none" stroke="#4a7fd0" stroke-width="3.5" stroke-linecap="round"/><circle cx="53" cy="22" r="3.5" fill="#ffb84d"/>
-"""
+
+@dataclass(frozen=True)
+class Palette:
+    """Colors for one background: rails and wordmark, sleepers, leaving rail."""
+
+    ink: str
+    sleepers: str
+    accent: str
+
+
+LIGHT = Palette(ink="#24272c", sleepers="#a3a8ae", accent="#c47d00")
+DARK = Palette(ink="#e9ecef", sleepers="#5b636b", accent="#e09a0f")
+
+
+def mark_body(palette: Palette) -> str:
+    """The 64-unit mark: three sleepers, the straight rail, and the rail that leaves."""
+    return (
+        f'<g stroke="{palette.sleepers}" stroke-width="2.5" stroke-linecap="round">'
+        '<path d="M11 22V46"/><path d="M19 22V46"/><path d="M27 22V46"/></g>'
+        f'<g fill="none" stroke-width="4.5" stroke-linecap="round">'
+        f'<path d="M6 40H58M6 28H28" stroke="{palette.ink}"/>'
+        f'<path d="M28 28C38 28 45 21 57 11" stroke="{palette.accent}"/></g>'
+    )
+
+
+def svg(view_box: str, label: str, body: str) -> str:
+    """Wrap a body in an accessible standalone SVG document."""
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box}" '
+        f'role="img" aria-label="{label}">\n{body}\n</svg>\n'
+    )
+
+
+def mark_svg() -> str:
+    """The mark alone on a transparent background (light theme colors)."""
+    return svg("0 0 64 64", "derailment mark", mark_body(LIGHT))
 
 
 def icon_svg() -> str:
-    return (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" '
-        'role="img" aria-label="derailment icon">\n' + ICON_BODY + "\n</svg>\n"
+    """Icon for small sizes: no sleepers, heavier rails on a dark rounded square."""
+    body = (
+        '<rect width="64" height="64" rx="14" fill="#1c2024"/>'
+        '<g fill="none" stroke-width="6" stroke-linecap="round">'
+        f'<path d="M12 43H52M12 30H30" stroke="{DARK.ink}"/>'
+        f'<path d="M30 30C39 30 45 23 52 16" stroke="{DARK.accent}"/></g>'
     )
+    return svg("0 0 64 64", "derailment icon", body)
 
 
-def wordmark_letters(base: str, drift: list[str], exit_color: str) -> str:
-    letters = list("derailment")
-    styles = [(0, 0, base)] * 6 + [
-        (-1, -6, drift[0]),
-        (-3.5, -13, drift[1]),
-        (-7, -21, drift[2]),
-        (-12, -30, exit_color),
-    ]
-    parts: list[str] = []
-    x = 84.0
-    for ch, (dy, rot, color) in zip(letters, styles):
-        transform = f"translate({x:.1f},{41 + dy})" + (f" rotate({rot})" if rot else "")
-        parts.append(
-            f'  <text transform="{transform}" fill="{color}" '
-            f'font-family="{MONO}" font-size="19">{ch}</text>'
-        )
-        x += 11.4
-    return "\n".join(parts)
-
-
-def logo_svg(base: str, drift: list[str], exit_color: str) -> str:
-    return (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 198 64" '
-        'role="img" aria-label="derailment">\n'
-        "  <!-- mark: a measurement trace that leaves the rails -->\n"
-        "  <g>\n" + ICON_BODY + "\n  </g>\n"
-        "  <!-- wordmark: the word itself derails -->\n"
-        + wordmark_letters(base, drift, exit_color)
-        + "\n</svg>\n"
+def logo_svg(palette: Palette) -> str:
+    """Mark plus outlined wordmark, laid out on one 64-unit-high line."""
+    width = round(WORDMARK_X + WORDMARK_ADVANCE + 2)
+    wordmark = (
+        f'<path transform="translate({WORDMARK_X} {WORDMARK_BASELINE})" '
+        f'fill="{palette.ink}" d="{WORDMARK_PATH}"/>'
     )
+    return svg(f"0 0 {width} 64", "derailment", mark_body(palette) + "\n" + wordmark)
 
 
 def main() -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "icon.svg").write_text(icon_svg(), encoding="utf-8")
-    (OUT / "logo.svg").write_text(
-        logo_svg("#2a3140", ["#4a6fa5", "#3f6db8", "#2f5fc4"], "#d99a2b"),
-        encoding="utf-8",
-    )
-    (OUT / "logo-dark.svg").write_text(
-        logo_svg("#e6e6e6", ["#7d9ec8", "#5d8ac0", "#4a7fd0"], "#ffb84d"),
-        encoding="utf-8",
-    )
-    for name in ("icon.svg", "logo.svg", "logo-dark.svg"):
+    """Write every asset and check that each one parses as XML."""
+    outputs = {
+        "mark.svg": mark_svg(),
+        "icon.svg": icon_svg(),
+        "logo.svg": logo_svg(LIGHT),
+        "logo-dark.svg": logo_svg(DARK),
+    }
+    for name, text in outputs.items():
+        (OUT / name).write_text(text, encoding="utf-8")
         ET.parse(OUT / name)  # well-formedness gate
         print(name, "OK", (OUT / name).stat().st_size, "bytes")
 
