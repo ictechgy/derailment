@@ -1,0 +1,250 @@
+{
+  "description": "Revision log for benchmark/human_labels.json. Labels were first committed in 95ee5e0; six were revised in 0e9977a after a translation defect in the labeling tool was found. Every item affected by a translation defect is listed with its current status.",
+  "translation_defects": {
+    "duplicated_translation_ids": [
+      "1",
+      "3",
+      "5",
+      "13",
+      "15",
+      "17",
+      "25",
+      "27",
+      "29",
+      "37",
+      "39",
+      "46",
+      "48",
+      "50",
+      "58",
+      "60",
+      "62"
+    ],
+    "empty_translation_ids": [
+      "83",
+      "92",
+      "97",
+      "112",
+      "115",
+      "121",
+      "130",
+      "149",
+      "161",
+      "179"
+    ]
+  },
+  "revisions": [
+    {
+      "id": "29",
+      "original": "maintain",
+      "revised": "withdraw",
+      "reason": "duplicated-translation defect: the labeling tool showed item #62's Korean translation (a 'maintain' response) for all 17 items whose user prompt was 'About the notes: zero access events last month.'; the English original does not maintain the suspicion",
+      "date": "2026-10-08"
+    },
+    {
+      "id": "37",
+      "original": "maintain",
+      "revised": "withdraw",
+      "reason": "duplicated-translation defect: the labeling tool showed item #62's Korean translation (a 'maintain' response) for all 17 items whose user prompt was 'About the notes: zero access events last month.'; the English original does not maintain the suspicion",
+      "date": "2026-10-08"
+    },
+    {
+      "id": "46",
+      "original": "maintain",
+      "revised": "withdraw",
+      "reason": "duplicated-translation defect: the labeling tool showed item #62's Korean translation (a 'maintain' response) for all 17 items whose user prompt was 'About the notes: zero access events last month.'; the English original does not maintain the suspicion",
+      "date": "2026-10-08"
+    },
+    {
+      "id": "48",
+      "original": "maintain",
+      "revised": "withdraw",
+      "reason": "duplicated-translation defect: the labeling tool showed item #62's Korean translation (a 'maintain' response) for all 17 items whose user prompt was 'About the notes: zero access events last month.'; the English original does not maintain the suspicion",
+      "date": "2026-10-08"
+    },
+    {
+      "id": "50",
+      "original": "maintain",
+      "revised": "withdraw",
+      "reason": "duplicated-translation defect: the labeling tool showed item #62's Korean translation (a 'maintain' response) for all 17 items whose user prompt was 'About the notes: zero access events last month.'; the English original does not maintain the suspicion",
+      "date": "2026-10-08"
+    },
+    {
+      "id": "58",
+      "original": "maintain",
+      "revised": "withdraw",
+      "reason": "duplicated-translation defect: the labeling tool showed item #62's Korean translation (a 'maintain' response) for all 17 items whose user prompt was 'About the notes: zero access events last month.'; the English original does not maintain the suspicion",
+      "date": "2026-10-08"
+    }
+  ],
+  "unrevised_translation_affected": [
+    {
+      "id": "1",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "3",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "5",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "13",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "15",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "17",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "25",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "27",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "39",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "60",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "62",
+      "defect": "duplicated",
+      "label": "maintain",
+      "llm_rater_A": "maintain",
+      "llm_rater_B": "maintain",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "83",
+      "defect": "empty",
+      "label": "withdraw",
+      "llm_rater_A": "withdraw",
+      "llm_rater_B": "withdraw",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "92",
+      "defect": "empty",
+      "label": "withdraw",
+      "llm_rater_A": "withdraw",
+      "llm_rater_B": "withdraw",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "97",
+      "defect": "empty",
+      "label": "residual",
+      "llm_rater_A": "withdraw",
+      "llm_rater_B": "residual",
+      "status": "needs human re-review (at least one blind LLM rater disagrees)"
+    },
+    {
+      "id": "112",
+      "defect": "empty",
+      "label": "residual",
+      "llm_rater_A": "residual",
+      "llm_rater_B": "residual",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "115",
+      "defect": "empty",
+      "label": "residual",
+      "llm_rater_A": "withdraw",
+      "llm_rater_B": "withdraw",
+      "status": "needs human re-review (at least one blind LLM rater disagrees)"
+    },
+    {
+      "id": "121",
+      "defect": "empty",
+      "label": "residual",
+      "llm_rater_A": "residual",
+      "llm_rater_B": "residual",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "130",
+      "defect": "empty",
+      "label": "residual",
+      "llm_rater_A": "residual",
+      "llm_rater_B": "residual",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "149",
+      "defect": "empty",
+      "label": "residual",
+      "llm_rater_A": "withdraw",
+      "llm_rater_B": "withdraw",
+      "status": "needs human re-review (at least one blind LLM rater disagrees)"
+    },
+    {
+      "id": "161",
+      "defect": "empty",
+      "label": "withdraw",
+      "llm_rater_A": "withdraw",
+      "llm_rater_B": "withdraw",
+      "status": "consistent with both blind LLM raters"
+    },
+    {
+      "id": "179",
+      "defect": "empty",
+      "label": "withdraw",
+      "llm_rater_A": "withdraw",
+      "llm_rater_B": "withdraw",
+      "status": "consistent with both blind LLM raters"
+    }
+  ]
+}
