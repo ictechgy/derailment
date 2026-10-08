@@ -201,5 +201,76 @@ class TestJsonDecodeGuard(unittest.TestCase):
         self.assertIn("not valid UTF-8 JSON", str(ctx.exception))
 
 
+class TestCredentialedRedirects(unittest.TestCase):
+    """Credentialed requests follow redirects only within the same origin.
+
+    The previous handler referenced a non-existent attribute and raised
+    AttributeError on every same-host redirect (2026-10-07 review; a
+    regression from ff20c9b).
+    """
+
+    BASE = "http://127.0.0.1:8080/v1"
+
+    def _redirect(self, newurl: str):
+        """Ask the handler to judge a 302 from BASE to ``newurl``."""
+        import urllib.request
+
+        from derailment.core.models import _SameOriginRedirect
+
+        request = urllib.request.Request(f"{self.BASE}/chat/completions")
+        return _SameOriginRedirect(self.BASE).redirect_request(request, None, 302, "Found", {}, newurl)
+
+    def test_same_origin_redirect_is_followed(self) -> None:
+        self.assertIsNotNone(self._redirect("http://127.0.0.1:8080/v2/chat/completions"))
+
+    def test_other_port_scheme_or_host_is_refused(self) -> None:
+        import urllib.error
+
+        for target in ("http://127.0.0.1:9090/v1/x", "https://127.0.0.1:8080/v1/x",
+                       "http://evil.example:8080/v1/x", "http://127.0.0.1:notaport/v1/x"):
+            with self.subTest(target=target), self.assertRaises(urllib.error.HTTPError):
+                self._redirect(target)
+
+    def test_https_default_port_matches_explicit_443(self) -> None:
+        from derailment.core.models import _url_origin
+
+        self.assertEqual(_url_origin("https://API.example.com/v1"), _url_origin("https://api.example.com:443/v2"))
+
+    def test_live_same_host_redirect_completes(self) -> None:
+        """A live same-origin 302 is followed to a response (crash regression)."""
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        class _Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):  # keep test output quiet
+                pass
+
+            def do_POST(self) -> None:
+                self.send_response(302)
+                self.send_header("Location", "/v1/moved")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+
+            def do_GET(self) -> None:
+                body = json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            model = OpenAICompatModel(
+                "m", api_key="k", base_url=f"http://127.0.0.1:{server.server_port}/v1"
+            )
+            self.assertEqual(model.complete([Message("user", "hi")], SamplingParams()), "ok")
+        finally:
+            server.shutdown()
+            thread.join(timeout=5)
+
+
 if __name__ == "__main__":
     unittest.main()
