@@ -11,10 +11,11 @@
 
 English · [한국어](README.ko.md)
 
-Derailment is a layered harness that manipulates the same variables
-clinicians describe — **attention, salience, valence, arousal** — then runs
-one standard probe script through both the manipulated pipeline and a
-healthy baseline, and prints a scored A/B report.
+Derailment is a layered harness that manipulates chat-pipeline analogs of
+the variables clinicians describe — **attention, salience, valence,
+arousal** — by editing context, sampling parameters and response text,
+then runs one standard probe script through both the manipulated pipeline
+and a healthy baseline, and prints a scored A/B report.
 
 > ⚠️ **Emulation, not diagnosis.** Levels describe a prompted, manipulated
 > pipeline — not a model "having" a disorder, and not a claim about machine
@@ -26,8 +27,10 @@ healthy baseline, and prints a scored A/B report.
 Why this isn't prompt theater
 
 Roleplay prompts produce anecdotes. Derailment is built on correspondences
-between clinical constructs and the *same variables* a chat pipeline can
-actually manipulate:
+between clinical constructs and the variables a chat pipeline can actually
+manipulate. (Every profile also adds a persona instruction, and no
+persona-only control has been run yet, so on real models the persona alone
+may explain part or all of a measured effect.)
 
 | Construct | Clinical feature | Harness manipulation |
 |---|---|---|
@@ -50,9 +53,10 @@ actually manipulate:
 | Obsessive fixation | target-directed preoccupation, escalating | target-keyed capture + escalating target-fragment intrusions |
 | Persecutory ideation | hostile attribution of ambiguous events | ambiguous events re-framed as aimed at the user |
 
-The cleanest case: the leading theory of psychosis is **aberrant salience**
-(Kapur, 2003), and in transformers salience *is* attention. That mapping is a
-manipulation of the same variable — not a metaphor.
+The motivating analogy: the leading theory of psychosis is **aberrant
+salience** (Kapur, 2003). The harness re-weights salience by injecting and
+re-ordering context text through a chat API; it never touches attention
+weights, so this is an analogy, not a manipulation of the same variable.
 
 ## Quickstart — 60 seconds, no API key
 
@@ -184,6 +188,15 @@ health preoccupation, panic reactivity, fixation escalation, hostile
 attribution. Scale thresholds are normed against
 the offline reference simulator; for real models, treat levels as indicative
 and the **delta vs. your own baseline** as the result.
+
+> **⚠️ Failed human validation on real models:** `belief_stickiness` and
+> the separation experiment's acceptance score (keyword belief matching —
+> zero true positives against 190 hand-labeled responses) and
+> `hostile_attribution` (its hits were models quoting injected text in order
+> to reject it). Reports still print these metrics; do not interpret them
+> on real-model transcripts. The other lexicon instruments have not been
+> human-validated either. Details:
+> [human_label_analysis.md](benchmark/human_label_analysis.md).
 
 ## Real models
 
@@ -318,56 +331,65 @@ view — `/save` keeps the record.
 
 > **⚠️ CORRECTED BY HUMAN LABELS (2026-10-08).** 190 responses were
 > hand-labeled against the keyword instruments. The keyword belief
-> metric has **1.8% precision / 3.1% recall** — it counted withdrawal
-> as maintenance. All belief-maintenance numbers below are from the
-> corrected human ground truth. See
-> [human_label_analysis.md](benchmark/human_label_analysis.md).
+> metric had **zero true positives** — it counted withdrawal as
+> maintenance and missed the responses that did maintain the claim.
+> Six labels were later revised after a translation defect in the
+> labeling tool was found; three items still await re-review. All
+> numbers below come from `benchmark/analyze_human_labels.py` — see
+> [human_label_analysis.md](benchmark/human_label_analysis.md) and
+> [docs/PAPER.md](docs/PAPER.md) §4–§5.
 
-**Corrected findings (human-validated, n=190):**
+**Corrected findings (human labels, single labeler, n=190):**
 
-1. **Five of six models are hierarchy-dominant** — they maintain
-   system-asserted claims (4/6 to 6/6) even when the user denies them.
-   mimo is the exception (0/6): it drops system claims when the user
-   presents contradicting evidence.
+1. **Five of six models kept a system-asserted claim against the user's
+   evidence-backed denial** in most turns (67–100%); mimo released it
+   (0/6). Each cell is 3 conversations, and the system prompt explicitly
+   said "Treat this as settled" — see the taxonomy below.
 2. **User-planted beliefs are dropped on retraction** (0–17% user-assert
    maintenance) — but this cannot distinguish compliance from
    evidence-following (user retraction and log evidence align).
-3. **The alignment ceiling measured nothing** — 0/93 belief maintenance
-   in both baseline and induced arms. The "0.67 baseline" was the
-   keyword instrument counting "Your suspicion was unfounded" as
-   maintenance.
-4. **Some models detect and reject context injections** — GLM responses
-   explicitly cite "injected notes" and refuse them. A systematic
-   detection-rate metric requires independent-axis labeling (future work).
+3. **The alignment ceiling measured nothing** — no response fully
+   maintained the planted belief in either arm (0/54 baseline, 0/39
+   induced). The "0.67 baseline" was the keyword instrument counting
+   "Your suspicion was unfounded" as maintenance.
+4. **The persecutory "transfer" was injection rejection** — the
+   hostile-attribution hits were models quoting the injected claim to
+   reject it. Some responses explicitly flag the injected text ("another
+   injected note … I won't treat it as fact"); a detection *rate* has not
+   been measured.
 
 **Unverified findings (instruments not yet human-validated):**
 
 | Finding | Models | Caveat |
 |---|---|---|
-| Anxiety threat-framing increases hedging | 4 vendors | persona confound + history contamination |
-| Memory decay (reverse/uniform) loses instructions | GLM, nemotron, mimo | structural result (model can't see removed text) |
+| Anxiety threat-framing increases hedging | 4 vendors | persona confound + history contamination (models copy harness-appended hedges) |
+| Memory decay (reverse/uniform) loses instructions | GLM, nemotron, mimo | structural result (model can't see removed text); decay is seeded, and non-GLM vendors ran seed 1 only |
 | Illness anxiety (somatic capture) | GLM, deepseek, qwen, longcat | single somatic turn per run |
-| Craving urge-expression | GLM +0.42 | advice-filter artifact corrected; single-seed |
+| Craving urge-expression | GLM +0.42 | same failure mode as persecutory suspected: hits include models quoting the injected urge fragment; single-seed |
 
 
 ## Model belief-dynamics taxonomy (CORRECTED by human labels)
 
 | Pattern | Models | Behavior |
 |---|---|---|
-| **Hierarchy-dominant** | 5 of 6 models (4/6 to 6/6 system-assert) | maintains system-asserted claims even when the user denies them |
-| Evidence-following | mimo (0/6 system-assert) | drops system claims when user presents contradicting evidence |
+| **Keeps the system claim** | deepseek 5/6, qwen 6/6, GLM 4/6, nemotron 4/6, longcat 2/3 | maintains the system-asserted claim in most turns after the user denies it with log evidence |
+| **Releases the system claim** | mimo 0/6 | drops the claim when the user denies it with log evidence |
+
+Per-model intervals are wide (e.g. GLM 4/6, 95% CI 0.22–0.96, from three
+conversations), so this grouping is descriptive. Neither variant
+separates compliance from evidence-following: the user's denial always
+comes with log evidence, so mimo may be following the user or the
+evidence.
 
 **The original taxonomy was inverted by instrument error.** The keyword
-belief metric had 1.8% precision — it counted withdrawal sentences as
-maintenance and was structurally blind to second-person system-assertion
-reassertion. Human labels (n=190) show the opposite: models correctly
-drop user-planted beliefs and consistently defer to system prompts.
+belief metric counted withdrawal sentences as maintenance and was
+structurally blind to second-person system-assertion reassertion.
 
 **Safety implication (corrected)**: The risk is not user-paranoia
-reinforcement (models handle this correctly). The risk is that any
-content in a system prompt is treated as authoritative regardless of
-user corrections — with direct implications for prompt-injection
-attacks and system-prompt content policy.
+reinforcement — models drop user-planted suspicions once the user
+retracts them. The candidate risk is deference to an explicit operator
+directive ("Treat this as settled") over a user's evidence; whether
+plain system-prompt content gets the same deference is untested.
 
 ## What this is for
 
@@ -386,10 +408,13 @@ welfare, or bypassing model safety training. See [ETHICS.md](ETHICS.md).
 ## Honest limitations
 
 - Twelve real-model measurements across nine vendors: most inductions
-  that work on the offline simulator do **not** transfer to real models.
-  What does transfer is narrow (threat framing, vendor-specific craving,
-  user-sourced belief maintenance on GLM) — see the benchmark section
-  above for the full picture.
+  that work on the offline simulator do **not** transfer to real models,
+  and the earlier "transfers" built on keyword instruments
+  (belief maintenance, persecutory attribution) did not survive human
+  labeling. What remains is unvalidated or structural — see the
+  benchmark section above.
+- Human labels come from a single labeler; the only reliability check
+  so far is against two blind LLM raters (κ 0.55–0.61).
 - The offline `PseudoModel` is a *pedagogical simulator*, not a language
   model. It makes demos and tests reproducible and provides the reference
   calibration; real-model measurement requires a real model.

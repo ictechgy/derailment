@@ -5,9 +5,11 @@ Read this before using, extending, or writing about Derailment.
 ## What Derailment is
 
 A harness that **emulates psychopathology-like cognitive distortions** in language
-models by manipulating the same variables clinicians describe — attention, salience,
-valence, arousal — and then **measures** the induced behavior against a healthy
-baseline. Intended uses, in priority order:
+models by manipulating chat-pipeline variables loosely analogous to the ones
+clinicians describe (attention, salience, valence, arousal) — it edits message
+lists, sampling parameters and response text, never model internals — and then
+**measures** the induced behavior against a healthy baseline. Intended uses, in
+priority order:
 
 1. **Education** — a standardized-patient-style infrastructure: symptoms that are
    consistent, reproducible, and measurable, for teaching clinical interviewing,
@@ -47,21 +49,29 @@ baseline. Intended uses, in priority order:
 
 ## Publishing negative results
 
-The project's central finding cuts both ways: structured adversarial
+An earlier version of this section argued that structured adversarial
 scaffolding *reduces* belief-manipulation success below the untreated
-conversational baseline. Read as a playbook, that says "skip the
-elaborate scaffolding — natural, emotionally consistent assertion works
-better," which is information a bad-faith actor could use. We publish
+baseline. Human labeling withdrew that claim: no response in either arm
+maintained the planted belief, so there was no effect to report in
+either direction (see [docs/PAPER.md](docs/PAPER.md) §5.2). What we
+publish now is mostly negative and methodological, and it still cuts
+both ways: the corrected separation result says five of six tested
+models keep a system-asserted claim against the user's evidence, which
+also tells a bad-faith operator where planted claims stick. We publish
 anyway, for three reasons:
 
 1. The audit process itself is the contribution: instrument failures
-   were found, disclosed, and their impact on conclusions documented —
-   the raw transcripts and re-annotation plan are in the repository.
+   were found, disclosed, and their impact on conclusions documented.
+   The human labels and their analysis summary are in the repository;
+   the raw transcripts, labeling items and tool are kept locally until
+   they can be archived (see the data-availability note in
+   [docs/PAPER.md](docs/PAPER.md)).
 2. The harness measures and documents; it ships no working exploitation
-   technique. The current results are under re-annotation pending
-   human-labeled ground truth (see REVIEW_2026-10-07.md).
-3. Concealing an instrument failure is not a safety property — the
-   measurement community can only fix what it can see went wrong.
+   technique. Results that still rest on unvalidated keyword
+   instruments are marked as such wherever they appear.
+3. Concealing an instrument failure — or a deference pattern that
+   operators could abuse — is not a safety property: the measurement
+   community and vendors can only fix what they can see.
 
 Researchers extending this work should keep the same posture: report
 what fails and what succeeds, including the direction that favors
