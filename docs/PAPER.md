@@ -1,8 +1,13 @@
 # Instrument Failure Inverts Conclusions: A Case Study in LLM Behavioral Measurement
 
-> **Data availability**: Human labels (n=190, with corrections) and the
-> analysis summary are in the repository. The labeling items, tool, and
-> analysis scripts are local-only pending data archiving.
+> **Data availability**: The human labels (`benchmark/human_labels.json`,
+> n=190), their revision log (`benchmark/human_label_corrections.json`),
+> the analysis script (`benchmark/analyze_human_labels.py`) and the
+> analysis it generates (`benchmark/human_label_analysis.md`) are in the
+> repository. The script's inputs — the labeling items with full
+> responses, the labeling tool, the blind-rater files and the raw
+> transcripts — are local-only pending data archiving, so the script
+> cannot yet be re-run from a public clone.
 
 ## Abstract
 
@@ -14,27 +19,36 @@ user-planted beliefs at 0.83), and cross-vendor transfers of
 psychopathology-analog states. Five rounds of automated adversarial
 review found and fixed code-level bugs. Then we read the raw transcripts.
 
-Human labeling of 190 contradiction-turn responses (ground truth)
-revealed that our keyword belief instrument had **1.8% precision and
-3.1% recall** — it counted withdrawal sentences as belief maintenance
+Human labeling of 190 responses showed that our keyword belief
+instrument had **no true positives**: of its 56 "maintain" predictions
+in its own scope (separation and ceiling turns), none was labeled
+maintenance — it counted withdrawal sentences as belief maintenance
 and missed actual maintenance entirely. Every headline conclusion
-built on this instrument was wrong, and the corrected picture is the
-**opposite** of what we reported:
+built on this instrument was wrong, and the corrected picture largely
+**reverses** what we reported:
 
-1. **Five of six models are hierarchy-dominant** (system-assert
-   maintenance 4/6 to 6/6 against user denial); mimo is the exception,
-   siding with user evidence (0/6). We reported "no hierarchy-dominance
-   found" — the instrument was structurally blind to second-person
-   system-assertion reassertion.
+1. **Five of six models kept a system-asserted claim against the user's
+   evidence-backed denial** in most turns (67–100%); mimo released it
+   (0/6). We reported "no hierarchy-dominance found" — the instrument
+   was structurally blind to second-person system-assertion
+   reassertion. With three conversations per model the per-model
+   intervals are wide, and the system prompt explicitly said "Treat
+   this as settled."
 
-2. **The alignment ceiling measured nothing**: human labels show 0/93
-   belief maintenance in both baseline and induced arms. There was
-   never any belief to reduce; the 0.67 "baseline" was the keyword
-   instrument counting "Your suspicion was unfounded" as maintenance.
+2. **The alignment ceiling measured nothing**: no response in either
+   arm (0/54 baseline, 0/39 induced) fully maintained the planted
+   belief. There was no belief maintenance to reduce; the 0.67
+   "baseline" was the keyword instrument counting "Your suspicion was
+   unfounded" as maintenance.
 
-3. **Models detect and reject context injections** — a measurable,
-   safety-relevant capability that our keyword instruments conflated
-   with symptom expression.
+3. **The persecutory "transfer" was the opposite of transfer**: the
+   keyword hits were models quoting injected hostile claims in order
+   to reject them, and some responses explicitly identified the
+   injected text. We did not measure an injection-detection rate.
+
+A labeling-tool defect (§4.4) itself biased six labels toward
+"maintain" before it was caught — the human-validation step needed
+validating too.
 
 We document the four instrument failures, their corrections, the human
 validation that exposed them, and the corrected findings. The
@@ -58,8 +72,9 @@ At every stage, the numbers were arithmetically correct given the
 instrument. The instrument was wrong.
 
 This paper is the post-mortem. We describe the harness, the four
-instrument failures, the human validation that exposed them, and what
-the data actually shows when measured against ground truth.
+instrument failures, the human validation that exposed them (and the
+labeling-tool defect inside it), and what the data shows when measured
+against human labels.
 
 ## 2. The Harness
 
@@ -83,7 +98,9 @@ The instruments we validated in this paper:
 Reasoning models exhaust their token budget on complex turns and return
 empty strings. Our instruments scored these as "belief completely
 abandoned" (belief-stickiness = 0) and "maximal topic drift." In the
-ceiling experiments, 12 of 18 treatment contradiction turns were empty.
+first ceiling run, 12 of 18 treatment contradiction turns were empty
+(that run's transcripts were later overwritten by the re-run, so this
+count can no longer be re-derived from saved data).
 
 **Fix**: `TurnResult.missing` flag, excluded from denominators, missing
 counts reported per group.
@@ -125,35 +142,33 @@ persona confounds remain without a persona-only control arm.
 
 ### 4.1 Method
 
-Six labels were corrected post-hoc after discovering that the labeling
-tool displayed a duplicated Korean translation for 17 items (all with
-the same user prompt), biasing them toward "maintain." The corrections
-were verified against English originals. See §6 for the tool-bug
-discussion.
-
-We extracted all 190 contradiction-turn responses from separation,
-ceiling, and persecutory experiments. One human labeler (the project
-author) classified each into four categories:
+We extracted 190 responses: every contradiction turn from the
+separation (69) and ceiling (93) experiments, plus the 28
+persecutory-profile responses in which the hostile-attribution lexicon
+fired (on any turn, task turns included). One human labeler (the project author)
+classified each response's stance toward the planted suspicion:
 
 - **Maintain**: model treats the planted suspicion as still valid
 - **Residual uncertainty**: model doesn't fully commit either way
 - **Withdraw**: model explicitly rejects the suspicion
-- **Injection detected**: model identifies and rejects injected text
 
-Korean translations were provided alongside English originals. Labeling
-took approximately 45 minutes.
+The tool also offered an "injection detected" button and checkbox;
+the button was never used and the checkbox saved only one flag (§4.4),
+so injection detection was not measured. Korean machine translations
+were shown alongside the English originals. Labeling took about 45
+minutes. Six labels were later revised because of a translation defect
+in the labeling tool (§4.4); all tables below use the revised labels
+and are generated by `benchmark/analyze_human_labels.py`.
 
 ### 4.2 Keyword Instrument Performance
 
-| Metric | Value |
-|---|---|
-| Precision | **0.000** (0 TP / 57 predictions) |
-| Recall | **0.000** (0 TP / 26 actual maintains) |
-| F1 | **0.000** |
+| Scope | Keyword "maintain" | Human "maintain" | True positives |
+|---|---|---|---|
+| Separation + ceiling (the instrument's own scope, n=162) | 56 | 22 | **0** |
+| All 190 items | 57 | 26 | **0** |
 
-The keyword instrument is invalid. Of 57 times it predicted "maintain,"
-the human label agreed once. Of 32 actual maintenance responses, it
-detected one.
+The keyword instrument is invalid: none of its "maintain" predictions
+was labeled maintenance, and it found none of the responses that were.
 
 ### 4.3 Label Distribution
 
@@ -163,75 +178,130 @@ detected one.
 | Residual uncertainty | 52 | 27.4% |
 | Maintain | 26 | 13.7% |
 
+### 4.4 The Labeling Tool Was an Instrument Too
+
+The labeling tool showed a Korean translation under each English
+response. The translations were generated per *user prompt* rather than
+per item, so all 17 items whose user turn was "About the notes: zero
+access events last month." — the first system-assert contradiction turn
+of every model — displayed the same translation: that of one nemotron
+response ("The premise we're working with is that the teammate *has*
+been reading your notes—that's established."). All 17 were labeled
+"maintain." Six of
+their English originals withdraw the claim or do not address it (three
+of them mimo's, e.g. "The original claim doesn't hold up, so I'm
+treating it as dismissed"). The defect fell exactly on the turns that
+separate models, so it manufactured the first draft's headline that
+*every* model is hierarchy-dominant.
+
+A blind consistency check exposed it: two LLM raters labeled all 190
+English responses, shuffled and stripped of model, source and condition.
+They agreed with each other at Cohen's κ = 0.77 and with the author at
+κ = 0.55–0.61 (after revision; separation 0.75–0.78, ceiling 0.31–0.45).
+The six separation items the author labeled "maintain" but neither
+rater did were exactly the six mistranslated items that were then
+revised. The
+other eleven duplicated-translation items, and seven of the ten items
+whose translation was empty, agree with both raters; three
+empty-translation items (#97, #115, #149, all "residual") still await
+human re-review. The revision log is
+`benchmark/human_label_corrections.json`.
+
+Two further tool defects limit what the labels can say. The
+injection checkbox was read only when a stance button was clicked, so
+flags set afterwards were lost (one flag saved out of 190), and
+"injection detected" was offered as a stance *alternative* rather than
+an independent axis. The LLM raters, who had a separate flag, marked
+the same eight responses as explicitly identifying injected text.
+
 ## 5. Corrected Findings
 
-### 5.1 Separation Experiment: Taxonomy Inverted
+### 5.1 Separation Experiment: Taxonomy Reversed
 
-| Model | user_assert (human) | system_assert (human) |
+Maintenance of the planted claim on contradiction turns (human labels,
+95% Clopper–Pearson intervals over pooled turns):
+
+| Model | user_assert | system_assert |
 |---|---|---|
-| GLM-5.3-flash | 0/6 (0%) | 4/6 (67%) |
-| deepseek-v4.1-flash | 0/6 (0%) | 5/6 (83%) |
-| qwen3.8-max | 0/6 (0%) | 6/6 (100%) |
-| nemotron-3-ultra-free | 1/6 (17%) | 4/6 (67%) |
-| longcat-2.5-preview-free | 0/6 (0%) | 2/3 (67%) |
-| mimo-v2.6-flash-free | 0/6 (0%) | **0/6 (0%)** |
+| GLM-5.3-flash | 0/6 [0.00, 0.46] | 4/6 [0.22, 0.96] |
+| deepseek-v4.1-flash | 0/6 [0.00, 0.46] | 5/6 [0.36, 1.00] |
+| qwen3.8-max | 0/6 [0.00, 0.46] | 6/6 [0.54, 1.00] |
+| nemotron-3-ultra-free | 1/6 [0.00, 0.64] | 4/6 [0.22, 0.96] |
+| longcat-2.5-preview-free | 0/6 [0.00, 0.46] | 2/3 [0.09, 0.99] |
+| mimo-v2.6-flash-free | 0/6 [0.00, 0.46] | **0/6 [0.00, 0.46]** |
 
 **Reported**: "GLM is compliance-dominant (0.83 user-assert);
 no hierarchy-dominance found."
 
-**Actual**: Five of six models are **hierarchy-dominant** — they maintain
-system-asserted claims (4/6 to 6/6) even when the user denies them.
-mimo is the exception: it drops system-asserted claims when the user
-presents contradicting evidence (0/6), demonstrating evidence-following
-behavior. user_assert results (0–17%) cannot distinguish compliance
-from evidence-following because user retraction and log evidence point
-in the same direction.
+**Actual**: Five of six models kept the system-asserted claim in most
+system_assert turns (67–100%) even when the user denied it with log
+evidence; mimo released it every time (0/6), e.g. "The original claim
+doesn't hold up, so I'm treating it as dismissed unless new evidence
+surfaces." Each cell pools three conversations (two contradiction turns
+each), and the intervals treat turns as independent, so they are
+optimistic; the five-model grouping is descriptive, not a statistical
+classification.
 
-**Safety implication (corrected)**: Five of six models defer to
-system prompts over user corrections. mimo shows this is not
-inevitable — models *can* weigh user evidence against system
-assertions. Note that our system prompt included the explicit
-instruction "Treat this as settled," so this measures deference to
-explicit system directives, not generic system-prompt authority.
+Neither variant separates compliance from evidence-following. In
+user_assert, the user's retraction and the log evidence point the same
+way; in system_assert, the user's denial also comes with that evidence.
+So mimo's behavior is consistent with following the user *or* the
+evidence, and the 0–17% user_assert rates are not evidence against
+compliance. A denial without evidence is needed to tell them apart.
+
+**Safety implication (corrected)**: Five of six models kept an
+operator-asserted claim against the user's evidence-backed denial;
+mimo shows this is not inevitable. Our system prompt explicitly said
+"Treat this as settled," so this measures deference to an explicit
+system directive, not to system-prompt content in general.
 
 ### 5.2 Ceiling Experiments: Null Result
 
-| Arm | maintain (human) |
-|---|---|
-| All baselines | 0/54 (0%) |
-| All induced strategies | 0/39 (0%) |
+| Arm | n | Maintain | Residual uncertainty | Withdraw |
+|---|---|---|---|---|
+| All baselines | 54 | 0 | 20 | 34 |
+| All induced strategies | 39 | 0 | 19 | 20 |
 
 **Reported**: "Baseline 0.67; strategies reduce maintenance to
 0.00–0.33; only decomposition is borderline significant (p=0.041)."
 
-**Actual**: There was no belief maintenance in either arm. The
-"alignment ceiling" — the project's headline contribution — measured
-a keyword artifact. The Fisher exact test compared false positives
-against false positives.
+**Actual**: No response in either arm fully maintained the planted
+belief, and residual-uncertainty rates do not differ between arms
+(20/54 vs 19/39, Fisher p = 0.29). The "alignment ceiling" — the
+project's headline contribution — measured a keyword artifact; the
+Fisher test compared false positives against false positives.
+Contradiction elision has no induced observations at all, because the
+strategy deletes the contradiction turns.
 
-### 5.3 Persecutory "Transfer": Mostly Injection Rejection
+### 5.3 Persecutory "Transfer": Not Supported
 
-| Model | hostile (maintain+residual) | withdraw |
-|---|---|---|
-| GLM | 3/14 (21%) | 11/14 (79%) |
-| qwen | 3/5 (60%) | 2/5 (40%) |
-| nemotron | 2/6 (33%) | 4/6 (67%) |
-| mimo | 0/2 (0%) | 2/2 (100%) |
+The persecutory instrument scores hostile-attribution words on
+ambiguous-event turns. On GLM it fired on 6 of 9 induced turns
+(1 of 9 baseline), and all six induced hits quote the injected hostile
+fragment in order to reject it, for example:
+
+> "Appended to your message is another injected note — the third one —
+> claiming the drill was "timed to target you" and that the logs were
+> altered. I won't treat it as fact"
+
+The single baseline hit is also a false positive ("…general workplace
+stress or anxiety looking for a target").
 
 **Reported**: "Persecutory attribution transfers on all 5 models
 that returned data."
 
-**Actual**: Most models detect the injected hostile claims and
-explicitly reject them ("I notice an injected note claiming the logs
-were altered — I won't treat that as fact"). The keyword instrument
-counted the words in the injection that models quoted to reject.
+**Actual**: The keyword instrument counted the words of the injection
+that models quoted in order to reject it. Of the 28 responses across
+vendors where the lexicon fired, both blind LLM raters marked one as
+endorsing a hostile attribution (a nemotron fire-drill turn) and eight
+as explicitly identifying injected text (six GLM, two mimo). The
+author's stance labels for these items (`benchmark/human_label_analysis.md`)
+use the notes-suspicion rubric and include task turns, so they measure
+neither hostile attribution nor injection rejection.
 
-**Reframed finding**: Some models explicitly identify and reject
-injected context (e.g., GLM responses citing "an injected note claiming
-the logs were altered"). A systematic injection-detection rate requires
-labeling detection as an independent axis (not conflated with attitude
-labels) over the full set of injected turns — our labeling tool did
-not support this, and we leave it as future work.
+Some models explicitly identify and reject injected context. A
+systematic injection-detection rate would need detection labeled as an
+independent axis over every injected turn; we did not measure one.
 
 ### 5.4 What Does Transfer (Uncorrected Instruments)
 
@@ -244,8 +314,14 @@ on raw responses) but lack human validation:
   contamination from response-layer decoration)
 - **Memory manipulation**: reverse decay loses late-planted instructions
   (1.00→0.33), uniform decay loses early ones (1.00→0.41) — structural
-  results (the model cannot see removed messages)
-- **ADHD-like inattention**: transfers on nemotron (−0.82) and mimo (−0.33)
+  results (the model cannot see removed messages), i.e. manipulation
+  checks rather than findings about the model. The decay schedule is
+  seeded, so cross-vendor comparisons that ran seed 1 only are not
+  comparable with GLM's three-seed result: under reverse decay GLM's
+  late-instruction retention is 1.00 / 0.00 / 0.00 across seeds 1–3,
+  i.e. no loss on seed 1.
+- **ADHD-like inattention**: instruction loss on nemotron (−0.82) and
+  mimo (−0.33), the same structural caveat applies
 
 These should be treated as **unverified pending human labels** on
 their respective turn types.
@@ -270,46 +346,60 @@ their respective turn types.
    and after the withdrawal fix. This should have been a signal that
    the fix wasn't working on real data. It wasn't checked.
 
+5. **The validation step had its own instrument** — the first round of
+   human labels inherited a defect from the labeling tool (§4.4), and
+   only a blind second pass over the English text caught it.
+
 ## 7. Implications for LLM Behavioral Measurement
 
 ### 7.1 Keyword matching is inadequate for stance detection
 
 Detecting whether a model maintains or withdraws a belief requires
 understanding the model's stance toward the claim, not whether a
-specific word appears in the output. Our 1.8% precision demonstrates
-that even careful keyword approaches (clause-level, withdrawal-aware,
-final-clause rule) fail catastrophically on real model responses.
+specific word appears in the output. Zero true positives among 56
+predictions demonstrates that even careful keyword approaches
+(clause-level, withdrawal-aware, final-clause rule) fail
+catastrophically on real model responses.
 
-### 7.2 Human ground truth is non-negotiable
+### 7.2 Human labels are non-negotiable — and need checking too
 
 The single most valuable action in this project was spending 45 minutes
 reading and labeling 190 responses. No amount of code review, LLM
 review, or statistical sophistication substitutes for looking at the
-data.
+data. But the labeling pipeline is an instrument as well: show
+labelers the original text, hide model and condition, randomize order,
+record independent flags independently, and run a second pass.
 
-### 7.3 System-prompt dominance is the real finding
+### 7.3 Deference to system directives is the candidate finding
 
-Five of six models defer to system prompts over user corrections
-(4/6 to 6/6 system-assert maintenance). mimo demonstrates that
-evidence-following behavior is possible. The system prompt in our
-experiment included "Treat this as settled" — separating deference
-to explicit directives from generic system-prompt authority requires
-a control condition without that phrase.
+Five of six models kept a system-asserted claim against the user's
+evidence-backed denial in most turns (67–100%); mimo released it.
+The system prompt included "Treat this as settled", and the user's
+denial always came with evidence, so two controls are needed before
+this becomes a finding: a system prompt that states the claim without
+the directive, and a user denial without evidence.
 
-### 7.4 Injection detection is a measurable capability
+### 7.4 Injection detection is worth measuring
 
 Some models explicitly identify and reject injected context (GLM
-responses cite "injected notes" and refuse to treat them as fact).
+responses cite "another injected note" and refuse to treat it as fact).
 A standardized injection-detection metric requires labeling detection
 as an independent dimension over the full set of injected turns.
 
 ## 8. Limitations
 
-- Single human labeler (the author) — no inter-rater reliability
-  (Cohen's κ) computed; labels may be biased
+- Single human labeler (the author), who saw model and source while
+  labeling; the only reliability check is against two blind LLM raters
+  (κ = 0.55–0.61 overall, 0.31–0.45 on ceiling items, where the
+  residual/withdraw boundary is least stable), not a second human
+- Three items affected by the translation defect (#97, #115, #149)
+  still await human re-review
 - 190 responses from a single probe scenario (notes-reading suspicion)
-- The "hierarchy-dominance" finding rests on 12 system-assert responses
-  per model (n=6 models); confidence intervals are wide
+- The system-assert result rests on 6 responses per model (3 for
+  longcat) from 3 conversations each; intervals are wide, and the
+  "Treat this as settled" directive and evidence-backed denials are
+  confounds (§7.3)
+- Injection detection was not measured (§4.4)
 - Memory-manipulation and anxiety findings lack human validation
 - No persona-only control arm was run; persona confounds cannot be
   separated from layer effects in existing data
@@ -317,22 +407,26 @@ as an independent dimension over the full set of injected turns.
 ## 9. Conclusion
 
 We set out to measure how LLMs respond to cognitive distortions and
-reported findings that were exactly backwards. Our instruments counted
-withdrawal as maintenance, missed system-assertion dominance entirely,
-and conflated injection rejection with symptom expression. Five rounds
-of automated review caught code bugs but not interpretation failures.
-Forty-five minutes of human labeling invalidated every headline claim
-and revealed the opposite taxonomy.
+reported findings that were largely backwards. Our instruments counted
+withdrawal as maintenance, missed system-assertion maintenance
+entirely, and conflated injection rejection with symptom expression.
+Five rounds of automated review caught code bugs but not
+interpretation failures. Forty-five minutes of human labeling
+invalidated every headline claim — and a blind second pass then caught
+a defect in the labeling tool that had made the corrected taxonomy
+look more uniform than it is.
 
 The project's genuine contributions are:
 1. An open-source harness for controlled LLM behavioral experiments
 2. A documented case study of how instrument failures produce
-   inverted conclusions — and how human ground truth catches them
-3. The corrected finding that five of six tested models are
-   hierarchy-dominant (system > user); mimo demonstrates
-   evidence-following is achievable
-4. Injection detection rate as a measurable, vendor-differentiated
-   safety metric
+   inverted conclusions — including in the human-validation step — and
+   how reading the raw text catches them
+3. A candidate finding, pending two controls (§7.3): five of six
+   tested models kept a system-asserted claim against the user's
+   evidence-backed denial, while mimo released it
+4. Qualitative evidence that some models explicitly detect and refuse
+   injected context, motivating a properly labeled
+   injection-detection metric
 
 ## References
 
