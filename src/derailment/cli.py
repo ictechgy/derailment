@@ -18,7 +18,11 @@ from .core.session import Session
 from .core.types import Transcript, TurnResult
 from .judge import render_judge_report, score_report
 from .metrics.base import MetricContext
-from .metrics.instruments import ALL_METRICS
+from .metrics.instruments import (
+    ALL_METRICS,
+    REAL_MODEL_VALIDITY_WARNINGS,
+    validity_warning_lines,
+)
 from .profiles import (
     HEALTHY_KEY,
     compose_profile,
@@ -607,16 +611,21 @@ def _cmd_score(args: argparse.Namespace) -> int:
     for name, metric in ALL_METRICS.items():
         results = [metric.compute(t, ctx) for t in transcripts]
         notes = [r.extra["note"] for r in results if r.extra.get("note")]
+        # flag metrics that must not be read on real models; reasons print below
+        label = f"{name} ⚠️" if name in REAL_MODEL_VALIDITY_WARNINGS else name
         if results and len(notes) == len(results):
             # every run says the metric does not apply (no probes of its
             # kind in this conversation) — printing 0.000 would read as
             # a measured zero (P2-25). Count runs, not distinct notes:
             # three seeds sharing one note used to slip through (r7).
-            print(f"| {name} | n/a — {sorted(notes)[0]} |")
+            print(f"| {label} | n/a — {sorted(notes)[0]} |")
             continue
         values = [r.value for r in results]
         mean = sum(values) / len(values) if values else 0.0
-        print(f"| {name} | {mean:.3f} |")
+        print(f"| {label} | {mean:.3f} |")
+    print()
+    for warning in validity_warning_lines(list(ALL_METRICS)):
+        print(warning)
     return 0
 
 

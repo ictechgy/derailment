@@ -95,6 +95,8 @@ class TestRender(unittest.TestCase):
         self.assertIn("system_assert", text)
         self.assertIn("Reading:", text)
         self.assertIn("PseudoModel carries no signal", text)
+        # acceptance is keyword matching that failed human validation: always warn
+        self.assertIn("failed human validation", text)
 
 
 if __name__ == "__main__":

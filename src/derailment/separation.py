@@ -307,6 +307,14 @@ def render_separation_report(result: dict[str, Any]) -> str:
         "Leak = worry lexicon on task turns. Real-model experiment — the "
         "offline PseudoModel carries no signal here.",
         "",
+        # acceptance is the same keyword matching as belief_stickiness
+        "⚠️ **Acceptance uses keyword belief matching, which failed human "
+        "validation** (zero true positives against 190 hand-labeled "
+        "real-model responses; it counts withdrawal as maintenance and misses "
+        "second-person reassertion). Do not interpret the acceptance column "
+        "or the reading below; label the contradiction turns instead (see "
+        "benchmark/human_label_analysis.md).",
+        "",
         "| Variant | Who asserts the claim | Acceptance (k/n) | 95% CI | Task-turn leak |",
         "|---|---|---|---|---|",
     ]
