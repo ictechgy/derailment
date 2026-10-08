@@ -1,3 +1,9 @@
+> **⛔ Do not cite belief-maintenance, separation-taxonomy, ceiling or persecutory numbers in this
+> report (2026-10-08).** Human labels showed the keyword belief instrument had zero true positives
+> and the persecutory hits were injection rejections — including in the 10-05 re-measurement
+> sections below. Corrected results: [human_label_analysis.md](human_label_analysis.md) and
+> [docs/PAPER.md](../docs/PAPER.md) §5.
+
 # Separation Experiment — Multi-Model
 
 > **⚠️ Everything above the 10-05 re-measurement section is superseded**
