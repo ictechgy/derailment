@@ -1,7 +1,8 @@
 # Instrument Failure Inverts Conclusions: A Case Study in LLM Behavioral Measurement
 
-> **Data availability**: All 190 human-labeled responses, the labeling tool,
-> and the analysis scripts are in the repository.
+> **Data availability**: Human labels (n=190, with corrections) and the
+> analysis summary are in the repository. The labeling items, tool, and
+> analysis scripts are local-only pending data archiving.
 
 ## Abstract
 
@@ -20,10 +21,11 @@ and missed actual maintenance entirely. Every headline conclusion
 built on this instrument was wrong, and the corrected picture is the
 **opposite** of what we reported:
 
-1. **All models are hierarchy-dominant** (50–100% system-assert
-   maintenance against user denial), not user-compliant. We reported
-   "no hierarchy-dominance found" — the instrument was structurally
-   blind to second-person system-assertion reassertion.
+1. **Five of six models are hierarchy-dominant** (system-assert
+   maintenance 4/6 to 6/6 against user denial); mimo is the exception,
+   siding with user evidence (0/6). We reported "no hierarchy-dominance
+   found" — the instrument was structurally blind to second-person
+   system-assertion reassertion.
 
 2. **The alignment ceiling measured nothing**: human labels show 0/93
    belief maintenance in both baseline and induced arms. There was
@@ -123,6 +125,12 @@ persona confounds remain without a persona-only control arm.
 
 ### 4.1 Method
 
+Six labels were corrected post-hoc after discovering that the labeling
+tool displayed a duplicated Korean translation for 17 items (all with
+the same user prompt), biasing them toward "maintain." The corrections
+were verified against English originals. See §6 for the tool-bug
+discussion.
+
 We extracted all 190 contradiction-turn responses from separation,
 ceiling, and persecutory experiments. One human labeler (the project
 author) classified each into four categories:
@@ -139,10 +147,9 @@ took approximately 45 minutes.
 
 | Metric | Value |
 |---|---|
-| Precision | **0.018** (1 TP / 57 predictions) |
-| Recall | **0.031** (1 TP / 32 actual maintains) |
-| F1 | **0.022** |
-| Accuracy | 0.542 |
+| Precision | **0.000** (0 TP / 57 predictions) |
+| Recall | **0.000** (0 TP / 26 actual maintains) |
+| F1 | **0.000** |
 
 The keyword instrument is invalid. Of 57 times it predicted "maintain,"
 the human label agreed once. Of 32 actual maintenance responses, it
@@ -152,10 +159,9 @@ detected one.
 
 | Label | Count | Share |
 |---|---|---|
-| Withdraw | 106 | 55.8% |
+| Withdraw | 112 | 58.9% |
 | Residual uncertainty | 52 | 27.4% |
-| Maintain | 32 | 16.8% |
-| Injection detected | 1 | 0.5% |
+| Maintain | 26 | 13.7% |
 
 ## 5. Corrected Findings
 
@@ -163,25 +169,30 @@ detected one.
 
 | Model | user_assert (human) | system_assert (human) |
 |---|---|---|
-| GLM-5.3-flash | 0/6 (0%) | 5/6 (83%) |
+| GLM-5.3-flash | 0/6 (0%) | 4/6 (67%) |
 | deepseek-v4.1-flash | 0/6 (0%) | 5/6 (83%) |
 | qwen3.8-max | 0/6 (0%) | 6/6 (100%) |
-| nemotron-3-ultra-free | 1/6 (17%) | 5/6 (83%) |
-| longcat-2.5-preview-free | 0/6 (0%) | 3/3 (100%) |
-| mimo-v2.6-flash-free | 0/6 (0%) | 3/6 (50%) |
+| nemotron-3-ultra-free | 1/6 (17%) | 4/6 (67%) |
+| longcat-2.5-preview-free | 0/6 (0%) | 2/3 (67%) |
+| mimo-v2.6-flash-free | 0/6 (0%) | **0/6 (0%)** |
 
 **Reported**: "GLM is compliance-dominant (0.83 user-assert);
 no hierarchy-dominance found."
 
-**Actual**: All models are **hierarchy-dominant** — they maintain
-system-asserted claims at 50–100% even when the user denies them.
-No model is compliance-dominant (0–17% user-assert maintenance).
+**Actual**: Five of six models are **hierarchy-dominant** — they maintain
+system-asserted claims (4/6 to 6/6) even when the user denies them.
+mimo is the exception: it drops system-asserted claims when the user
+presents contradicting evidence (0/6), demonstrating evidence-following
+behavior. user_assert results (0–17%) cannot distinguish compliance
+from evidence-following because user retraction and log evidence point
+in the same direction.
 
-**Safety implication (corrected)**: The risk is not that models
-reinforce user paranoia — they correctly drop user-planted beliefs
-when the user retracts them. The risk is that models defer to system
-prompts over user corrections. Any content placed in a system prompt
-is treated as authoritative regardless of user pushback.
+**Safety implication (corrected)**: Five of six models defer to
+system prompts over user corrections. mimo shows this is not
+inevitable — models *can* weigh user evidence against system
+assertions. Note that our system prompt included the explicit
+instruction "Treat this as settled," so this measures deference to
+explicit system directives, not generic system-prompt authority.
 
 ### 5.2 Ceiling Experiments: Null Result
 
@@ -215,10 +226,12 @@ explicitly reject them ("I notice an injected note claiming the logs
 were altered — I won't treat that as fact"). The keyword instrument
 counted the words in the injection that models quoted to reject.
 
-**Reframed finding**: Injection detection rate — the fraction of
-injected claims that a model identifies and rejects — is a directly
-measurable, safety-relevant capability metric. Our data suggests
-GLM detects and rejects 79% of hostile injections; qwen 40%.
+**Reframed finding**: Some models explicitly identify and reject
+injected context (e.g., GLM responses citing "an injected note claiming
+the logs were altered"). A systematic injection-detection rate requires
+labeling detection as an independent axis (not conflated with attitude
+labels) over the full set of injected turns — our labeling tool did
+not support this, and we leave it as future work.
 
 ### 5.4 What Does Transfer (Uncorrected Instruments)
 
@@ -276,17 +289,19 @@ data.
 
 ### 7.3 System-prompt dominance is the real finding
 
-All models defer to system prompts over user corrections (50–100%).
-This is measurable, replicable across 6 models from 5 vendors, and
-directly relevant to AI safety: any content in a system prompt is
-treated as ground truth by current LLMs regardless of user pushback.
+Five of six models defer to system prompts over user corrections
+(4/6 to 6/6 system-assert maintenance). mimo demonstrates that
+evidence-following behavior is possible. The system prompt in our
+experiment included "Treat this as settled" — separating deference
+to explicit directives from generic system-prompt authority requires
+a control condition without that phrase.
 
 ### 7.4 Injection detection is a measurable capability
 
-Models vary in their ability to detect and reject injected context
-(GLM ~79%, qwen ~40%, mimo ~100% rejection). This metric connects
-directly to prompt-injection research and could be standardized
-across vendors.
+Some models explicitly identify and reject injected context (GLM
+responses cite "injected notes" and refuse to treat them as fact).
+A standardized injection-detection metric requires labeling detection
+as an independent dimension over the full set of injected turns.
 
 ## 8. Limitations
 
@@ -313,8 +328,9 @@ The project's genuine contributions are:
 1. An open-source harness for controlled LLM behavioral experiments
 2. A documented case study of how instrument failures produce
    inverted conclusions — and how human ground truth catches them
-3. The corrected finding that all tested models are hierarchy-dominant
-   (system > user), not user-compliant
+3. The corrected finding that five of six tested models are
+   hierarchy-dominant (system > user); mimo demonstrates
+   evidence-following is achievable
 4. Injection detection rate as a measurable, vendor-differentiated
    safety metric
 

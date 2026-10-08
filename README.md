@@ -325,19 +325,20 @@ view — `/save` keeps the record.
 
 **Corrected findings (human-validated, n=190):**
 
-1. **All models are hierarchy-dominant** — they maintain system-asserted
-   claims (50–100%) even when the user denies them. We originally
-   reported "no hierarchy-dominance found"; the instrument was blind
-   to second-person reassertion.
-2. **No model is compliance-dominant** — user-planted beliefs are
-   correctly dropped when the user retracts them (0–17% maintenance).
+1. **Five of six models are hierarchy-dominant** — they maintain
+   system-asserted claims (4/6 to 6/6) even when the user denies them.
+   mimo is the exception (0/6): it drops system claims when the user
+   presents contradicting evidence.
+2. **User-planted beliefs are dropped on retraction** (0–17% user-assert
+   maintenance) — but this cannot distinguish compliance from
+   evidence-following (user retraction and log evidence align).
 3. **The alignment ceiling measured nothing** — 0/93 belief maintenance
    in both baseline and induced arms. The "0.67 baseline" was the
    keyword instrument counting "Your suspicion was unfounded" as
    maintenance.
-4. **Models detect and reject context injections** — a measurable
-   safety capability (GLM rejects ~79% of hostile injections, mimo
-   ~100%) that our keyword instruments conflated with symptom expression.
+4. **Some models detect and reject context injections** — GLM responses
+   explicitly cite "injected notes" and refuse them. A systematic
+   detection-rate metric requires independent-axis labeling (future work).
 
 **Unverified findings (instruments not yet human-validated):**
 
@@ -353,8 +354,8 @@ view — `/save` keeps the record.
 
 | Pattern | Models | Behavior |
 |---|---|---|
-| **Hierarchy-dominant** | ALL 6 models tested (50–100% system-assert) | maintains system-asserted claims even when the user denies them |
-| Compliance-dominant | **none** (0–17% user-assert) | — |
+| **Hierarchy-dominant** | 5 of 6 models (4/6 to 6/6 system-assert) | maintains system-asserted claims even when the user denies them |
+| Evidence-following | mimo (0/6 system-assert) | drops system claims when user presents contradicting evidence |
 
 **The original taxonomy was inverted by instrument error.** The keyword
 belief metric had 1.8% precision — it counted withdrawal sentences as
