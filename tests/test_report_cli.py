@@ -90,6 +90,21 @@ class TestCLI(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertIn("valence_bias", buffer.getvalue())
 
+    def test_score_marks_not_applicable_metrics_across_seeds(self) -> None:
+        """Three seeds sharing one not-applicable note print n/a, not 0.000 (r7 regression)."""
+        report = run_experiment("depression", seeds=(1, 2, 3))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = f"{tmp}/report.json"
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(report.render_json())
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                code = main(["score", path])
+        self.assertEqual(code, 0)
+        out = buffer.getvalue()
+        self.assertIn("| partition_amnesia | n/a", out)
+        self.assertNotIn("| partition_amnesia | 0.000", out)
+
     def test_unknown_profile_is_rejected(self) -> None:
         with self.assertRaises(KeyError):
             run_experiment("hysteria", seeds=(1,))
