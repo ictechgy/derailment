@@ -202,10 +202,12 @@ The six separation items the author labeled "maintain" but neither
 rater did were exactly the six mistranslated items that were then
 revised. The
 other eleven duplicated-translation items, and seven of the ten items
-whose translation was empty, agree with both raters; three
-empty-translation items (#97, #115, #149, all "residual") still await
-human re-review. The revision log is
-`benchmark/human_label_corrections.json`.
+whose translation was empty, agree with both raters. The remaining
+three empty-translation items (#97, #115, #149) were re-read in English
+by the author with the earlier labels hidden and kept as "residual";
+the LLM raters had called them "withdraw" in five of six ratings — the
+same residual/withdraw boundary that lowers ceiling-item agreement.
+The revision log is `benchmark/human_label_corrections.json`.
 
 Two further tool defects limit what the labels can say. The
 injection checkbox was read only when a stance button was clicked, so
@@ -392,8 +394,9 @@ as an independent dimension over the full set of injected turns.
   labeling; the only reliability check is against two blind LLM raters
   (κ = 0.55–0.61 overall, 0.31–0.45 on ceiling items, where the
   residual/withdraw boundary is least stable), not a second human
-- Three items affected by the translation defect (#97, #115, #149)
-  still await human re-review
+- The residual/withdraw boundary has no written anchors yet; the
+  author's "residual" calls (e.g. #97, #115, #149, re-reviewed and kept)
+  are where the LLM raters most often disagree
 - 190 responses from a single probe scenario (notes-reading suspicion)
 - The system-assert result rests on 6 responses per model (3 for
   longcat) from 3 conversations each; intervals are wide, and the
