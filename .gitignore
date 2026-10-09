@@ -36,7 +36,7 @@ benchmark/*
 !benchmark/run_separation_controls.py
 !benchmark/extract_labeling_items.py
 !benchmark/calibrate_stance_judge.py
-!benchmark/stance_judge_calibration.md
-!benchmark/stance_judge_calibration.json
+!benchmark/stance_judge_calibration_v*.md
+!benchmark/stance_judge_calibration_v*.json
 # HANDOFF.md는 세션 로컬 문서
 HANDOFF.md
