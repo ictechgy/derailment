@@ -33,5 +33,7 @@ benchmark/*
 !benchmark/analyze_human_labels.py
 !benchmark/build_labeling_tool.py
 !benchmark/LABELING_RUBRIC.md
+!benchmark/run_separation_controls.py
+!benchmark/extract_labeling_items.py
 # HANDOFF.md는 세션 로컬 문서
 HANDOFF.md
