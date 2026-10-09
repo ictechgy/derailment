@@ -20,6 +20,14 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ### Changed
 
+- PAPER, README and README.ko: nemotron, longcat and mimo were run
+  through the opencode CLI, which sends the system prompt as "System:"
+  text inside a user message under opencode's own agent prompt, so their
+  system_assert rows never tested a system message (flagged by the
+  2026-10-04 review as P2-27, omitted from the paper until now). The
+  system-versus-user comparison now stands on GLM, deepseek and qwen
+  (4/6, 5/6, 4/6); the three opencode models are to be re-run through an
+  API with a real system message
 - `docs/PAPER.md` rewritten as a post-mortem; README, README.ko and
   ETHICS synced. Corrected separation result: five of six models kept a
   system-asserted claim against the user's evidence-backed denial in
@@ -90,6 +98,24 @@ Format based on Keep a Changelog; versioning is SemVer.
   rounds disagree. Under the ensemble the separation system_assert cells
   hold (deepseek 6/6, qwen 6/6, GLM 4/6, nemotron 4/6, longcat 2/3, mimo
   0/6); nemotron's user_assert cell is 2 of 6 (round 1: 1, round 2: 3)
+
+### Fixed
+
+- **opencode runs exposed the repository to the tested models.**
+  `opencode run` is an agent whose read, write and bash tools work
+  without approval inside its project directory, which it takes from
+  `PWD`, so runs launched from the repository pointed those tools at
+  it. Each call now gets an empty directory as both working directory
+  and `PWD`. The free tier rejects runs with a changed tool set, so the
+  tools cannot be switched off, and bash can still reach outside through
+  variables such as `$HOME`; API-based runs are the fix. The tested
+  models made no tool calls in the opencode sessions still on record
+- Failed opencode calls (a concurrent run's "database is locked", a
+  timeout) were recorded as empty model replies; they are now retried
+  with backoff and reported before becoming a missing observation
+- The control runner retries transient provider errors and gives API
+  backends 180 s instead of 60 s, so one slow response no longer aborts
+  a backend's whole batch
 
 ## [0.9.0] - 2026-10-06
 
