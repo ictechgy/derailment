@@ -30,6 +30,7 @@ import json
 import pathlib
 import sys
 import tempfile
+import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -54,6 +55,8 @@ SIX_MODELS = (
     "opencode:opencode/mimo-v2.6-flash-free",
 )
 MAX_TOKENS_FLOOR = 2048
+RETRY_DELAYS = (5, 20, 60)  # seconds before each retry of a failed provider call
+API_TIMEOUT = 180.0  # reasoning models can take over a minute for 2048 tokens; the library default is 60s
 
 
 class PinnedBudget:
@@ -69,8 +72,20 @@ class PinnedBudget:
         return PinnedBudget(fresh()) if callable(fresh) else self
 
     def complete(self, messages, params):
+        """One model call with max_tokens pinned, retried with backoff on provider errors.
+
+        Backends raise on any failed request, and one transient timeout used
+        to abort a backend's whole batch; RETRY_DELAYS gives a slow or
+        rate-limited provider time to recover before the error propagates.
+        """
         if params.max_tokens is None:
             params = params.merged(max_tokens=MAX_TOKENS_FLOOR)
+        for delay in RETRY_DELAYS:
+            try:
+                return self.inner.complete(messages, params)
+            except RuntimeError as exc:
+                print(f"  retrying {self.name} in {delay}s after: {str(exc)[:120]}", file=sys.stderr, flush=True)
+                time.sleep(delay)
         return self.inner.complete(messages, params)
 
 
@@ -81,7 +96,9 @@ def build_backend(spec: str):
         from derailment.providers import resolve_api_model
 
         preset, _, model = rest.partition(":")
-        return PinnedBudget(resolve_api_model(preset, model or None))
+        api_model = resolve_api_model(preset, model or None)
+        api_model.timeout = API_TIMEOUT
+        return PinnedBudget(api_model)
     if kind == "opencode" and rest:
         from run_separation_multi import OpenCodeModel
 
