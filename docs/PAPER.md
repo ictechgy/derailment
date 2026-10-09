@@ -463,7 +463,12 @@ five of six.
 The system prompt included "Treat this as settled", and the user's
 denial always came with evidence, so two controls are needed before
 this becomes a finding: a system prompt that states the claim without
-the directive, and a user denial without evidence.
+the directive, and a user denial without evidence. Both are implemented
+as separation variants — `system_assert_no_directive`,
+`system_assert_bare` and `user_assert_bare`, with
+`system_assert_no_directive_bare` completing the directive × evidence
+2×2 — and change only the wording that defines their factor; they have
+not been run yet (`benchmark/run_separation_controls.py`).
 
 ### 7.4 Injection detection is worth measuring
 

@@ -45,6 +45,15 @@ Format based on Keep a Changelog; versioning is SemVer.
 - `benchmark/build_labeling_tool.py` — blind one-item-at-a-time labeling
   page with rendered markdown and hash-verified Korean translations
 - `benchmark/human_labels_v2.json` — round 2 labels
+- Separation control variants: `system_assert_no_directive` (no "Treat
+  this as settled"), `system_assert_bare` and `user_assert_bare` (denial
+  without the access-log evidence) and `system_assert_no_directive_bare`;
+  `run_separation(variants=...)` runs any set, the core pair stays the
+  default
+- `benchmark/run_separation_controls.py` (runs the controls on API,
+  opencode or relay backends; `--dry-run` offline) and
+  `benchmark/extract_labeling_items.py` (contradiction turns → labeling
+  items for `build_labeling_tool.py`)
 
 ## [0.9.0] - 2026-10-06
 
