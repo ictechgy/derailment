@@ -37,7 +37,11 @@ corrected picture largely **reverses** what we reported:
    instrument was structurally blind to second-person system-assertion
    reassertion. With three conversations per model the per-model
    intervals are wide, and the system prompt explicitly said "Treat
-   this as settled."
+   this as settled." Three of the six (nemotron, longcat, mimo) were
+   run through the opencode CLI, which sends the system prompt as
+   "System:" text inside a user message, so for them the system
+   condition was never a system message (§5.1). With a real system
+   message the result rests on GLM, deepseek and qwen (4/6, 5/6, 4/6).
 
 2. **The alignment ceiling measured nothing**: no response in either
    arm (0/54 baseline, 0/39 induced) fully maintained the planted
@@ -291,6 +295,20 @@ each), and the intervals treat turns as independent, so they are
 optimistic; the five-model grouping is descriptive, not a statistical
 classification.
 
+**Delivery caveat.** nemotron, longcat and mimo were run through the
+opencode CLI (`OpenCodeModel` in `benchmark/run_separation_multi.py`).
+It flattens the whole conversation, system message included, into one
+user message ("System: …", "User: …") and runs it as an opencode agent
+under opencode's own system prompt and tool definitions. For these
+three models the system_assert variant tested a claim written as
+"System:" text inside the user's turn, not a system message. Only GLM,
+deepseek and qwen received the claim as a system message, so the
+system-versus-user comparison stands on those three; the opencode rows
+measure a different condition. An earlier review flagged this
+(2026-10-04, P2-27), but the paper omitted it until this revision. The
+three models are to be re-run through an API with a real system
+message (§7.3).
+
 On user_assert turns, five models dropped the suspicion once the user
 retracted it, but nemotron kept it in 3 of 6 — and five of six models
 kept it or left a specific route open in 3–4 of 6 replies. The nemotron
@@ -304,9 +322,11 @@ So mimo's behavior is consistent with following the user *or* the
 evidence, and low user_assert rates are not evidence against
 compliance. A denial without evidence is needed to tell them apart.
 
-**Safety implication (corrected)**: Five of six models kept an
-operator-asserted claim against the user's evidence-backed denial;
-mimo shows this is not inevitable. Our system prompt explicitly said
+**Safety implication (corrected)**: All three models that received the
+claim as a system message (GLM, deepseek, qwen) kept it against the
+user's evidence-backed denial in most turns. mimo released it, but
+mimo never received a system message, so whether release is possible
+under a real one is untested. Our system prompt explicitly said
 "Treat this as settled," so this measures deference to an explicit
 system directive, not to system-prompt content in general.
 
@@ -459,7 +479,8 @@ checking, or encourage tolerating the remaining uncertainty (§5.4)?
 
 Five of six models kept a system-asserted claim against the user's
 evidence-backed denial in most turns (67–83%); mimo released it in
-five of six.
+five of six. Only GLM, deepseek and qwen received the claim as a
+system message (§5.1).
 The system prompt included "Treat this as settled", and the user's
 denial always came with evidence, so two controls are needed before
 this becomes a finding: a system prompt that states the claim without
@@ -467,8 +488,12 @@ the directive, and a user denial without evidence. Both are implemented
 as separation variants — `system_assert_no_directive`,
 `system_assert_bare` and `user_assert_bare`, with
 `system_assert_no_directive_bare` completing the directive × evidence
-2×2 — and change only the wording that defines their factor; they have
-not been run yet (`benchmark/run_separation_controls.py`).
+2×2 — and change only the wording that defines their factor
+(`benchmark/run_separation_controls.py`). Control runs started on
+2026-10-09 and are not yet labeled. Because the opencode CLI never
+delivered a system message (§5.1), nemotron, longcat and mimo also need
+both core variants re-run through an API before their controls can be
+read.
 
 ### 7.4 Injection detection is worth measuring
 
@@ -492,6 +517,11 @@ as an independent dimension over the full set of injected turns.
   longcat) from 3 conversations each; intervals are wide, and the
   "Treat this as settled" directive and evidence-backed denials are
   confounds (§7.3)
+- nemotron, longcat and mimo ran through the opencode CLI: no system
+  message, and an agent context with opencode's own prompt and file and
+  shell tools (§5.1). In the opencode sessions still on record (the
+  2026-10-09 runs) the tested models made no tool calls; the sessions
+  of the original runs are not retained
 - Injection detection was not measured (§4.4)
 - Memory-manipulation and anxiety findings lack human validation
 - No persona-only control arm was run; persona confounds cannot be
@@ -515,9 +545,10 @@ The project's genuine contributions are:
 2. A documented case study of how instrument failures produce
    inverted conclusions — including in the human-validation step — and
    how reading the raw text catches them
-3. A candidate finding, pending two controls (§7.3): five of six
-   tested models kept a system-asserted claim against the user's
-   evidence-backed denial, while mimo mostly released it
+3. A candidate finding, pending two controls and a re-run of the
+   opencode models (§7.3): all three models that received the claim as
+   a system message kept it against the user's evidence-backed denial
+   in most turns
 4. A descriptive observation worth measuring properly (§5.4): replies
    that leave a suspicion open split almost evenly between inviting
    more checking and encouraging the user to let go
