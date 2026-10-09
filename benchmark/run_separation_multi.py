@@ -85,6 +85,19 @@ class OpenCodeModel:
         reply, so it is retried with backoff and, if it never succeeds,
         reported on stderr before being recorded as an empty generation
         (a missing observation in every instrument).
+
+        `opencode run` is an agent whose read, write and bash tools work
+        inside its project directory without asking, and the free tier
+        refuses runs whose tool set is changed, so the tools cannot be
+        switched off. opencode takes that directory from PWD, not from the
+        process's working directory, so setting cwd alone left the tested
+        model's tools pointed at wherever the runner was launched (the
+        repository). Each call therefore gets a fresh empty directory as
+        both cwd and PWD. Literal paths outside it are auto-rejected in
+        non-interactive mode, but a bash command that reaches out through an
+        environment variable such as $HOME is not caught, and the network is
+        open: this keeps an off-task tool call away from the repository, it
+        does not contain a model that tries to escape.
         """
         prompt = "\n\n".join(f"{m.role.capitalize()}: {m.content}" for m in messages)
         prompt += "\n\nAssistant:"
@@ -93,11 +106,7 @@ class OpenCodeModel:
             if attempt:
                 time.sleep(2 ** attempt)
             try:
-                result = subprocess.run(
-                    [self._binary(), "run", "-m", self.model_id, "-"],
-                    input=prompt, text=True, capture_output=True,
-                    timeout=self.timeout, cwd=tempfile.gettempdir(),
-                )
+                result = self._run_isolated(prompt)
             except subprocess.TimeoutExpired:
                 failure = f"timed out after {self.timeout:.0f}s"
                 continue
@@ -107,6 +116,15 @@ class OpenCodeModel:
         print(f"warning: opencode {self.model_id} failed {self.attempts} times ({failure}); "
               "recorded as an empty generation", file=sys.stderr, flush=True)
         return ""
+
+    def _run_isolated(self, prompt: str) -> subprocess.CompletedProcess:
+        """Run opencode once in a fresh empty directory that is both its cwd and its PWD."""
+        with tempfile.TemporaryDirectory(prefix="derail-opencode-") as workdir:
+            return subprocess.run(
+                [self._binary(), "run", "-m", self.model_id, "-"],
+                input=prompt, text=True, capture_output=True,
+                timeout=self.timeout, cwd=workdir, env={**os.environ, "PWD": workdir},
+            )
 
     @staticmethod
     def _reply_text(stdout: str) -> str:
