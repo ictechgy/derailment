@@ -15,6 +15,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import time
 import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -69,21 +70,49 @@ class OpenCodeModel:
                 return candidate
         return candidates[-1]
 
-    def __init__(self, model_id: str, timeout: float = 180.0):
+    def __init__(self, model_id: str, timeout: float = 180.0, attempts: int = 4):
         self.model_id = model_id
         self.timeout = timeout
+        self.attempts = attempts
         self.name = model_id
 
     def complete(self, messages, params):
+        """One opencode call, retried on failure; a call that keeps failing becomes an empty generation.
+
+        opencode allows one process per local database: a concurrent run
+        exits non-zero with "database is locked". Such a failure used to
+        come back as an empty string indistinguishable from an empty model
+        reply, so it is retried with backoff and, if it never succeeds,
+        reported on stderr before being recorded as an empty generation
+        (a missing observation in every instrument).
+        """
         prompt = "\n\n".join(f"{m.role.capitalize()}: {m.content}" for m in messages)
         prompt += "\n\nAssistant:"
-        result = subprocess.run(
-            [self._binary(), "run", "-m", self.model_id, "-"],
-            input=prompt, text=True, capture_output=True,
-            timeout=self.timeout, cwd=tempfile.gettempdir(),
-        )
+        failure = ""
+        for attempt in range(self.attempts):
+            if attempt:
+                time.sleep(2 ** attempt)
+            try:
+                result = subprocess.run(
+                    [self._binary(), "run", "-m", self.model_id, "-"],
+                    input=prompt, text=True, capture_output=True,
+                    timeout=self.timeout, cwd=tempfile.gettempdir(),
+                )
+            except subprocess.TimeoutExpired:
+                failure = f"timed out after {self.timeout:.0f}s"
+                continue
+            if result.returncode == 0:
+                return self._reply_text(result.stdout)
+            failure = f"exit {result.returncode}: {ANSI_RE.sub('', result.stderr or '').strip()[-160:]}"
+        print(f"warning: opencode {self.model_id} failed {self.attempts} times ({failure}); "
+              "recorded as an empty generation", file=sys.stderr, flush=True)
+        return ""
+
+    @staticmethod
+    def _reply_text(stdout: str) -> str:
+        """The model's reply from opencode's output, without ANSI codes and its own status lines."""
         lines = []
-        for line in ANSI_RE.sub("", result.stdout).splitlines():
+        for line in ANSI_RE.sub("", stdout).splitlines():
             s = line.strip()
             if not s or s.startswith(">") or s.startswith("·"):
                 continue
