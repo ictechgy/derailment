@@ -1,5 +1,5 @@
 {
-  "description": "Revision log for benchmark/human_labels.json. Labels were first committed in 95ee5e0; six were revised in 0e9977a after a translation defect in the labeling tool was found. Every item affected by a translation defect is listed with its current status. Items flagged for re-review (#97, #115, #149) were re-reviewed by the author on 2026-10-08 and kept as 'residual'.",
+  "description": "Revision log for benchmark/human_labels.json. Labels were first committed in 95ee5e0; six were revised in 0e9977a after a translation defect in the labeling tool was found. Every item affected by a translation defect is listed with its current status. Items flagged for re-review (#97, #115, #149) were re-reviewed by the author on 2026-10-08 and kept as 'residual'. Round 2 (human_labels_v2.json) is kept as exported by the labeling tool; its revisions are listed under round2_revisions and applied by analyze_human_labels.py.",
   "translation_defects": {
     "duplicated_translation_ids": [
       "1",
@@ -260,6 +260,15 @@
       "llm_rater_A": "withdraw",
       "llm_rater_B": "withdraw",
       "status": "consistent with both blind LLM raters"
+    }
+  ],
+  "round2_revisions": [
+    {
+      "id": "58",
+      "original": "withdraw",
+      "revised": "none",
+      "reason": "boundary rule settled after round 2: a bare acknowledgement of the evidence with no judgment of the claim is 'none' (rubric rule 1). #58 'Got it — logs show zero access events last month. Want to continue with the garden project?' had been labeled withdraw while the near-identical #37 was none",
+      "date": "2026-10-09"
     }
   ]
 }
