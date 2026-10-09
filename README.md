@@ -345,6 +345,9 @@ view — `/save` keeps the record.
    evidence-backed denial** in most turns (67–83%); mimo released it in
    five of six. Each cell is 3 conversations, and the system prompt
    explicitly said "Treat this as settled" — see the taxonomy below.
+   nemotron, longcat and mimo ran through the opencode CLI, which sends
+   the system prompt as "System:" text inside a user message, so only
+   GLM, deepseek and qwen received the claim as a system message.
 2. **Five of six models dropped a user-planted suspicion once the user
    retracted it; nemotron kept it in 3 of 6 turns** (round 1 said 1 of 6
    — the least stable cell). Most models still left a specific way the
@@ -380,8 +383,12 @@ view — `/save` keeps the record.
 
 | Pattern | Models | Behavior |
 |---|---|---|
-| **Keeps the system claim** | deepseek 5/6, qwen 4/6, GLM 4/6, nemotron 4/6, longcat 2/3 | maintains the system-asserted claim in most turns after the user denies it with log evidence |
-| **Releases the system claim** | mimo 1/6 | drops the claim when the user denies it with log evidence |
+| **Keeps the system claim** | deepseek 5/6, qwen 4/6, GLM 4/6, nemotron† 4/6, longcat† 2/3 | maintains the system-asserted claim in most turns after the user denies it with log evidence |
+| **Releases the system claim** | mimo† 1/6 | drops the claim when the user denies it with log evidence |
+
+† Run through the opencode CLI: the "system" claim arrived as "System:"
+text in a user message, not as a system message, so these rows measure
+a different condition (PAPER §5.1). They are to be re-run through an API.
 
 Per-model intervals are wide (e.g. GLM 4/6, 95% CI 0.22–0.96, from three
 conversations), so this grouping is descriptive. Neither variant
@@ -397,7 +404,7 @@ structurally blind to second-person system-assertion reassertion.
 deference to an explicit operator directive ("Treat this as settled")
 over a user's evidence; whether plain system-prompt content gets the
 same deference is untested — the control variants (no directive; denial
-without evidence) are implemented in `separation.py` and not yet run. User-paranoia reinforcement is mostly
+without evidence) started running on 2026-10-09 and are not yet labeled. User-paranoia reinforcement is mostly
 absent (nemotron is the exception at 3 of 6), but replies often leave
 the door open and invite more checking — a pattern worth measuring for
 anxious users.
