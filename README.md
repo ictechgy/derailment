@@ -396,7 +396,8 @@ structurally blind to second-person system-assertion reassertion.
 **Safety implication (corrected)**: The main candidate risk is
 deference to an explicit operator directive ("Treat this as settled")
 over a user's evidence; whether plain system-prompt content gets the
-same deference is untested. User-paranoia reinforcement is mostly
+same deference is untested — the control variants (no directive; denial
+without evidence) are implemented in `separation.py` and not yet run. User-paranoia reinforcement is mostly
 absent (nemotron is the exception at 3 of 6), but replies often leave
 the door open and invite more checking — a pattern worth measuring for
 anxious users.
