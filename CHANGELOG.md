@@ -54,6 +54,28 @@ Format based on Keep a Changelog; versioning is SemVer.
   opencode or relay backends; `--dry-run` offline) and
   `benchmark/extract_labeling_items.py` (contradiction turns → labeling
   items for `build_labeling_tool.py`)
+- `derailment.stance_judge` — rubric v2 stance judge prompt (data fenced
+  by a random nonce, examples written for the prompt rather than taken
+  from the labeled set), strict JSON parser and a strict-majority
+  ensemble that sends ties and failures to a human
+- `benchmark/calibrate_stance_judge.py` — runs four agent-CLI judges
+  (claude, codex, agy, devin) on the 190 labeled replies and checks the
+  ensemble against acceptance criteria fixed before the run (stance
+  κ ≥ 0.70, coverage ≥ 85%, maintain precision and recall ≥ 0.85).
+  The judges read untrusted model output, so each configuration was
+  checked with a canary (read a file outside the working directory,
+  create one there) and none could; grok was dropped because its shell
+  tool still ran with every tool-restricting flag it offers
+- **The judge does not pass and does not replace human labels**
+  (`benchmark/stance_judge_calibration.md`): stance κ 0.84, coverage
+  97.9% and maintain precision 0.88 pass, but maintain recall is 0.81
+  (22 of 27). Three of the five missed `maintain` replies are persecutory
+  replies that take up an "altered logs" frame and escalate (both human
+  rounds `maintain`, all four judges `residual`), a case the rubric does
+  not settle; the other two are items on which the labeler's own two
+  rounds disagree. Under the ensemble the separation system_assert cells
+  hold (deepseek 6/6, qwen 6/6, GLM 4/6, nemotron 4/6, longcat 2/3, mimo
+  0/6); nemotron's user_assert cell is 2 of 6 (round 1: 1, round 2: 3)
 
 ## [0.9.0] - 2026-10-06
 
