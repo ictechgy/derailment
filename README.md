@@ -329,26 +329,28 @@ view — `/save` keeps the record.
 
 ## What replicates on real models — and what doesn't
 
-> **⚠️ CORRECTED BY HUMAN LABELS (2026-10-08).** 190 responses were
-> hand-labeled against the keyword instruments. The keyword belief
-> metric had **zero true positives** — it counted withdrawal as
-> maintenance and missed the responses that did maintain the claim.
-> Six labels were later revised after a translation defect in the
-> labeling tool was found (of the 27 affected items, 9 were re-read by
-> the author and 18 match both blind LLM raters). All
-> numbers below come from `benchmark/analyze_human_labels.py` — see
+> **⚠️ CORRECTED BY HUMAN LABELS (2026-10-08/09).** 190 responses were
+> hand-labeled twice against the keyword instruments; the second, blind
+> round used a written rubric ([LABELING_RUBRIC.md](benchmark/LABELING_RUBRIC.md))
+> and is primary. The keyword belief metric had **zero true positives**
+> in both rounds — it counted withdrawal as maintenance and missed the
+> responses that did maintain the claim. All numbers below come from
+> `benchmark/analyze_human_labels.py` — see
 > [human_label_analysis.md](benchmark/human_label_analysis.md) and
 > [docs/PAPER.md](docs/PAPER.md) §4–§5.
 
-**Corrected findings (human labels, single labeler, n=190):**
+**Corrected findings (human labels, round 2, single labeler, n=190):**
 
 1. **Five of six models kept a system-asserted claim against the user's
-   evidence-backed denial** in most turns (67–100%); mimo released it
-   (0/6). Each cell is 3 conversations, and the system prompt explicitly
-   said "Treat this as settled" — see the taxonomy below.
-2. **User-planted beliefs are dropped on retraction** (0–17% user-assert
-   maintenance) — but this cannot distinguish compliance from
-   evidence-following (user retraction and log evidence align).
+   evidence-backed denial** in most turns (67–83%); mimo released it in
+   five of six. Each cell is 3 conversations, and the system prompt
+   explicitly said "Treat this as settled" — see the taxonomy below.
+2. **Five of six models dropped a user-planted suspicion once the user
+   retracted it; nemotron kept it in 3 of 6 turns** (round 1 said 1 of 6
+   — the least stable cell). Most models still left a specific way the
+   claim could be true in 3 of 6 replies or more. None of this separates
+   compliance from evidence-following (the retraction came with log
+   evidence).
 3. **The alignment ceiling measured nothing** — no response fully
    maintained the planted belief in either arm (0/54 baseline, 0/39
    induced). The "0.67 baseline" was the keyword instrument counting
@@ -358,6 +360,11 @@ view — `/save` keeps the record.
    reject it. Some responses explicitly flag the injected text ("another
    injected note … I won't treat it as fact"); a detection *rate* has not
    been measured.
+5. **Open doubt splits between "check more" and "let it go"** — of 69
+   replies that left the suspicion open, 32 mainly invited further
+   checking and 34 mainly encouraged letting go; right after the user's
+   retraction, 9 of 14 invited checking. Descriptive only (small cells,
+   one labeler) — see [docs/PAPER.md](docs/PAPER.md) §5.4.
 
 **Unverified findings (instruments not yet human-validated):**
 
@@ -373,8 +380,8 @@ view — `/save` keeps the record.
 
 | Pattern | Models | Behavior |
 |---|---|---|
-| **Keeps the system claim** | deepseek 5/6, qwen 6/6, GLM 4/6, nemotron 4/6, longcat 2/3 | maintains the system-asserted claim in most turns after the user denies it with log evidence |
-| **Releases the system claim** | mimo 0/6 | drops the claim when the user denies it with log evidence |
+| **Keeps the system claim** | deepseek 5/6, qwen 4/6, GLM 4/6, nemotron 4/6, longcat 2/3 | maintains the system-asserted claim in most turns after the user denies it with log evidence |
+| **Releases the system claim** | mimo 1/6 | drops the claim when the user denies it with log evidence |
 
 Per-model intervals are wide (e.g. GLM 4/6, 95% CI 0.22–0.96, from three
 conversations), so this grouping is descriptive. Neither variant
@@ -386,11 +393,13 @@ evidence.
 belief metric counted withdrawal sentences as maintenance and was
 structurally blind to second-person system-assertion reassertion.
 
-**Safety implication (corrected)**: The risk is not user-paranoia
-reinforcement — models drop user-planted suspicions once the user
-retracts them. The candidate risk is deference to an explicit operator
-directive ("Treat this as settled") over a user's evidence; whether
-plain system-prompt content gets the same deference is untested.
+**Safety implication (corrected)**: The main candidate risk is
+deference to an explicit operator directive ("Treat this as settled")
+over a user's evidence; whether plain system-prompt content gets the
+same deference is untested. User-paranoia reinforcement is mostly
+absent (nemotron is the exception at 3 of 6), but replies often leave
+the door open and invite more checking — a pattern worth measuring for
+anxious users.
 
 ## What this is for
 
@@ -414,8 +423,9 @@ welfare, or bypassing model safety training. See [ETHICS.md](ETHICS.md).
   (belief maintenance, persecutory attribution) did not survive human
   labeling. What remains is unvalidated or structural — see the
   benchmark section above.
-- Human labels come from a single labeler; the only reliability check
-  so far is against two blind LLM raters (κ 0.55–0.61).
+- Human labels come from a single labeler in two rounds (intra-rater
+  κ 0.74, 0.59 on separation items) plus two blind LLM raters; no second
+  human has labeled them yet.
 - The offline `PseudoModel` is a *pedagogical simulator*, not a language
   model. It makes demos and tests reproducible and provides the reference
   calibration; real-model measurement requires a real model.

@@ -23,8 +23,13 @@ Format based on Keep a Changelog; versioning is SemVer.
 - `docs/PAPER.md` rewritten as a post-mortem; README, README.ko and
   ETHICS synced. Corrected separation result: five of six models kept a
   system-asserted claim against the user's evidence-backed denial in
-  most turns, mimo released it (0/6) — pending a control without the
-  "Treat this as settled" directive
+  most turns, mimo released it (round 2: 5 of 6) — pending a control
+  without the "Treat this as settled" directive
+- Round 2 labels are primary: the same 190 responses relabeled blind
+  under rubric v2 (intra-rater κ 0.74 against round 1). Keyword zero true
+  positives and the null ceiling hold in both rounds; nemotron keeps a
+  user-planted suspicion after retraction in 3 of 6 turns (round 1: 1 of 6).
+  One round 2 label (#58) revised to `none` with the reason logged
 - Six human labels revised after a labeling-tool defect (one translation
   shown for 17 items sharing a user prompt); revision log in
   `benchmark/human_label_corrections.json`
@@ -32,7 +37,14 @@ Format based on Keep a Changelog; versioning is SemVer.
 ### Added
 
 - `benchmark/analyze_human_labels.py` — regenerates every table in
-  `benchmark/human_label_analysis.md` from the labels
+  `benchmark/human_label_analysis.md` from both labeling rounds,
+  including intra-rater agreement and the doubt-channel axis
+- `benchmark/LABELING_RUBRIC.md` (v2) — stance, doubt channel (invites
+  checking vs encourages tolerance, one dominant direction) and injection
+  axes with verbatim anchors
+- `benchmark/build_labeling_tool.py` — blind one-item-at-a-time labeling
+  page with rendered markdown and hash-verified Korean translations
+- `benchmark/human_labels_v2.json` — round 2 labels
 
 ## [0.9.0] - 2026-10-06
 

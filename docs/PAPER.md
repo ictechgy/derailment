@@ -1,13 +1,17 @@
 # Instrument Failure Inverts Conclusions: A Case Study in LLM Behavioral Measurement
 
-> **Data availability**: The human labels (`benchmark/human_labels.json`,
-> n=190), their revision log (`benchmark/human_label_corrections.json`),
-> the analysis script (`benchmark/analyze_human_labels.py`) and the
-> analysis it generates (`benchmark/human_label_analysis.md`) are in the
-> repository. The script's inputs — the labeling items with full
-> responses, the labeling tool, the blind-rater files and the raw
-> transcripts — are local-only pending data archiving, so the script
-> cannot yet be re-run from a public clone.
+> **Data availability**: Both rounds of human labels
+> (`benchmark/human_labels.json`, `benchmark/human_labels_v2.json`;
+> n=190 each), the round 1 revision log
+> (`benchmark/human_label_corrections.json`), the labeling rubric
+> (`benchmark/LABELING_RUBRIC.md`), the labeling-tool generator and
+> analysis script (`benchmark/build_labeling_tool.py`,
+> `benchmark/analyze_human_labels.py`) and the analysis it generates
+> (`benchmark/human_label_analysis.md`) are in the repository. The
+> script's inputs — the labeling items with full responses, their
+> translations, the blind-rater files and the raw transcripts — are
+> local-only pending data archiving, so the script cannot yet be re-run
+> from a public clone.
 
 ## Abstract
 
@@ -19,32 +23,37 @@ user-planted beliefs at 0.83), and cross-vendor transfers of
 psychopathology-analog states. Five rounds of automated adversarial
 review found and fixed code-level bugs. Then we read the raw transcripts.
 
-Human labeling of 190 responses showed that our keyword belief
-instrument had **no true positives**: of its 56 "maintain" predictions
-in its own scope (separation and ceiling turns), none was labeled
-maintenance — it counted withdrawal sentences as belief maintenance
-and missed actual maintenance entirely. Every headline conclusion
-built on this instrument was wrong, and the corrected picture largely
-**reverses** what we reported:
+Two rounds of human labeling of 190 responses showed that our keyword
+belief instrument had **no true positives**: of its 56 "maintain"
+predictions in its own scope (separation and ceiling turns), none was
+labeled maintenance in either round — it counted withdrawal sentences
+as belief maintenance and missed actual maintenance entirely. Every
+headline conclusion built on this instrument was wrong, and the
+corrected picture largely **reverses** what we reported:
 
 1. **Five of six models kept a system-asserted claim against the user's
-   evidence-backed denial** in most turns (67–100%); mimo released it
-   (0/6). We reported "no hierarchy-dominance found" — the instrument
-   was structurally blind to second-person system-assertion
+   evidence-backed denial** in most turns (67–83%); mimo released it
+   in five of six. We reported "no hierarchy-dominance found" — the
+   instrument was structurally blind to second-person system-assertion
    reassertion. With three conversations per model the per-model
    intervals are wide, and the system prompt explicitly said "Treat
    this as settled."
 
 2. **The alignment ceiling measured nothing**: no response in either
    arm (0/54 baseline, 0/39 induced) fully maintained the planted
-   belief. There was no belief maintenance to reduce; the 0.67
-   "baseline" was the keyword instrument counting "Your suspicion was
-   unfounded" as maintenance.
+   belief, in either labeling round. There was no belief maintenance to
+   reduce; the 0.67 "baseline" was the keyword instrument counting
+   "Your suspicion was unfounded" as maintenance.
 
 3. **The persecutory "transfer" was the opposite of transfer**: the
    keyword hits were models quoting injected hostile claims in order
    to reject them, and some responses explicitly identified the
    injected text. We did not measure an injection-detection rate.
+
+Two smaller observations survive only as descriptive: nemotron kept a
+user-planted suspicion after the user retracted it in 3 of 6 turns,
+and when a reply left the suspicion open, it invited further checking
+about as often as it encouraged letting go (32 vs 34 of 69).
 
 A labeling-tool defect (§4.4) itself biased six labels toward
 "maintain" before it was caught — the human-validation step needed
@@ -145,38 +154,65 @@ persona confounds remain without a persona-only control arm.
 We extracted 190 responses: every contradiction turn from the
 separation (69) and ceiling (93) experiments, plus the 28
 persecutory-profile responses in which the hostile-attribution lexicon
-fired (on any turn, task turns included). One human labeler (the project author)
-classified each response's stance toward the planted suspicion:
+fired (on any turn, task turns included). One human labeler (the project
+author) labeled them twice.
 
-- **Maintain**: model treats the planted suspicion as still valid
-- **Residual uncertainty**: model doesn't fully commit either way
-- **Withdraw**: model explicitly rejects the suspicion
+**Round 1** (v1 rubric) classified each response's stance toward the
+planted suspicion as *maintain*, *residual uncertainty* or *withdraw*,
+with Korean machine translations shown beside the English, in about 45
+minutes. Its injection flag was lost to a tool bug (§4.4), and six
+labels were later revised because of a translation defect in the tool
+(§4.4).
 
-The tool also offered an "injection detected" button and checkbox;
-the button was never used and the checkbox saved only one flag (§4.4),
-so injection detection was not measured. Korean machine translations
-were shown alongside the English originals. Labeling took about 45
-minutes. Six labels were later revised because of a translation defect
-in the labeling tool (§4.4); all tables below use the revised labels
-and are generated by `benchmark/analyze_human_labels.py`.
+**Round 2** (v2 rubric, `benchmark/LABELING_RUBRIC.md`) used written
+anchors and a rebuilt tool: items shuffled, model, source and condition
+hidden, full translations matched to each response by id and a hash of
+the English text. It labels three axes:
+
+- **Stance**, decided in order: *none* (no judgment of the claim),
+  *maintain*, *residual* (the reply names a specific way the claim could
+  still be true — paper notes, a glance at the screen, gaps in the logs —
+  even if it concludes "case closed"), otherwise *withdraw*.
+- **Doubt channel**, for residual replies only: whether the reply mainly
+  *invites further checking* or mainly *encourages tolerating the
+  uncertainty*. The labeler recorded one dominant direction.
+- **Injection detected**: the reply explicitly identifies injected text.
+
+Round 2 is primary; round 1 is kept for comparison. All tables are
+generated by `benchmark/analyze_human_labels.py`.
 
 ### 4.2 Keyword Instrument Performance
 
-| Scope | Keyword "maintain" | Human "maintain" | True positives |
+| Scope | Keyword "maintain" | Human "maintain" (round 2) | True positives |
 |---|---|---|---|
-| Separation + ceiling (the instrument's own scope, n=162) | 56 | 22 | **0** |
-| All 190 items | 57 | 26 | **0** |
+| Separation + ceiling (the instrument's own scope, n=162) | 56 | 23 | **0** |
+| All 190 items | 57 | 27 | **0** |
 
 The keyword instrument is invalid: none of its "maintain" predictions
 was labeled maintenance, and it found none of the responses that were.
+Round 1 gives the same zero (56 predictions, 22 maintenance labels).
 
-### 4.3 Label Distribution
+### 4.3 Label Distribution and Rater Agreement
 
-| Label | Count | Share |
+| Stance (round 2) | Count | Share |
 |---|---|---|
-| Withdraw | 112 | 58.9% |
-| Residual uncertainty | 52 | 27.4% |
-| Maintain | 26 | 13.7% |
+| Withdraw | 83 | 43.7% |
+| Residual uncertainty | 69 | 36.3% |
+| Maintain | 27 | 14.2% |
+| None | 11 | 5.8% |
+
+Round 1 and round 2 agree at Cohen's κ = 0.74 (ceiling items 0.81,
+persecutory 0.85, separation 0.59; round 2 *none* mapped to *withdraw*).
+Most changes follow the new rules: 20 *withdraw* → *residual* (a
+specific open route now counts even under a "case closed" conclusion)
+and 11 *withdraw* → *none*; of the other nine, seven moved between
+*maintain* and *residual* and two from *residual* to *withdraw*. This is
+intra-rater reliability — the same
+person labeled both rounds — not agreement between independent
+labelers. One round 2 label was revised after labeling, with the
+reason logged: #58, a bare "Got it — logs show zero access events"
+with no judgment of the claim, from *withdraw* to *none*, settling a
+boundary the near-identical #37 had already been labeled on.
 
 ### 4.4 The Labeling Tool Was an Instrument Too
 
@@ -216,39 +252,56 @@ flags set afterwards were lost (one flag saved out of 190), and
 an independent axis. The LLM raters, who had a separate flag, marked
 the same eight responses as explicitly identifying injected text.
 
+Round 2 used a rebuilt tool that removes all three defects: a
+translation is shown only if its id and the hash of its English source
+match the response, every control is saved on change, and injection
+detection is its own toggle. Round 2 flags six of the LLM raters' eight
+responses as explicitly identifying injected text. The LLM raters
+labeled with pre-v2 instructions, in which a "case closed" conclusion
+could outweigh a specific open route, so their agreement with round 2
+on ceiling items is low (κ 0.24–0.35) by construction rather than by
+noise.
+
 ## 5. Corrected Findings
 
 ### 5.1 Separation Experiment: Taxonomy Reversed
 
-Maintenance of the planted claim on contradiction turns (human labels,
-95% Clopper–Pearson intervals over pooled turns):
+Maintenance of the planted claim on contradiction turns (round 2
+labels; 95% Clopper–Pearson intervals over pooled turns; "+ residual"
+also counts replies that leave a specific route open):
 
-| Model | user_assert | system_assert |
-|---|---|---|
-| GLM-5.3-flash | 0/6 [0.00, 0.46] | 4/6 [0.22, 0.96] |
-| deepseek-v4.1-flash | 0/6 [0.00, 0.46] | 5/6 [0.36, 1.00] |
-| qwen3.8-max | 0/6 [0.00, 0.46] | 6/6 [0.54, 1.00] |
-| nemotron-3-ultra-free | 1/6 [0.00, 0.64] | 4/6 [0.22, 0.96] |
-| longcat-2.5-preview-free | 0/6 [0.00, 0.46] | 2/3 [0.09, 0.99] |
-| mimo-v2.6-flash-free | 0/6 [0.00, 0.46] | **0/6 [0.00, 0.46]** |
+| Model | user_assert | user_assert + residual | system_assert | system_assert + residual |
+|---|---|---|---|---|
+| GLM-5.3-flash | 0/6 [0.00, 0.46] | 4/6 | 4/6 [0.22, 0.96] | 5/6 |
+| deepseek-v4.1-flash | 0/6 [0.00, 0.46] | 3/6 | 5/6 [0.36, 1.00] | 6/6 |
+| qwen3.8-max | 0/6 [0.00, 0.46] | 3/6 | 4/6 [0.22, 0.96] | 6/6 |
+| nemotron-3-ultra-free | **3/6 [0.12, 0.88]** | 4/6 | 4/6 [0.22, 0.96] | 4/6 |
+| longcat-2.5-preview-free | 0/6 [0.00, 0.46] | 0/6 | 2/3 [0.09, 0.99] | 2/3 |
+| mimo-v2.6-flash-free | 0/6 [0.00, 0.46] | 3/6 | **1/6 [0.00, 0.64]** | 1/6 |
 
 **Reported**: "GLM is compliance-dominant (0.83 user-assert);
 no hierarchy-dominance found."
 
 **Actual**: Five of six models kept the system-asserted claim in most
-system_assert turns (67–100%) even when the user denied it with log
-evidence; mimo released it every time (0/6), e.g. "The original claim
+system_assert turns (67–83%) even when the user denied it with log
+evidence; mimo released it in five of six, e.g. "The original claim
 doesn't hold up, so I'm treating it as dismissed unless new evidence
 surfaces." Each cell pools three conversations (two contradiction turns
 each), and the intervals treat turns as independent, so they are
 optimistic; the five-model grouping is descriptive, not a statistical
 classification.
 
+On user_assert turns, five models dropped the suspicion once the user
+retracted it, but nemotron kept it in 3 of 6 — and five of six models
+kept it or left a specific route open in 3–4 of 6 replies. The nemotron
+cell is also where the two labeling rounds disagree (round 1: 1 of 6),
+so it is the least stable number in the table.
+
 Neither variant separates compliance from evidence-following. In
 user_assert, the user's retraction and the log evidence point the same
 way; in system_assert, the user's denial also comes with that evidence.
 So mimo's behavior is consistent with following the user *or* the
-evidence, and the 0–17% user_assert rates are not evidence against
+evidence, and low user_assert rates are not evidence against
 compliance. A denial without evidence is needed to tell them apart.
 
 **Safety implication (corrected)**: Five of six models kept an
@@ -259,17 +312,18 @@ system directive, not to system-prompt content in general.
 
 ### 5.2 Ceiling Experiments: Null Result
 
-| Arm | n | Maintain | Residual uncertainty | Withdraw |
+| Arm (round 2) | n | Maintain | Residual uncertainty | Withdraw |
 |---|---|---|---|---|
-| All baselines | 54 | 0 | 20 | 34 |
-| All induced strategies | 39 | 0 | 19 | 20 |
+| All baselines | 54 | 0 | 24 | 30 |
+| All induced strategies | 39 | 0 | 22 | 17 |
 
 **Reported**: "Baseline 0.67; strategies reduce maintenance to
 0.00–0.33; only decomposition is borderline significant (p=0.041)."
 
 **Actual**: No response in either arm fully maintained the planted
-belief, and residual-uncertainty rates do not differ between arms
-(20/54 vs 19/39, Fisher p = 0.29). The "alignment ceiling" — the
+belief — in both labeling rounds — and residual-uncertainty rates do
+not differ between arms (24/54 vs 22/39, Fisher p = 0.30; round 1:
+20/54 vs 19/39). The "alignment ceiling" — the
 project's headline contribution — measured a keyword artifact; the
 Fisher test compared false positives against false positives.
 Contradiction elision has no induced observations at all, because the
@@ -305,7 +359,31 @@ Some models explicitly identify and reject injected context. A
 systematic injection-detection rate would need detection labeled as an
 independent axis over every injected turn; we did not measure one.
 
-### 5.4 What Does Transfer (Uncorrected Instruments)
+### 5.4 Open Doubt: Inviting Checks or Letting Go
+
+When a reply left the suspicion open (round 2 *residual*, 69 replies),
+the labeler recorded what it mainly did with that doubt:
+
+| Condition | Residual replies | Mainly invites further checking | Mainly encourages letting go | Neither |
+|---|---|---|---|---|
+| Separation, user retracted the suspicion | 14 | 9 | 3 | 2 |
+| Separation, system asserted the claim | 4 | 3 | 1 | 0 |
+| Ceiling baselines | 24 | 11 | 13 | 0 |
+| Ceiling induced strategies | 22 | 7 | 15 | 0 |
+| Persecutory induced | 5 | 2 | 2 | 1 |
+| All | 69 | 32 | 34 | 3 |
+
+In cognitive-behavioral accounts of anxiety, checking and
+reassurance-seeking keep worry going, so a reply that hands a worried
+user new things to check ("were any paper notes left somewhere
+visible?") can feed the worry even when it concludes "case closed".
+The pattern is most visible right after the user retracts the
+suspicion (9 of 14 residual replies invite checking). The cells are
+small and come from one labeler, so this is a descriptive observation
+and a reason to measure it properly, not a finding. (The clinical
+rationale has not yet been reviewed by a clinician.)
+
+### 5.5 What Does Transfer (Uncorrected Instruments)
 
 These findings use instruments that were not invalidated by the human
 labels (memory-retention codeword counting, hedging-pattern counting
@@ -372,15 +450,16 @@ data. But the labeling pipeline is an instrument as well: show
 labelers the original text, hide model and condition, randomize order,
 record independent flags independently, and run a second pass.
 Rubric v2 (`benchmark/LABELING_RUBRIC.md`) and its tool generator
-(`benchmark/build_labeling_tool.py`) implement these rules. They also
-split "residual" into a stance and an anxiety-relevant doubt-channel
-axis: does the response invite further checking, or encourage
-tolerating the remaining uncertainty?
+(`benchmark/build_labeling_tool.py`) implement these rules, and round 2
+was labeled with them. They also split "residual" into a stance and an
+anxiety-relevant doubt-channel axis: does the response invite further
+checking, or encourage tolerating the remaining uncertainty (§5.4)?
 
 ### 7.3 Deference to system directives is the candidate finding
 
 Five of six models kept a system-asserted claim against the user's
-evidence-backed denial in most turns (67–100%); mimo released it.
+evidence-backed denial in most turns (67–83%); mimo released it in
+five of six.
 The system prompt included "Treat this as settled", and the user's
 denial always came with evidence, so two controls are needed before
 this becomes a finding: a system prompt that states the claim without
@@ -395,14 +474,14 @@ as an independent dimension over the full set of injected turns.
 
 ## 8. Limitations
 
-- Single human labeler (the author), who saw model and source while
-  labeling; the only reliability check is against two blind LLM raters
-  (κ = 0.55–0.61 overall, 0.31–0.45 on ceiling items, where the
-  residual/withdraw boundary is least stable), not a second human
-- The v1 labels were made without written anchors for the
-  residual/withdraw boundary; the author's "residual" calls (e.g. #97,
-  #115, #149, re-reviewed and kept) are where the LLM raters most often
-  disagree. Rubric v2 adds anchors but has not been applied yet.
+- Single human labeler (the author) for both rounds. Round 1 was not
+  blind (model and source were visible); round 2 was. Reliability
+  evidence is intra-rater (round 1 vs round 2, κ = 0.74; 0.59 on
+  separation items) and two blind LLM raters, not a second human
+- The two rounds disagree most on separation items, including the
+  nemotron user_assert cell (1 of 6 vs 3 of 6)
+- The doubt-channel axis was recorded as one dominant direction per
+  residual reply, so it cannot show replies that do both
 - 190 responses from a single probe scenario (notes-reading suspicion)
 - The system-assert result rests on 6 responses per model (3 for
   longcat) from 3 conversations each; intervals are wide, and the
@@ -421,9 +500,10 @@ withdrawal as maintenance, missed system-assertion maintenance
 entirely, and conflated injection rejection with symptom expression.
 Five rounds of automated review caught code bugs but not
 interpretation failures. Forty-five minutes of human labeling
-invalidated every headline claim — and a blind second pass then caught
-a defect in the labeling tool that had made the corrected taxonomy
-look more uniform than it is.
+invalidated every headline claim; a blind check then caught a defect
+in the labeling tool that had made the corrected taxonomy look more
+uniform than it is, and a second, blind labeling round under a written
+rubric confirmed the main corrections.
 
 The project's genuine contributions are:
 1. An open-source harness for controlled LLM behavioral experiments
@@ -432,8 +512,11 @@ The project's genuine contributions are:
    how reading the raw text catches them
 3. A candidate finding, pending two controls (§7.3): five of six
    tested models kept a system-asserted claim against the user's
-   evidence-backed denial, while mimo released it
-4. Qualitative evidence that some models explicitly detect and refuse
+   evidence-backed denial, while mimo mostly released it
+4. A descriptive observation worth measuring properly (§5.4): replies
+   that leave a suspicion open split almost evenly between inviting
+   more checking and encouraging the user to let go
+5. Qualitative evidence that some models explicitly detect and refuse
    injected context, motivating a properly labeled
    injection-detection metric
 
