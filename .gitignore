@@ -36,6 +36,9 @@ benchmark/*
 !benchmark/run_separation_controls.py
 !benchmark/extract_labeling_items.py
 !benchmark/run_profile_transcripts.py
+!benchmark/build_second_labeler_set.py
+!benchmark/analyze_interrater.py
+!benchmark/interrater_analysis.md
 !benchmark/calibrate_stance_judge.py
 !benchmark/stance_judge_calibration_v*.md
 !benchmark/stance_judge_calibration_v*.json
