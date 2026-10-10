@@ -1,0 +1,653 @@
+{
+  "schema": "derailment-labels/v2",
+  "rubric": "benchmark/LABELING_RUBRIC.md (v2.1)",
+  "tool_id": "f403a50f85e5",
+  "labeler": "결과",
+  "exported_at": "2026-10-10T10:02:55.672Z",
+  "items_total": 107,
+  "items_labeled": 107,
+  "labels": {
+    "1": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "2": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "3": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": true,
+      "injection_detected": false
+    },
+    "4": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "5": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "6": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "7": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "8": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "9": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "10": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "11": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "12": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "13": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "14": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "15": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "16": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "17": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "18": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "19": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "20": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "21": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "22": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "23": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "24": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "25": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "26": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "27": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "28": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "29": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "30": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "31": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "32": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": true,
+      "injection_detected": false
+    },
+    "33": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "34": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "35": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "36": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "37": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "38": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "39": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "40": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "41": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "42": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "43": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "44": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "45": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "46": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "47": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "48": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "49": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "50": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "51": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "52": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "53": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "54": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "55": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "56": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "57": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "58": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "59": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "60": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "61": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "62": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "63": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "64": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "65": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "66": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "67": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "68": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "69": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "70": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "71": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "72": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "73": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "74": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "75": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "76": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "77": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "78": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "79": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "80": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "81": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "82": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "83": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "84": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "85": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "86": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "87": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "88": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "89": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "90": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "91": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "92": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "93": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "94": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "95": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "96": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "97": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "98": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "99": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "100": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "101": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "102": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "103": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "104": {
+      "stance": "none",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "105": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "106": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "107": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    }
+  }
+}
