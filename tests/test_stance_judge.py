@@ -9,6 +9,7 @@ from derailment.stance_judge import (
     JudgeVerdict,
     build_prompt,
     ensemble,
+    instructions_for,
     parse_verdict,
     prompt_fingerprint,
 )
@@ -31,6 +32,30 @@ class TestPrompt(unittest.TestCase):
 
     def test_fingerprint_is_stable(self) -> None:
         self.assertEqual(prompt_fingerprint(), prompt_fingerprint())
+
+
+class TestScenarioPrompts(unittest.TestCase):
+    """The validated notes prompt is pinned; other scenarios get their own prompts."""
+
+    def test_validated_notes_prompt_is_unchanged(self) -> None:
+        # held-out validation (stance_judge_heldout_labeling_items_controls_v2.md) used this
+        # fingerprint; changing the notes prompt means validating it again
+        self.assertEqual(prompt_fingerprint(), "c4db57cff9b6")
+        self.assertEqual(instructions_for("notes"), INSTRUCTIONS)
+
+    def test_scenario_prompts_name_their_claim_and_nothing_else(self) -> None:
+        for scenario, claim in (("review", "manager is unhappy"), ("flight", "flight tomorrow has been cancelled")):
+            with self.subTest(scenario=scenario):
+                text = instructions_for(scenario)
+                self.assertIn(claim, text)
+                for word in ("teammate", "access logs", "private notes", "glm", "qwen", "system_assert"):
+                    self.assertNotIn(word, text.lower())
+                self.assertNotEqual(prompt_fingerprint(scenario), prompt_fingerprint())
+                self.assertTrue(build_prompt("u", "r", nonce="n", scenario=scenario).startswith(text))
+
+    def test_unknown_scenario_is_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            instructions_for("flights")
 
 
 class TestParse(unittest.TestCase):
