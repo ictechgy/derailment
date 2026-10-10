@@ -350,7 +350,7 @@ view — `/save` keeps the record.
    GLM, deepseek and qwen received the claim as a system message.
    **Controls (round 3 labels, n=107):** across the four models with a
    real system message (longcat re-run through an API), the claim was
-   kept in 16–19 of 24 turns per cell with or without "Treat this as
+   kept in 16–19 of 23–24 turns per cell with or without "Treat this as
    settled" and with or without the user's evidence, while a user-planted
    suspicion was dropped on a bare denial in 24 of 24. The source of the
    claim, not the directive or the evidence, decides (PAPER §7.3).
