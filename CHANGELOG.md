@@ -5,6 +5,15 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-10
+
+**Do not use 0.9.0's belief-maintenance numbers.** 0.9.0 shipped keyword
+instruments that failed human validation (zero true positives against
+190 hand-labeled replies) without any warning. This release retracts
+the claims built on them, warns on every real-model report, and
+replaces the measurement with human labels and an LLM judge ensemble
+validated on held-out labels.
+
 ### Retracted (human labels, n=190 — see `benchmark/human_label_analysis.md`)
 
 - **Keyword belief instrument** (`belief_stickiness`, separation
