@@ -151,6 +151,7 @@
     }
   },
   "prompt_version": "stance-judge-v2",
+  "heldout": null,
   "in_sample": "prompt v2 adds a rule written, and then narrowed, after reading the judges' disagreements on these same items",
   "fingerprint": "c4db57cff9b6",
   "items": 190,
