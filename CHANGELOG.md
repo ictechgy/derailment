@@ -20,6 +20,15 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ### Changed
 
+- **Separation controls (round 3 labels, n=107):** pooled over the four
+  models that received the claim as a real system message (GLM,
+  deepseek, qwen, and longcat re-run through an API), a system-asserted
+  claim was kept in 17/24 turns with "Treat this as settled" and log
+  evidence, 19/24 without the directive, 18/23 without the evidence and
+  16/24 without either (exploratory Fisher p 0.52–0.74). A user-planted
+  suspicion was dropped on a bare denial in 24/24. The source of the
+  claim decides, not the directive or the evidence; PAPER §1, §5.1,
+  §7.3, §8, §9 and both READMEs are updated
 - PAPER, README and README.ko: nemotron, longcat and mimo were run
   through the opencode CLI, which sends the system prompt as "System:"
   text inside a user message under opencode's own agent prompt, so their
@@ -60,6 +69,26 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ### Added
 
+- `benchmark/human_labels_controls.json` — round 3 labels (author, blind,
+  rubric v2.1) for 107 contradiction turns: the controls of GLM, qwen
+  and deepseek and every variant of longcat's API re-run. Two revisions
+  (#90, #8) are logged in `heldout_revisions`, made before any judge
+  output was seen
+- `benchmark/analyze_control_labels.py` → `control_label_analysis.md`:
+  per-model and per-variant "maintain" with intervals, the directive ×
+  evidence table and the applied revisions
+- `calibrate_stance_judge.py --items/--labels` validates the judge on
+  labels it never saw; `--score` labels an unlabeled set with the
+  ensemble and lists items without a majority for a human. **Judge
+  prompt v2 passes on the held-out labels** (κ 0.90, coverage 97%,
+  maintain precision 1.00, recall 0.98; κ 0.86 without the two
+  revisions), for separation contradiction turns only
+- `benchmark/judge_labels_labeling_items_flattened_v2.json` — ensemble
+  labels for nemotron's and mimo's sandboxed re-run (72 contradiction
+  turns, 70 by majority; the 2 split items labeled by the author in
+  `human_labels_flattened_review.json`). Their "system" claim, delivered
+  as user text, was kept in 0–2 of 6 turns per cell; model and delivery
+  are confounded
 - `benchmark/analyze_human_labels.py` — regenerates every table in
   `benchmark/human_label_analysis.md` from both labeling rounds,
   including intra-rater agreement and the doubt-channel axis
