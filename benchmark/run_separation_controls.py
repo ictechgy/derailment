@@ -39,8 +39,12 @@ sys.path.insert(0, str(ROOT / "benchmark"))
 from derailment.core.models import PseudoModel  # noqa: E402
 from derailment.separation import (  # noqa: E402
     CONTROL_VARIANTS,
+    NOTES,
+    SCENARIOS,
     VARIANTS,
+    Scenario,
     run_separation,
+    scenario_for,
     variant_spec,
 )
 
@@ -126,11 +130,13 @@ def parse_variants(arg: str) -> tuple[str, ...]:
     return names
 
 
-def run_backend(spec: str, model, seeds: tuple[int, ...], variants: tuple[str, ...], transcript_dir: pathlib.Path) -> dict | None:
+def run_backend(spec: str, model, seeds: tuple[int, ...], variants: tuple[str, ...], transcript_dir: pathlib.Path,
+                scenario: Scenario = NOTES) -> dict | None:
     """Run one backend; a provider failure is reported and skipped so the other backends still run."""
-    print(f"== {spec} seeds={seeds} variants={','.join(variants)} ==", flush=True)
+    print(f"== {spec} scenario={scenario.key} seeds={seeds} variants={','.join(variants)} ==", flush=True)
     try:
-        result = run_separation(model, seeds=seeds, locale="en", transcript_dir=str(transcript_dir), variants=variants)
+        result = run_separation(model, seeds=seeds, locale="en", transcript_dir=str(transcript_dir), variants=variants,
+                                scenario=scenario)
     except Exception as exc:  # one backend failing must not stop the batch
         print(f"  FAILED ({type(exc).__name__}): {str(exc)[:160]} — check the backend's key, quota or CLI", file=sys.stderr, flush=True)
         return None
@@ -143,7 +149,9 @@ def merge_summary(results: dict[str, dict], path: pathlib.Path) -> None:
     """Merge this run's per-backend results into the summary file."""
     existing = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     for spec, result in results.items():
-        existing.setdefault(spec, {}).update(result["variants"])
+        # the notes scenario keeps its original keys; other scenarios get their own entry per backend
+        key = spec if result.get("scenario", "notes") == "notes" else f"{spec}@{result['scenario']}"
+        existing.setdefault(key, {}).update(result["variants"])
     path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
     print(f"summary: {path}")
 
@@ -155,16 +163,17 @@ def main() -> int:
     parser.add_argument("--models", choices=["six"], help="shortcut for the six models of the original run")
     parser.add_argument("--seeds", type=int, nargs="+", default=[1, 2, 3])
     parser.add_argument("--variants", default="controls", help="'controls' (default), 'all', or comma-separated names")
+    parser.add_argument("--scenario", default="notes", choices=list(SCENARIOS), help="planted claim (default notes)")
     parser.add_argument("--dry-run", action="store_true", help="run offline with PseudoModel; writes nothing under benchmark/")
     args = parser.parse_args()
-    variants, seeds = parse_variants(args.variants), tuple(args.seeds)
+    variants, seeds, scenario = parse_variants(args.variants), tuple(args.seeds), scenario_for(args.scenario)
     if args.dry_run:
         with tempfile.TemporaryDirectory() as scratch:
-            return 0 if run_backend("pseudo", PseudoModel(seed=1), seeds, variants, pathlib.Path(scratch)) else 1
+            return 0 if run_backend("pseudo", PseudoModel(seed=1), seeds, variants, pathlib.Path(scratch), scenario) else 1
     specs = list(SIX_MODELS if args.models == "six" else []) + args.backend
     if not specs:
         parser.error("give --backend at least once, --models six, or --dry-run")
-    results = {spec: r for spec in specs if (r := run_backend(spec, build_backend(spec), seeds, variants, TRANSCRIPTS))}
+    results = {spec: r for spec in specs if (r := run_backend(spec, build_backend(spec), seeds, variants, TRANSCRIPTS, scenario))}
     if results:
         merge_summary(results, SUMMARY)
     return 0 if len(results) == len(specs) else 1
