@@ -187,6 +187,70 @@ class TestControlVariants(unittest.TestCase):
         self.assertIn("system_asert", str(ctx.exception))
 
 
+
+class TestScenarios(unittest.TestCase):
+    """Other planted claims reuse the variants; only the claim's wording changes."""
+
+    EVIDENCE_WORDS = {"notes": ("log", "access", "event", "checked"),
+                      "review": ("review", "rating", "written"),
+                      "flight": ("app", "status", "scheduled", "checked")}
+
+    def test_every_scenario_keeps_the_notes_structure(self) -> None:
+        from derailment.separation import NOTES, SCENARIOS, VARIANTS, script_for
+
+        for key, scenario in SCENARIOS.items():
+            for variant in VARIANTS:
+                with self.subTest(scenario=key, variant=variant):
+                    ours, notes = script_for(variant, scenario), script_for(variant, NOTES)
+                    self.assertEqual([t.kind for t in ours], [t.kind for t in notes])
+                    tasks = [(o.user, n.user) for o, n in zip(ours, notes, strict=True) if n.user.startswith(("Summarize", "What", "Draft", "List", "Write", "Give"))]
+                    self.assertTrue(tasks and all(o == n for o, n in tasks))
+
+    def test_bare_denials_drop_each_scenarios_evidence(self) -> None:
+        from derailment.separation import SCENARIOS
+
+        for key, scenario in SCENARIOS.items():
+            words = self.EVIDENCE_WORDS[key]
+            with self.subTest(scenario=key):
+                bare = [*scenario.bare_denials, *scenario.system_denials[False][:2]]
+                with_evidence = [*scenario.denials, *scenario.system_denials[True][:2]]
+                self.assertFalse(any(w in d.lower() for d in bare for w in words))
+                self.assertTrue(all(any(w in d.lower() for w in words) for d in with_evidence))
+
+    def test_directive_is_the_only_system_prompt_difference_in_every_scenario(self) -> None:
+        from derailment.separation import ASSERTION_DIRECTIVE, SCENARIOS, profile_for
+
+        for key, scenario in SCENARIOS.items():
+            with self.subTest(scenario=key):
+                with_directive = profile_for("system_assert", scenario).layers[0].persona
+                self.assertEqual(with_directive, profile_for("system_assert_no_directive", scenario).layers[0].persona + ASSERTION_DIRECTIVE)
+                self.assertIn(scenario.fact, with_directive)
+                self.assertNotIn(scenario.fact, profile_for("user_assert", scenario).layers[0].persona)
+
+    def test_transcripts_name_and_tag_their_scenario(self) -> None:
+        import json
+        import pathlib
+        import tempfile
+
+        from derailment.separation import NOTES, REVIEW, transcript_name
+
+        self.assertEqual(transcript_name("a/b", "system_assert", 2), "separation_a_b_system_assert_seed2.json")
+        self.assertEqual(transcript_name("a/b", "system_assert", 2, REVIEW), "separation_a_b_review-system_assert_seed2.json")
+        with tempfile.TemporaryDirectory() as tmp:
+            run_variant(PseudoModel(seed=1), "system_assert", 1, transcript_dir=tmp, scenario=REVIEW)
+            saved = json.loads(next(pathlib.Path(tmp).glob("*.json")).read_text())
+        self.assertEqual(saved["meta"]["scenario"], "review")
+        self.assertIn(REVIEW.system_denials[True][1], [t["spec"]["user"] for t in saved["turns"]])
+        self.assertIsNot(REVIEW, NOTES)
+
+    def test_unknown_scenario_is_rejected(self) -> None:
+        from derailment.separation import scenario_for
+
+        with self.assertRaises(ValueError) as ctx:
+            scenario_for("flights")
+        self.assertIn("flight", str(ctx.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
 

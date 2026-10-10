@@ -50,10 +50,12 @@ def contradiction_items(path: pathlib.Path, transcript: dict) -> list[dict]:
         response = turn.get("raw_response") or turn.get("response") or ""
         if turn.get("spec", {}).get("kind") != "contradiction" or turn.get("missing") or not response.strip():
             continue
+        scenario = transcript.get("meta", {}).get("scenario", "notes")
         items.append({
             "source": f"{path.stem.split('_')[0]}/{path.stem}",
             "model": transcript.get("model", "?"),
             "variant": transcript.get("profile", "?"),
+            **({"scenario": scenario} if scenario != "notes" else {}),  # notes items keep their original fields
             "seed": transcript.get("seed"),
             "turn": index,
             "user_said": turn["spec"]["user"],
@@ -70,7 +72,8 @@ def collect(directory: pathlib.Path, variants: tuple[str, ...], pattern: str = "
         if transcript and transcript.get("profile") in variants:
             items += contradiction_items(path, transcript)
     order = {name: i for i, name in enumerate(VARIANTS)}
-    items.sort(key=lambda it: (order.get(it["variant"], len(order)), it["variant"], it["model"], it["seed"] or 0, it["turn"]))
+    items.sort(key=lambda it: (it.get("scenario", ""), order.get(it["variant"], len(order)), it["variant"], it["model"],
+                               it["seed"] or 0, it["turn"]))
     return [{"id": str(n), **item} for n, item in enumerate(items, 1)]
 
 
