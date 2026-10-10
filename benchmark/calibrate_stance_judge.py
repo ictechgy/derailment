@@ -519,6 +519,39 @@ def heldout_revisions(tool_id: str | None) -> list[dict]:
     return [r for r in log.get("heldout_revisions", []) if r.get("tool_id") == tool_id]
 
 
+def score_items(items_path: pathlib.Path, judges: list[str], workers: int, timeout: float, report_only: bool) -> int:
+    """Label unlabeled items with the ensemble; items without a majority are listed for a human.
+
+    Only meaningful within the scope the ensemble passed on held-out labels:
+    separation contradiction turns, this prompt version and these judge commands
+    (all recorded in the output).
+    """
+    items = {str(x["id"]): x for x in json.loads(items_path.read_text(encoding="utf-8"))}
+    ids = sorted(items, key=int)
+    cache = Cache(CACHE / items_path.stem)
+    if not report_only:
+        run_judges(items, ids, judges, cache, workers, timeout)
+    labels = {i: ensemble_label(i, judges, cache) for i in ids}
+    out = BENCH / f"judge_labels_{items_path.stem}_{PROMPT_VERSION.rsplit('-', 1)[-1]}.json"
+    needs_human = [i for i in ids if labels[i]["stance"] is None]
+    out.write_text(json.dumps({
+        "schema": "derailment-judge-labels/v1", "items_file": items_path.name, "prompt_version": PROMPT_VERSION,
+        "fingerprint": cache.fingerprint, "commands": {j: JUDGES[j] for j in judges},
+        "validated_scope": "separation contradiction turns (stance_judge_heldout_labeling_items_controls_v2.md)",
+        "needs_human": needs_human, "labels": labels}, indent=2), encoding="utf-8")
+    print(f"wrote {out} — {len(ids) - len(needs_human)} labeled by the ensemble, {len(needs_human)} need a human: "
+          + (", ".join("#" + i for i in needs_human) or "none"))
+    return 0
+
+
+def ensemble_label(item_id: str, judges: list[str], cache: Cache) -> dict:
+    """The ensemble's label for one item, with every judge's vote kept for audit."""
+    verdicts = {j: (parse_verdict(a["output"]) if (a := cache.get(j, item_id)) else None) for j in judges}
+    decided = ensemble(list(verdicts.values()))
+    return {"stance": decided.stance, "doubt": decided.doubt, "injection_detected": decided.injection_detected,
+            "agreeing": decided.agreeing, "votes": {j: (v.stance if v else None) for j, v in verdicts.items()}}
+
+
 def main() -> int:
     """CLI entry point."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -529,11 +562,17 @@ def main() -> int:
     parser.add_argument("--report-only", action="store_true", help="do not call judges; rebuild the report from the cache")
     parser.add_argument("--items", type=pathlib.Path, help="held-out items (extract_labeling_items.py output) instead of the 190 round 2 items")
     parser.add_argument("--labels", type=pathlib.Path, help="the labeling tool's export for --items")
+    parser.add_argument("--score", action="store_true",
+                        help="label --items with the validated ensemble instead of calibrating (no --labels)")
     args = parser.parse_args()
     judges = [j.strip() for j in args.judges.split(",") if j.strip()]
     unknown = [j for j in judges if j not in JUDGES]
     if unknown:
         parser.error(f"unknown judge(s) {unknown}; choose from {list(JUDGES)}")
+    if args.score:
+        if args.items is None or args.labels is not None:
+            parser.error("--score takes --items and no --labels")
+        return score_items(args.items, judges, args.workers, args.timeout, args.report_only)
     if (args.items is None) != (args.labels is None):
         parser.error("--items and --labels go together")
     version = PROMPT_VERSION.rsplit("-", 1)[-1]
