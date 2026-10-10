@@ -49,5 +49,6 @@ benchmark/*
 !benchmark/control_label_analysis.md
 !benchmark/judge_labels_*.json
 !benchmark/human_labels_flattened_review.json
+!benchmark/human_labels_persecutory.json
 # HANDOFF.md는 세션 로컬 문서
 HANDOFF.md
