@@ -26,8 +26,10 @@ Format based on Keep a Changelog; versioning is SemVer.
   system_assert rows never tested a system message (flagged by the
   2026-10-04 review as P2-27, omitted from the paper until now). The
   system-versus-user comparison now stands on GLM, deepseek and qwen
-  (4/6, 5/6, 4/6); the three opencode models are to be re-run through an
-  API with a real system message
+  (4/6, 5/6, 4/6). longcat has been re-run through an API with a real
+  system message (all six variants, not yet labeled); nemotron and mimo
+  are free-tier models OpenCode serves only to its CLI, so their re-run
+  (in an OS sandbox) keeps the flattened delivery
 - `docs/PAPER.md` rewritten as a post-mortem; README, README.ko and
   ETHICS synced. Corrected separation result: five of six models kept a
   system-asserted claim against the user's evidence-backed denial in
@@ -108,7 +110,7 @@ Format based on Keep a Changelog; versioning is SemVer.
   it. Each call now gets an empty directory as both working directory
   and `PWD`. The free tier rejects runs with a changed tool set, so the
   tools cannot be switched off, and bash can still reach outside through
-  variables such as `$HOME`; API-based runs are the fix. The tested
+  variables such as `$HOME`; API runs or an OS sandbox are the fix. The tested
   models made no tool calls in the opencode sessions still on record
 - Failed opencode calls (a concurrent run's "database is locked", a
   timeout) were recorded as empty model replies; they are now retried
