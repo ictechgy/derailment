@@ -3,6 +3,12 @@
 Usage:
     python benchmark/extract_labeling_items.py --out benchmark/labeling_items_controls.json
     python benchmark/extract_labeling_items.py --variants all --transcripts DIR --out FILE
+    python benchmark/extract_labeling_items.py --transcripts benchmark/profile_transcripts \
+        --pattern 'persecutory_*.json' --profiles persecutory --out FILE
+
+``--pattern``/``--profiles`` read other profiles' transcripts (run_profile_transcripts.py); an
+item's source starts with the file's first name part ("separation", "persecutory", ...), which the
+analysis scripts use as its experiment group.
 
 Reads every ``separation_*.json`` transcript in the directory (default:
 benchmark/separation_transcripts/), keeps the requested variants
@@ -45,7 +51,7 @@ def contradiction_items(path: pathlib.Path, transcript: dict) -> list[dict]:
         if turn.get("spec", {}).get("kind") != "contradiction" or turn.get("missing") or not response.strip():
             continue
         items.append({
-            "source": f"separation/{path.stem}",
+            "source": f"{path.stem.split('_')[0]}/{path.stem}",
             "model": transcript.get("model", "?"),
             "variant": transcript.get("profile", "?"),
             "seed": transcript.get("seed"),
@@ -56,15 +62,15 @@ def contradiction_items(path: pathlib.Path, transcript: dict) -> list[dict]:
     return items
 
 
-def collect(directory: pathlib.Path, variants: tuple[str, ...]) -> list[dict]:
-    """Contradiction-turn items of the requested variants, numbered in a stable order."""
+def collect(directory: pathlib.Path, variants: tuple[str, ...], pattern: str = "separation_*.json") -> list[dict]:
+    """Contradiction-turn items of the requested variants (or profiles), numbered in a stable order."""
     items = []
-    for path in sorted(directory.glob("separation_*.json")):
+    for path in sorted(directory.glob(pattern)):
         transcript = load_transcript(path)
         if transcript and transcript.get("profile") in variants:
             items += contradiction_items(path, transcript)
     order = {name: i for i, name in enumerate(VARIANTS)}
-    items.sort(key=lambda it: (order[it["variant"]], it["model"], it["seed"] or 0, it["turn"]))
+    items.sort(key=lambda it: (order.get(it["variant"], len(order)), it["variant"], it["model"], it["seed"] or 0, it["turn"]))
     return [{"id": str(n), **item} for n, item in enumerate(items, 1)]
 
 
@@ -88,11 +94,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--transcripts", type=pathlib.Path, default=DEFAULT_TRANSCRIPTS)
     parser.add_argument("--variants", default="controls", help="'controls' (default), 'all', or comma-separated names")
+    parser.add_argument("--pattern", default="separation_*.json", help="transcript file pattern (default separation_*.json)")
+    parser.add_argument("--profiles", help="comma-separated profile names to keep instead of --variants (other experiments)")
     parser.add_argument("--out", type=pathlib.Path, required=True)
     args = parser.parse_args()
     if not args.transcripts.is_dir():
         sys.exit(f"error: {args.transcripts} is not a directory — run run_separation_controls.py first")
-    items = collect(args.transcripts, parse_variants(args.variants))
+    wanted = tuple(n.strip() for n in args.profiles.split(",") if n.strip()) if args.profiles else parse_variants(args.variants)
+    items = collect(args.transcripts, wanted, args.pattern)
     if not items:
         sys.exit("error: no contradiction turns found for those variants — check the transcript directory and --variants")
     args.out.write_text(json.dumps(items, ensure_ascii=False, indent=1), encoding="utf-8")
