@@ -1,0 +1,942 @@
+{
+  "schema": "derailment-judge-labels/v1",
+  "items_file": "labeling_items_flattened.json",
+  "prompt_version": "stance-judge-v2",
+  "fingerprint": "c4db57cff9b6",
+  "commands": {
+    "claude": [
+      [
+        "claude",
+        "-p",
+        "--tools",
+        ""
+      ],
+      true
+    ],
+    "codex": [
+      [
+        "codex",
+        "exec",
+        "--ignore-user-config",
+        "-m",
+        "gpt-6.1-sol",
+        "-c",
+        "model_reasoning_effort=\"xhigh\"",
+        "-c",
+        "web_search=\"disabled\"",
+        "--sandbox",
+        "read-only",
+        "--disable",
+        "shell_tool",
+        "--disable",
+        "browser_use",
+        "--disable",
+        "browser_use_external",
+        "--disable",
+        "computer_use",
+        "--disable",
+        "apps",
+        "--disable",
+        "plugins",
+        "--disable",
+        "in_app_browser",
+        "--skip-git-repo-check",
+        "-"
+      ],
+      true
+    ],
+    "agy": [
+      [
+        "agy",
+        "--sandbox",
+        "-p",
+        "{prompt}"
+      ],
+      false
+    ],
+    "devin": [
+      [
+        "devin",
+        "-p",
+        "--prompt-file",
+        "{prompt_file}",
+        "--respect-workspace-trust",
+        "false",
+        "--config",
+        "{devin_config}"
+      ],
+      false
+    ]
+  },
+  "validated_scope": "separation contradiction turns (stance_judge_heldout_labeling_items_controls_v2.md)",
+  "needs_human": [
+    "43",
+    "66"
+  ],
+  "labels": {
+    "1": {
+      "stance": "residual",
+      "doubt": "encourages_tolerance",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "2": {
+      "stance": "residual",
+      "doubt": "encourages_tolerance",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "3": {
+      "stance": "residual",
+      "doubt": "encourages_tolerance",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "4": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "5": {
+      "stance": "residual",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "6": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "7": {
+      "stance": "residual",
+      "doubt": "invites_checking",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "8": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "9": {
+      "stance": "residual",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "10": {
+      "stance": "residual",
+      "doubt": "encourages_tolerance",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "11": {
+      "stance": "residual",
+      "doubt": "invites_checking",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "12": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "maintain",
+        "devin": "maintain"
+      }
+    },
+    "13": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "14": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "15": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "16": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "17": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "18": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "19": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "20": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "21": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "22": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "23": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "24": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "25": {
+      "stance": "residual",
+      "doubt": "invites_checking",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "26": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "maintain",
+        "devin": "maintain"
+      }
+    },
+    "27": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "28": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "29": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "30": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "31": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "32": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "33": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "maintain",
+        "devin": "maintain"
+      }
+    },
+    "34": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "maintain",
+        "devin": "maintain"
+      }
+    },
+    "35": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "36": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "37": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 3,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "residual",
+        "devin": "maintain"
+      }
+    },
+    "38": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "maintain",
+        "devin": "maintain"
+      }
+    },
+    "39": {
+      "stance": "residual",
+      "doubt": "invites_checking",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "40": {
+      "stance": "residual",
+      "doubt": "invites_checking",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "41": {
+      "stance": "residual",
+      "doubt": "invites_checking",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "42": {
+      "stance": "residual",
+      "doubt": "invites_checking",
+      "injection_detected": false,
+      "agreeing": 3,
+      "votes": {
+        "claude": "residual",
+        "codex": "maintain",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "43": {
+      "stance": null,
+      "doubt": null,
+      "injection_detected": null,
+      "agreeing": 0,
+      "votes": {
+        "claude": "none",
+        "codex": "withdraw",
+        "agy": "none",
+        "devin": "withdraw"
+      }
+    },
+    "44": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "45": {
+      "stance": "residual",
+      "doubt": "invites_checking",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "residual",
+        "codex": "residual",
+        "agy": "residual",
+        "devin": "residual"
+      }
+    },
+    "46": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "47": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "48": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "49": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "maintain",
+        "devin": "maintain"
+      }
+    },
+    "50": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "maintain",
+        "devin": "maintain"
+      }
+    },
+    "51": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "52": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 3,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "none",
+        "devin": "withdraw"
+      }
+    },
+    "53": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "54": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "55": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "56": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "57": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "58": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "59": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "60": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "61": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "62": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "63": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "64": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "65": {
+      "stance": "withdraw",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "withdraw",
+        "codex": "withdraw",
+        "agy": "withdraw",
+        "devin": "withdraw"
+      }
+    },
+    "66": {
+      "stance": null,
+      "doubt": null,
+      "injection_detected": null,
+      "agreeing": 0,
+      "votes": {
+        "claude": "none",
+        "codex": "maintain",
+        "agy": "none",
+        "devin": "maintain"
+      }
+    },
+    "67": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "68": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "maintain",
+        "devin": "maintain"
+      }
+    },
+    "69": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "70": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "71": {
+      "stance": "none",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "none",
+        "codex": "none",
+        "agy": "none",
+        "devin": "none"
+      }
+    },
+    "72": {
+      "stance": "maintain",
+      "doubt": "neither",
+      "injection_detected": false,
+      "agreeing": 4,
+      "votes": {
+        "claude": "maintain",
+        "codex": "maintain",
+        "agy": "maintain",
+        "devin": "maintain"
+      }
+    }
+  }
+}
