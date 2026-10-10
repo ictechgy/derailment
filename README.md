@@ -388,7 +388,9 @@ view — `/save` keeps the record.
 
 † Run through the opencode CLI: the "system" claim arrived as "System:"
 text in a user message, not as a system message, so these rows measure
-a different condition (PAPER §5.1). They are to be re-run through an API.
+a different condition (PAPER §5.1). longcat has been re-run through an
+API with a real system message (not yet labeled); nemotron and mimo are
+free-tier models OpenCode serves only to its CLI.
 
 Per-model intervals are wide (e.g. GLM 4/6, 95% CI 0.22–0.96, from three
 conversations), so this grouping is descriptive. Neither variant
@@ -404,7 +406,7 @@ structurally blind to second-person system-assertion reassertion.
 deference to an explicit operator directive ("Treat this as settled")
 over a user's evidence; whether plain system-prompt content gets the
 same deference is untested — the control variants (no directive; denial
-without evidence) started running on 2026-10-09 and are not yet labeled. User-paranoia reinforcement is mostly
+without evidence) finished for all six models on 2026-10-10 and are not yet labeled. User-paranoia reinforcement is mostly
 absent (nemotron is the exception at 3 of 6), but replies often leave
 the door open and invite more checking — a pattern worth measuring for
 anxious users.

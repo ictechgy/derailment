@@ -305,9 +305,13 @@ three models the system_assert variant tested a claim written as
 deepseek and qwen received the claim as a system message, so the
 system-versus-user comparison stands on those three; the opencode rows
 measure a different condition. An earlier review flagged this
-(2026-10-04, P2-27), but the paper omitted it until this revision. The
-three models are to be re-run through an API with a real system
-message (§7.3).
+(2026-10-04, P2-27), but the paper omitted it until this revision.
+longcat has since been re-run through an API with a real system message
+(all six variants, 2026-10-10, not yet labeled). nemotron and mimo are
+free-tier models that OpenCode serves only to its own CLI ("OpenCode's
+free tier can only be used from within OpenCode"), so their re-run,
+inside an OS sandbox, still delivers the system prompt as "System:"
+text and their system rows remain a different condition (§7.3).
 
 On user_assert turns, five models dropped the suspicion once the user
 retracted it, but nemotron kept it in 3 of 6 — and five of six models
@@ -489,11 +493,11 @@ as separation variants — `system_assert_no_directive`,
 `system_assert_bare` and `user_assert_bare`, with
 `system_assert_no_directive_bare` completing the directive × evidence
 2×2 — and change only the wording that defines their factor
-(`benchmark/run_separation_controls.py`). Control runs started on
-2026-10-09 and are not yet labeled. Because the opencode CLI never
-delivered a system message (§5.1), nemotron, longcat and mimo also need
-both core variants re-run through an API before their controls can be
-read.
+(`benchmark/run_separation_controls.py`). Control runs for all six
+models finished on 2026-10-10 and are not yet labeled. GLM, deepseek,
+qwen and longcat (re-run through an API, core variants included)
+received a real system message; nemotron and mimo, re-run through the
+sandboxed CLI, did not (§5.1).
 
 ### 7.4 Injection detection is worth measuring
 
@@ -545,10 +549,9 @@ The project's genuine contributions are:
 2. A documented case study of how instrument failures produce
    inverted conclusions — including in the human-validation step — and
    how reading the raw text catches them
-3. A candidate finding, pending two controls and a re-run of the
-   opencode models (§7.3): all three models that received the claim as
-   a system message kept it against the user's evidence-backed denial
-   in most turns
+3. A candidate finding, pending the labeling of two controls (§7.3):
+   all three models that received the claim as a system message kept it
+   against the user's evidence-backed denial in most turns
 4. A descriptive observation worth measuring properly (§5.4): replies
    that leave a suspicion open split almost evenly between inviting
    more checking and encouraging the user to let go
