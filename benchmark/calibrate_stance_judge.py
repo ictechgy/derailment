@@ -155,10 +155,10 @@ def ask_judge(judge: str, prompt: str, timeout: float) -> dict:
 class Cache:
     """Append-only JSONL cache of judge answers, keyed by (judge, item) for the current prompt and command."""
 
-    def __init__(self, directory: pathlib.Path) -> None:
+    def __init__(self, directory: pathlib.Path, fingerprint: str | None = None) -> None:
         self.directory = directory
         self.lock = threading.Lock()
-        self.fingerprint = prompt_fingerprint()
+        self.fingerprint = fingerprint or prompt_fingerprint()
         self.entries: dict[tuple[str, str], dict] = {}
         directory.mkdir(parents=True, exist_ok=True)
         for path in directory.glob("*.jsonl"):
@@ -198,9 +198,10 @@ def run_judges(items: dict, ids: list[str], judges: list[str], cache: Cache, wor
 
     def call(judge: str, item_id: str) -> tuple[str, str, dict]:
         item = items[item_id]
-        answer = ask_judge(judge, build_prompt(item["user_said"], item["response"]), timeout)
+        prompt = lambda: build_prompt(item["user_said"], item["response"], scenario=item.get("scenario", "notes"))  # noqa: E731
+        answer = ask_judge(judge, prompt(), timeout)
         if answer["error"]:  # one retry for transient CLI failures
-            answer = ask_judge(judge, build_prompt(item["user_said"], item["response"]), timeout)
+            answer = ask_judge(judge, prompt(), timeout)
         return judge, item_id, answer
 
     pools = {judge: ThreadPoolExecutor(max_workers=max(1, workers)) for judge in judges}
@@ -491,6 +492,14 @@ def with_user_turns(items: dict) -> dict:
     return {i: {**item, "user_said": full[i]["user_said"]} for i, item in items.items()}
 
 
+def items_scenario(items: dict) -> str:
+    """The one separation scenario an item set belongs to; a judge prompt and its cache cover one scenario."""
+    scenarios = {item.get("scenario", "notes") for item in items.values()}
+    if len(scenarios) != 1:
+        sys.exit(f"error: the items mix scenarios {sorted(scenarios)} — split them into one file per scenario")
+    return scenarios.pop()
+
+
 def load_heldout(items_path: pathlib.Path, labels_path: pathlib.Path) -> tuple[dict, dict]:
     """Held-out items (extract_labeling_items.py output) and the labeling tool's export for them.
 
@@ -528,7 +537,7 @@ def score_items(items_path: pathlib.Path, judges: list[str], workers: int, timeo
     """
     items = {str(x["id"]): x for x in json.loads(items_path.read_text(encoding="utf-8"))}
     ids = sorted(items, key=int)
-    cache = Cache(CACHE / items_path.stem)
+    cache = Cache(CACHE / items_path.stem, prompt_fingerprint(items_scenario(items)))
     if not report_only:
         run_judges(items, ids, judges, cache, workers, timeout)
     labels = {i: ensemble_label(i, judges, cache) for i in ids}
@@ -579,7 +588,8 @@ def main() -> int:
     if args.items:
         # held-out item ids restart at 1, so their answers get their own cache directory
         items, labels = load_heldout(args.items, args.labels)
-        cache, report_path, heldout = Cache(CACHE / args.items.stem), BENCH / f"stance_judge_heldout_{args.items.stem}_{version}", args.labels.name
+        cache = Cache(CACHE / args.items.stem, prompt_fingerprint(items_scenario(items)))
+        report_path, heldout = BENCH / f"stance_judge_heldout_{args.items.stem}_{version}", args.labels.name
     else:
         items, labels = with_user_turns(load_items()), load_round2()
         if labels is None:
