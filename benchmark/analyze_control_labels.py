@@ -10,9 +10,11 @@ Inputs:
   with "heldout_revisions" from human_label_corrections.json applied on load
 - round 2 labels for the core variants of GLM, qwen and deepseek, whose core runs were not repeated
 
-Only models that received the claim as a real system message are included. nemotron and mimo ran
-through the opencode CLI, which sends the system prompt as "System:" text in a user message, so
-their rows would measure a different condition. Writes benchmark/control_label_analysis.md.
+The main tables cover only models that received the claim as a real system message. nemotron and
+mimo ran through the opencode CLI, which sends the system prompt as "System:" text in a user message;
+their replies are reported in a separate section, labeled by the validated judge ensemble
+(judge_labels_labeling_items_flattened_v2.json) with a human label for items without a majority
+(human_labels_flattened_review.json). Writes benchmark/control_label_analysis.md.
 """
 
 from __future__ import annotations
@@ -50,6 +52,10 @@ VARIANTS = {
     "system_assert_no_directive_bare": "system asserts it, no directive; denial without evidence",
 }
 CORE_FROM_ROUND2 = ("glm-5.3-flash", "deepseek-v4.1-flash", "qwen3.8-max")
+FLAT_MODELS = ("nemotron-3-ultra-free", "mimo-v2.6-flash-free")
+FLAT_ITEMS = BENCH / "labeling_items_flattened.json"
+FLAT_JUDGE = BENCH / "judge_labels_labeling_items_flattened_v2.json"
+FLAT_REVIEW = BENCH / "human_labels_flattened_review.json"
 
 
 def short_model(name: str) -> str:
@@ -146,6 +152,46 @@ def section_revisions() -> list[str]:
     return lines + [""]
 
 
+def flattened_cells() -> tuple[dict[tuple[str, str], list[dict]], int, int] | None:
+    """nemotron and mimo labels per (model, variant): the judge's, or a human's where the judges split.
+
+    Returns the cells, how many items a human labeled, and how many still have no label;
+    None when the judge labels have not been produced yet.
+    """
+    if not (FLAT_JUDGE.exists() and FLAT_ITEMS.exists()):
+        return None
+    items = {str(x["id"]): x for x in json.loads(FLAT_ITEMS.read_text(encoding="utf-8"))}
+    judged = json.loads(FLAT_JUDGE.read_text(encoding="utf-8"))["labels"]
+    review = json.loads(FLAT_REVIEW.read_text(encoding="utf-8"))["labels"] if FLAT_REVIEW.exists() else {}
+    cells: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    by_human = unlabeled = 0
+    for i, item in items.items():
+        label = judged[i] if judged[i]["stance"] else review.get(i)
+        by_human += judged[i]["stance"] is None and label is not None
+        if label is None:
+            unlabeled += 1
+            continue
+        cells[(short_model(item["model"]), item["variant"])].append(label)
+    return cells, by_human, unlabeled
+
+
+def section_flattened() -> list[str]:
+    """nemotron and mimo, whose system prompt arrived as user text: a different condition, judge-labeled."""
+    found = flattened_cells()
+    if found is None:
+        return []
+    cells, by_human, unlabeled = found
+    lines = ["## Different condition: nemotron and mimo (system prompt delivered as \"System:\" user text)", "",
+             "Re-run through the opencode CLI in an OS sandbox; the free tier is only served to the CLI, so the "
+             "system condition is not a system message. Labeled by the judge ensemble validated on the held-out "
+             f"labels above (prompt v2); {by_human} items without a judge majority were labeled by the author"
+             + (f", {unlabeled} still unlabeled" if unlabeled else "") + ". 'maintain' (95% Clopper-Pearson):", "",
+             "| model | " + " | ".join(VARIANTS) + " |", "|---" * (len(VARIANTS) + 1) + "|"]
+    for model in FLAT_MODELS:
+        lines.append(f"| {model} | " + " | ".join(cell_text(cells.get((model, v), []), ("maintain",), True) for v in VARIANTS) + " |")
+    return lines + [""]
+
+
 def build_report() -> str:
     """The whole markdown report."""
     cells, from_round2 = collect_cells()
@@ -158,7 +204,7 @@ def build_report() -> str:
              "Variants:", ""] + [f"- `{v}`: {d}" for v, d in VARIANTS.items()] + [""]
     lines += section_table(cells, from_round2, ("maintain",), "'maintain' per model and variant (95% Clopper-Pearson)", True)
     lines += section_table(cells, from_round2, ("maintain", "residual"), "'maintain' + 'residual' (sensitivity)", False)
-    lines += section_factorial(cells) + section_doubt(cells, from_round2) + section_revisions()
+    lines += section_factorial(cells) + section_doubt(cells, from_round2) + section_revisions() + section_flattened()
     return "\n".join(lines).rstrip() + "\n"
 
 
