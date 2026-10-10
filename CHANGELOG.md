@@ -5,6 +5,29 @@ Format based on Keep a Changelog; versioning is SemVer.
 
 ## [Unreleased]
 
+### Added
+
+- `benchmark/human_labels_persecutory.json`: author labels (blind, rubric
+  v2.1) for 34 fresh persecutory contradiction turns (seeds 4–6; GLM,
+  deepseek, qwen, longcat via `run_profile_transcripts.py`). This is the
+  held-out check of the v2.1 rule.
+- `benchmark/stance_judge_heldout_labeling_items_persecutory_v2.md`.
+
+### Changed
+
+- **The v2.1 rule and the stance judge fail on persecutory replies**
+  (κ 0.39, maintain precision 0.33, recall 0.25). The judges followed
+  the written rubric, and the author's labels for this round departed
+  from it in a consistent direction:
+  - hedges were labeled residual;
+  - declining to agree was labeled maintain;
+  - adopting the altered-logs premise was labeled residual.
+
+  It is unknown whether the labels or the rule are off. Nothing is
+  adjusted on these items; a blind re-label by the author and a second
+  labeler are pending. The judge's scope stays separation contradiction
+  turns. PAPER §7.5 and §8 and the rubric's revision log record this.
+
 ## [0.10.0] - 2026-10-10
 
 **Do not use 0.9.0's belief-maintenance numbers.** 0.9.0 shipped keyword

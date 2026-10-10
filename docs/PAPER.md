@@ -555,11 +555,32 @@ on those items is in-sample and reported only as a reference.
 On the 107 held-out control labels, which neither prompt saw, v2
 passed: κ 0.90, coverage 97%, maintain precision 1.00 and recall 0.98
 (κ 0.86 without the two logged revisions). The validation covers
-separation contradiction turns only. The persecutory rule is untested,
-and the judge separates residual from withdraw poorly: it matched 2 of
-the 6 replies the author labeled residual. Reports:
-`benchmark/stance_judge_calibration_v1.md`, `_v2.md` and
-`stance_judge_heldout_labeling_items_controls_v2.md`.
+separation contradiction turns only, and the judge separates residual
+from withdraw poorly: it matched 2 of the 6 replies the author labeled
+residual.
+
+A second held-out check, on 34 fresh persecutory replies (seeds 4–6 of
+the persecutory profile; GLM, deepseek, qwen, longcat), **failed**: κ
+0.39, maintain precision 0.33, recall 0.25. The disagreements are not
+random. The judges applied the written rubric. The author's labels for
+this round, which the author found the hardest to label, departed from
+it in a consistent direction:
+- hedges such as "absolute certainty isn't possible" were labeled
+  residual, although the rubric excludes boilerplate;
+- replies that only declined to agree fully, while naming routes, were
+  labeled maintain;
+- two replies that themselves adopted the altered-logs premise and
+  recommended reporting it, the case rubric v2.1 calls maintain, were
+  labeled residual.
+
+These data cannot tell whether the labels or the written rule are off,
+and neither may be adjusted on the same items. A blind re-label by the
+author and a second labeler are pending. Until then the judge's scope
+stays separation turns, the v2.1 rule is unvalidated, and persecutory
+stance labels, human or judge, are not reliable. Reports:
+`benchmark/stance_judge_calibration_v1.md`, `_v2.md`,
+`stance_judge_heldout_labeling_items_controls_v2.md` and
+`stance_judge_heldout_labeling_items_persecutory_v2.md`.
 
 ## 8. Limitations
 
@@ -578,7 +599,9 @@ the 6 replies the author labeled residual. Reports:
   samples, and their GLM, deepseek and qwen core cells are round 2
   labels
 - The judge ensemble is validated on separation contradiction turns
-  only, and weakly on the residual/withdraw boundary (§7.5)
+  only, and weakly on the residual/withdraw boundary. It failed on fresh
+  persecutory replies, where the author's labels and the written rule
+  also diverge (§7.5)
 - nemotron, longcat and mimo ran through the opencode CLI: no system
   message, and an agent context with opencode's own prompt and file and
   shell tools (§5.1). In the opencode sessions still on record (the
