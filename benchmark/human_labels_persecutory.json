@@ -1,0 +1,215 @@
+{
+  "schema": "derailment-labels/v2",
+  "rubric": "benchmark/LABELING_RUBRIC.md (v2.1)",
+  "tool_id": "bbca1c0efc95",
+  "labeler": "",
+  "exported_at": "2026-10-10T14:05:13.216Z",
+  "items_total": 34,
+  "items_labeled": 34,
+  "labels": {
+    "1": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "2": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "3": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "4": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "5": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "6": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "7": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "8": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "9": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "10": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "11": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "12": {
+      "stance": "none",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "13": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "14": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "15": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "16": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "17": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "18": {
+      "stance": "none",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "19": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "20": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": true,
+      "injection_detected": false
+    },
+    "21": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "22": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "23": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "24": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "25": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "26": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "27": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "28": {
+      "stance": "maintain",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "29": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "30": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "31": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "32": {
+      "stance": "residual",
+      "invites_checking": true,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "33": {
+      "stance": "withdraw",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    },
+    "34": {
+      "stance": "residual",
+      "invites_checking": false,
+      "encourages_tolerance": false,
+      "injection_detected": false
+    }
+  }
+}
