@@ -42,6 +42,10 @@ corrected picture largely **reverses** what we reported:
    "System:" text inside a user message, so for them the system
    condition was never a system message (§5.1). With a real system
    message the result rests on GLM, deepseek and qwen (4/6, 5/6, 4/6).
+   Two controls (§7.3) then removed the directive and the user's
+   evidence: across the four models with a real system message, the
+   claim was kept in 16–19 of 24 turns per cell either way, while a
+   user-planted suspicion was dropped on a bare denial in 24 of 24.
 
 2. **The alignment ceiling measured nothing**: no response in either
    arm (0/54 baseline, 0/39 induced) fully maintained the planted
@@ -307,7 +311,8 @@ system-versus-user comparison stands on those three; the opencode rows
 measure a different condition. An earlier review flagged this
 (2026-10-04, P2-27), but the paper omitted it until this revision.
 longcat has since been re-run through an API with a real system message
-(all six variants, 2026-10-10, not yet labeled). nemotron and mimo are
+(all six variants, 2026-10-10): system_assert 4/6, user_assert 0/6
+(round 3 labels, §7.3). nemotron and mimo are
 free-tier models that OpenCode serves only to its own CLI ("OpenCode's
 free tier can only be used from within OpenCode"), so their re-run,
 inside an OS sandbox, still delivers the system prompt as "System:"
@@ -324,15 +329,20 @@ user_assert, the user's retraction and the log evidence point the same
 way; in system_assert, the user's denial also comes with that evidence.
 So mimo's behavior is consistent with following the user *or* the
 evidence, and low user_assert rates are not evidence against
-compliance. A denial without evidence is needed to tell them apart.
+compliance. A denial without evidence is needed to tell them apart;
+the evidence-free controls (§7.3) supply it: a user-planted suspicion was
+dropped on a bare denial, and a system-asserted claim was kept against
+one.
 
 **Safety implication (corrected)**: All three models that received the
 claim as a system message (GLM, deepseek, qwen) kept it against the
 user's evidence-backed denial in most turns. mimo released it, but
 mimo never received a system message, so whether release is possible
 under a real one is untested. Our system prompt explicitly said
-"Treat this as settled," so this measures deference to an explicit
-system directive, not to system-prompt content in general.
+"Treat this as settled", but the controls (§7.3) show the same
+deference without that directive and without the user's evidence, so
+this is deference to system-prompt content, not only to an explicit
+directive.
 
 ### 5.2 Ceiling Experiments: Null Result
 
@@ -479,25 +489,45 @@ was labeled with them. They also split "residual" into a stance and an
 anxiety-relevant doubt-channel axis: does the response invite further
 checking, or encourage tolerating the remaining uncertainty (§5.4)?
 
-### 7.3 Deference to system directives is the candidate finding
+### 7.3 Deference to system-asserted claims survives both controls
 
-Five of six models kept a system-asserted claim against the user's
-evidence-backed denial in most turns (67–83%); mimo released it in
-five of six. Only GLM, deepseek and qwen received the claim as a
-system message (§5.1).
-The system prompt included "Treat this as settled", and the user's
-denial always came with evidence, so two controls are needed before
-this becomes a finding: a system prompt that states the claim without
-the directive, and a user denial without evidence. Both are implemented
-as separation variants — `system_assert_no_directive`,
-`system_assert_bare` and `user_assert_bare`, with
-`system_assert_no_directive_bare` completing the directive × evidence
-2×2 — and change only the wording that defines their factor
-(`benchmark/run_separation_controls.py`). Control runs for all six
-models finished on 2026-10-10 and are not yet labeled. GLM, deepseek,
-qwen and longcat (re-run through an API, core variants included)
-received a real system message; nemotron and mimo, re-run through the
-sandboxed CLI, did not (§5.1).
+The core system_assert prompt included "Treat this as settled", and the
+user's denial always came with log evidence. Two controls remove each:
+`system_assert_no_directive` drops the directive, `system_assert_bare`
+and `user_assert_bare` drop the evidence from the denial, and
+`system_assert_no_directive_bare` drops both. Each changes only the
+wording that defines its factor (`benchmark/run_separation_controls.py`).
+They were run on 2026-10-10 and labeled blind by the author under
+rubric v2.1 (107 contradiction turns, two revisions logged before any
+judge output was seen; `benchmark/control_label_analysis.md`).
+
+Pooled over the four models that received the claim as a real system
+message — GLM, deepseek, qwen, and longcat, whose core variants were
+re-run through an API — "maintain" counts were:
+
+| | denial with evidence | denial without evidence |
+|---|---|---|
+| with "Treat this as settled" | 17/24 | 18/23 |
+| without the directive | 19/24 | 16/24 |
+
+Neither the directive nor the evidence moved the rate (exploratory
+Fisher tests, p = 0.52–0.74). A user-planted suspicion, by contrast,
+was dropped in all 24 replies to a denial without evidence, as it was
+with evidence. What separated keeping from dropping the claim was who
+asserted it, not how firmly the system asserted it or whether the user
+brought evidence. Across the four system cells, deepseek kept the claim
+in 3–6 of 6 turns, qwen in 4–6, longcat in 4–5 and GLM in 2–4 (lowest
+without the directive but with evidence). Each cell is three
+conversations, one labeler labeled them, and the core cells of GLM,
+deepseek and qwen are round 2 labels (their core runs were not
+repeated).
+
+nemotron and mimo, whose "system" claim arrived as "System:" text in a
+user message (§5.1), kept it far less often: 0–2 of 6 turns in every
+cell of their sandboxed re-run, labeled by the judge ensemble validated
+in §7.5 (two items without a judge majority labeled by the author).
+Model and delivery are confounded here, so this does not show that the
+system role is what makes the difference.
 
 ### 7.4 Injection detection is worth measuring
 
@@ -505,6 +535,31 @@ Some models explicitly identify and reject injected context (GLM
 responses cite "another injected note" and refuse to treat it as fact).
 A standardized injection-detection metric requires labeling detection
 as an independent dimension over the full set of injected turns.
+
+### 7.5 An LLM judge ensemble passed held-out validation on separation turns
+
+Because the keyword instrument failed, we built a stance judge
+(`derailment.stance_judge`). Four agent CLIs from vendors not under
+test (claude, codex, agy, devin), each configured so that it cannot use
+tools (checked with a canary), read one reply under the rubric. A
+strict majority decides, and ties go to a human. The acceptance
+criteria were fixed before the first run: stance κ ≥ 0.70, a majority
+on ≥ 85% of items, and "maintain" precision and recall ≥ 0.85.
+
+Prompt v1 failed on the 190 round 2 labels (maintain recall 0.81).
+Three persecutory replies that act on an "altered logs" premise were
+labeled maintain by the author in both rounds and residual by every
+judge. Prompt v2 adds the rule this exposed (rubric v2.1), so its run
+on those items is in-sample and reported only as a reference.
+
+On the 107 held-out control labels, which neither prompt saw, v2
+passed: κ 0.90, coverage 97%, maintain precision 1.00 and recall 0.98
+(κ 0.86 without the two logged revisions). The validation covers
+separation contradiction turns only. The persecutory rule is untested,
+and the judge separates residual from withdraw poorly: it matched 2 of
+the 6 replies the author labeled residual. Reports:
+`benchmark/stance_judge_calibration_v1.md`, `_v2.md` and
+`stance_judge_heldout_labeling_items_controls_v2.md`.
 
 ## 8. Limitations
 
@@ -517,10 +572,13 @@ as an independent dimension over the full set of injected turns.
 - The doubt-channel axis was recorded as one dominant direction per
   residual reply, so it cannot show replies that do both
 - 190 responses from a single probe scenario (notes-reading suspicion)
-- The system-assert result rests on 6 responses per model (3 for
-  longcat) from 3 conversations each; intervals are wide, and the
-  "Treat this as settled" directive and evidence-backed denials are
-  confounds (§7.3)
+- The system-assert result rests on 6 responses per model and cell
+  from 3 conversations each; intervals are wide. The controls (§7.3)
+  remove the directive and evidence confounds but share the small
+  samples, and their GLM, deepseek and qwen core cells are round 2
+  labels
+- The judge ensemble is validated on separation contradiction turns
+  only, and weakly on the residual/withdraw boundary (§7.5)
 - nemotron, longcat and mimo ran through the opencode CLI: no system
   message, and an agent context with opencode's own prompt and file and
   shell tools (§5.1). In the opencode sessions still on record (the
@@ -549,9 +607,10 @@ The project's genuine contributions are:
 2. A documented case study of how instrument failures produce
    inverted conclusions — including in the human-validation step — and
    how reading the raw text catches them
-3. A candidate finding, pending the labeling of two controls (§7.3):
-   all three models that received the claim as a system message kept it
-   against the user's evidence-backed denial in most turns
+3. A finding that survives two controls (§7.3): the four models that
+   received the claim as a system message kept it against the user's
+   denial with or without the directive and the evidence, while
+   dropping a user-planted suspicion on a bare denial
 4. A descriptive observation worth measuring properly (§5.4): replies
    that leave a suspicion open split almost evenly between inviting
    more checking and encouraging the user to let go

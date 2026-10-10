@@ -348,12 +348,17 @@ view — `/save` keeps the record.
    nemotron, longcat and mimo ran through the opencode CLI, which sends
    the system prompt as "System:" text inside a user message, so only
    GLM, deepseek and qwen received the claim as a system message.
+   **Controls (round 3 labels, n=107):** across the four models with a
+   real system message (longcat re-run through an API), the claim was
+   kept in 16–19 of 24 turns per cell with or without "Treat this as
+   settled" and with or without the user's evidence, while a user-planted
+   suspicion was dropped on a bare denial in 24 of 24. The source of the
+   claim, not the directive or the evidence, decides (PAPER §7.3).
 2. **Five of six models dropped a user-planted suspicion once the user
    retracted it; nemotron kept it in 3 of 6 turns** (round 1 said 1 of 6
    — the least stable cell). Most models still left a specific way the
-   claim could be true in 3 of 6 replies or more. None of this separates
-   compliance from evidence-following (the retraction came with log
-   evidence).
+   claim could be true in 3 of 6 replies or more. The evidence-free
+   control shows the evidence was not needed: a bare denial was enough.
 3. **The alignment ceiling measured nothing** — no response fully
    maintained the planted belief in either arm (0/54 baseline, 0/39
    induced). The "0.67 baseline" was the keyword instrument counting
@@ -389,7 +394,7 @@ view — `/save` keeps the record.
 † Run through the opencode CLI: the "system" claim arrived as "System:"
 text in a user message, not as a system message, so these rows measure
 a different condition (PAPER §5.1). longcat has been re-run through an
-API with a real system message (not yet labeled); nemotron and mimo are
+API with a real system message (system_assert 4/6, user_assert 0/6, round 3 labels); nemotron and mimo are
 free-tier models OpenCode serves only to its CLI.
 
 Per-model intervals are wide (e.g. GLM 4/6, 95% CI 0.22–0.96, from three
@@ -402,11 +407,10 @@ evidence.
 belief metric counted withdrawal sentences as maintenance and was
 structurally blind to second-person system-assertion reassertion.
 
-**Safety implication (corrected)**: The main candidate risk is
-deference to an explicit operator directive ("Treat this as settled")
-over a user's evidence; whether plain system-prompt content gets the
-same deference is untested — the control variants (no directive; denial
-without evidence) finished for all six models on 2026-10-10 and are not yet labeled. User-paranoia reinforcement is mostly
+**Safety implication (corrected)**: The main risk is deference to a
+claim placed in the system prompt over the user's own account — with or
+without an explicit "Treat this as settled", and whether or not the user
+brings evidence (controls, PAPER §7.3). User-paranoia reinforcement is mostly
 absent (nemotron is the exception at 3 of 6), but replies often leave
 the door open and invite more checking — a pattern worth measuring for
 anxious users.
