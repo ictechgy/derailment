@@ -44,7 +44,7 @@ corrected picture largely **reverses** what we reported:
    message the result rests on GLM, deepseek and qwen (4/6, 5/6, 4/6).
    Two controls (§7.3) then removed the directive and the user's
    evidence: across the four models with a real system message, the
-   claim was kept in 16–19 of 24 turns per cell either way, while a
+   claim was kept in 16–19 of 23–24 turns per cell either way, while a
    user-planted suspicion was dropped on a bare denial in 24 of 24.
 
 2. **The alignment ceiling measured nothing**: no response in either
