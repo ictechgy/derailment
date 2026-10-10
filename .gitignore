@@ -35,6 +35,7 @@ benchmark/*
 !benchmark/LABELING_RUBRIC.md
 !benchmark/run_separation_controls.py
 !benchmark/extract_labeling_items.py
+!benchmark/run_profile_transcripts.py
 !benchmark/calibrate_stance_judge.py
 !benchmark/stance_judge_calibration_v*.md
 !benchmark/stance_judge_calibration_v*.json
