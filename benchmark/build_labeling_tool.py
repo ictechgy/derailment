@@ -103,6 +103,27 @@ def tool_identifier(payload: list[dict], seed: int) -> str:
     return digest[:12]
 
 
+# Shuffle seeds of the tools built so far: this script's default, and the persecutory re-label.
+KNOWN_SEEDS = (20261008, 20261011)
+
+
+def export_mismatch(export: dict, items: list[dict], seeds: tuple[int, ...] = KNOWN_SEEDS) -> str | None:
+    """Why a label export cannot belong to ``items``, or None when it does.
+
+    Exports carry the hash of the item text they were labeled on
+    ("dataset"). Older exports predate it, so their tool id must match a
+    tool built from these items (ids and order) with one of ``seeds``.
+    """
+    if "dataset" in export:
+        return None if export["dataset"] == dataset_identifier(items) else "it was labeled on different item text"
+    for seed in seeds:
+        order = [{"id": str(item["id"])} for item in items]
+        random.Random(seed).shuffle(order)  # the same permutation build_payload applies
+        if export.get("tool_id") == tool_identifier(order, seed):
+            return None
+    return f"its tool {export.get('tool_id')!r} was not built from these items"
+
+
 def dataset_identifier(items: list[dict]) -> str:
     """Hash of what each item shows (id, user turn, reply), written into every export.
 
@@ -380,10 +401,19 @@ const LANGS = ["ko", "en", "both"];
 
 // Progress lives in localStorage; a private window or blocked storage still works without it.
 function loadState() {
-  const fresh = { labeler: "", labels: {}, index: 0, lang: "ko" };
+  const fresh = { labeler: "", labels: {}, index: 0, lang: "ko", dataset: DATASET };
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return Object.assign(fresh, JSON.parse(raw));
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (saved.dataset && saved.dataset !== DATASET) {
+        // the items' text changed under the same ids: old labels must never be exported for the new text
+        localStorage.setItem(STORE_KEY + ":" + saved.dataset, raw);
+        alert("항목 내용이 저장된 진행 상황과 달라 새로 시작합니다. 이전 라벨은 브라우저에 따로 보관했습니다.");
+        return fresh;
+      }
+      return Object.assign(fresh, saved, { dataset: DATASET });
+    }
   } catch (err) {
     console.warn("saved progress could not be read; starting fresh:", err);
   }

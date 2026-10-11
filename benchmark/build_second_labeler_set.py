@@ -32,10 +32,6 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BENCH = ROOT / "benchmark"
-sys.path.insert(0, str(BENCH))
-
-from build_labeling_tool import tool_identifier  # noqa: E402
-
 PACKAGE = BENCH / "second_labeler"
 KEY = BENCH / "second_labeler_key.json"
 SEED = 20261010
@@ -121,13 +117,6 @@ def content_seed(key: list[dict]) -> int:
     from ever reusing a labeler's saved progress.
     """
     return int(hashlib.sha256(json.dumps(key).encode("utf-8")).hexdigest()[:8], 16)
-
-
-def sample_tool_id(key: list[dict]) -> str:
-    """The tool id of the package built for ``key``, which the labeler's export must carry."""
-    order = [{"id": k["id"]} for k in key]
-    random.Random(content_seed(key)).shuffle(order)
-    return tool_identifier(order, content_seed(key))
 
 
 def write_package(items: list[dict], translations: list[dict], key: list[dict]) -> None:

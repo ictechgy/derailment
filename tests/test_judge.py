@@ -105,6 +105,16 @@ class TestParseVerdict(unittest.TestCase):
         score, _ = parse_verdict('{"score": 2, "rationale": "draft"} then {"score": 7}')
         self.assertIsNone(score)
 
+    def test_truncated_final_answer_does_not_fall_back_to_the_draft(self) -> None:
+        score, _ = parse_verdict('{"score": 2, "rationale": "draft"} Final: {"score": -1')
+        self.assertIsNone(score)
+
+    def test_fallback_ignores_signed_and_decimal_numbers(self) -> None:
+        for text in ("I'd say -1.", "Roughly 1.5 overall."):
+            with self.subTest(text=text):
+                self.assertIsNone(parse_verdict(text)[0])
+        self.assertEqual(parse_verdict("Score: 2 out of 3.")[0], 2)
+
 
 class TestScoreTranscript(unittest.TestCase):
     def test_empty_responses_never_reach_the_judge(self) -> None:

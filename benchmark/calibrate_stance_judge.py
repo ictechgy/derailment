@@ -46,7 +46,6 @@ import argparse
 import hashlib
 import json
 import pathlib
-import random
 import subprocess
 import sys
 import tempfile
@@ -70,7 +69,7 @@ from analyze_human_labels import (  # noqa: E402
     separation_cells,
     without_none,
 )
-from build_labeling_tool import dataset_identifier, tool_identifier  # noqa: E402
+from build_labeling_tool import export_mismatch  # noqa: E402
 
 from derailment.stance_judge import (  # noqa: E402
     PROMPT_VERSION,
@@ -90,8 +89,6 @@ GROUPS = ("separation", "ceiling", "persecutory")
 # The held-out run that passed: --score labels count as validated only for its configuration and scope.
 VALIDATION = BENCH / "stance_judge_heldout_labeling_items_controls_v2.json"
 VALIDATED_SCOPE = "separation contradiction turns (stance_judge_heldout_labeling_items_controls_v2.md)"
-# Shuffle seeds of the labeling tools built so far (build_labeling_tool.py default, persecutory re-label).
-TOOL_SEEDS = (20261008, 20261011)
 
 CODEX_TOOLS_OFF = ("shell_tool", "browser_use", "browser_use_external", "computer_use", "apps", "plugins", "in_app_browser")
 
@@ -505,6 +502,9 @@ def verdict_line(report: dict) -> str:
     if report.get("in_sample"):
         return (f"**In-sample reference run, not an acceptance test** ({report['in_sample']}). "
                 "The criteria below are shown for comparison only; acceptance needs held-out labels.")
+    if report.get("unverifiable"):
+        return (f"**Not an acceptance test**: {report['unverifiable']}. "
+                "The criteria below are shown for comparison only.")
     verdict = "PASSES" if all(report["ensemble"]["acceptance"].values()) else "DOES NOT PASS"
     return f"**Ensemble {verdict} the acceptance criteria** fixed before the run."
 
@@ -541,16 +541,16 @@ def render_separation(cells: dict[str, dict[str, int]]) -> list[str]:
     return lines + [""]
 
 
-def round2_overlap(items: dict) -> list[str]:
+def round2_overlap(items: dict) -> list[str] | None:
     """Ids of items whose reply is also a round 2 item's reply (what IN_SAMPLE prompts were shaped on).
 
     Matched on the reply text, so renaming or renumbering a file cannot turn
-    in-sample items into "held-out" ones.
+    in-sample items into "held-out" ones. None when the round 2 items are
+    missing and the check cannot be made.
     """
     path = BENCH / "labeling_items_full.json"
     if not path.exists():
-        print(f"warning: {path.name} is missing, so these items cannot be checked against round 2", file=sys.stderr)
-        return []
+        return None
     seen = {x["response"] for x in json.loads(path.read_text(encoding="utf-8"))}
     return sorted((i for i, item in items.items() if item["response"] in seen), key=int)
 
@@ -603,24 +603,10 @@ def item_group(item: dict) -> str:
 
 
 def check_export_matches(export: dict, rows: list[dict], labels_path: pathlib.Path, items_path: pathlib.Path) -> None:
-    """Stop unless the export was made with a tool built from exactly these items.
-
-    Exports carry the hash of the item text they were labeled on ("dataset");
-    older exports predate it, so their tool id must match a tool built from
-    these items with one of the known shuffle seeds (ids and order only).
-    """
-    if "dataset" in export:
-        if export["dataset"] != dataset_identifier(rows):
-            sys.exit(f"error: {labels_path} was labeled on different item text than {items_path} has now")
-        return
-    order = [{"id": str(x["id"])} for x in rows]
-    known = set()
-    for seed in TOOL_SEEDS:
-        shuffled = list(order)
-        random.Random(seed).shuffle(shuffled)
-        known.add(tool_identifier(shuffled, seed))
-    if export.get("tool_id") not in known:
-        sys.exit(f"error: {labels_path} comes from tool {export.get('tool_id')!r}, which was not built from {items_path}")
+    """Stop unless the export was made with a tool built from exactly these items (see export_mismatch)."""
+    problem = export_mismatch(export, rows)
+    if problem:
+        sys.exit(f"error: {labels_path} does not belong to {items_path}: {problem}")
 
 
 def heldout_revisions(tool_id: str | None) -> list[dict]:
@@ -673,7 +659,9 @@ def validated_scope(items: dict, judges: list[str], cache: Cache) -> str | None:
     same_judges = passed.get("command_fingerprints") == {j: command_fingerprint(j) for j in judges}
     same_prompt = passed.get("fingerprint") == cache.fingerprint
     did_pass = all(passed.get("ensemble", {}).get("acceptance", {"none": False}).values())
-    in_scope = all(item_group(item) == "separation" for item in items.values())
+    # an unknown group is simply out of scope here (provisional), not an error
+    in_scope = all((item.get("group") or str(item.get("source", "")).split("/", 1)[0]) == "separation"
+                   for item in items.values())
     return VALIDATED_SCOPE if same_judges and same_prompt and did_pass and in_scope else None
 
 
@@ -709,10 +697,12 @@ def main() -> int:
     if (args.items is None) != (args.labels is None):
         parser.error("--items and --labels go together")
     version = PROMPT_VERSION.rsplit("-", 1)[-1]
+    unchecked = False
     if args.items:
         # held-out item ids restart at 1, so their answers get their own cache directory
         items, labels = load_heldout(args.items, args.labels)
         overlap = round2_overlap(items)
+        unchecked = overlap is None and PROMPT_VERSION in IN_SAMPLE
         if overlap and IN_SAMPLE.get(PROMPT_VERSION):
             sys.exit(f"error: {len(overlap)} of these items repeat round 2 replies (e.g. #{overlap[0]}), on which "
                      f"{PROMPT_VERSION} was shaped — a run on them is in-sample, not held-out")
@@ -727,6 +717,9 @@ def main() -> int:
     if not args.report_only:
         run_judges(items, ids, judges, cache, args.workers, args.timeout)
     report = evaluate(items, labels, ids, judges, cache, heldout)
+    if unchecked:
+        # without the round 2 items, overlap with what the prompt was shaped on cannot be ruled out
+        report["unverifiable"] = "these items could not be checked against the round 2 items the prompt was shaped on (labeling_items_full.json is missing)"
     if args.labels:
         report["revisions"] = heldout_revisions(json.loads(args.labels.read_text(encoding="utf-8")).get("tool_id"))
     report_path.with_suffix(".json").write_text(json.dumps(report, indent=2), encoding="utf-8")

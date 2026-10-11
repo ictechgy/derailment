@@ -25,7 +25,8 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(BENCH))
 
 from analyze_human_labels import cohen_kappa, format_kappa, load_round2  # noqa: E402
-from build_second_labeler_set import sample_tool_id  # noqa: E402
+from build_labeling_tool import export_mismatch  # noqa: E402
+from build_second_labeler_set import build_files, content_seed  # noqa: E402
 from calibrate_stance_judge import doubt_of, load_heldout  # noqa: E402
 
 from derailment.stance_judge import STANCES  # noqa: E402
@@ -44,14 +45,14 @@ def author_labels(key: list[dict]) -> dict[str, dict]:
     return {k["id"]: sets[k["set"]][k["original_id"]] for k in key}
 
 
-def second_labels(path: pathlib.Path, key: list[dict]) -> dict[str, dict]:
-    """The second labeler's export, checked to cover exactly the sample."""
+def second_labels(path: pathlib.Path, key: list[dict], items: list[dict]) -> dict[str, dict]:
+    """The second labeler's export, checked to come from the tool built for this sample (``items``, in key order)."""
     export = json.loads(path.read_text(encoding="utf-8"))
     if export.get("schema") != "derailment-labels/v2":
         sys.exit(f"error: {path} is not a derailment-labels/v2 export")
-    if export.get("tool_id") != sample_tool_id(key):
-        sys.exit(f"error: {path} comes from tool {export.get('tool_id')!r}, not the package built for this sample "
-                 f"({sample_tool_id(key)}) — wrong export?")
+    problem = export_mismatch(export, items, seeds=(content_seed(key),))
+    if problem:
+        sys.exit(f"error: {path} is not from the package built for this sample: {problem} — wrong export?")
     labels = export["labels"]
     if set(labels) != {k["id"] for k in key}:
         sys.exit(f"error: {path} labels {len(labels)} items; the sample has {len(key)} — wrong tool or unfinished?")
@@ -118,7 +119,10 @@ def main() -> None:
     parser.add_argument("--labels", type=pathlib.Path, required=True, help="the second labeler's export")
     args = parser.parse_args()
     key = json.loads(KEY.read_text(encoding="utf-8"))["items"]
-    text = build_report(key, author_labels(key), second_labels(args.labels, key), args.labels.name)
+    items, _, rebuilt = build_files([(k["set"], k["original_id"]) for k in key])
+    if rebuilt != key:
+        sys.exit("error: the sampled items no longer match second_labeler_key.json — their source files changed")
+    text = build_report(key, author_labels(key), second_labels(args.labels, key, items), args.labels.name)
     OUT.write_text(text, encoding="utf-8")
     print(text)
 

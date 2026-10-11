@@ -25,7 +25,7 @@ import analyze_interrater as interrater  # noqa: E402
 import build_second_labeler_set as second  # noqa: E402
 import calibrate_stance_judge as calib  # noqa: E402
 import extract_labeling_items as extract  # noqa: E402
-from build_labeling_tool import dataset_identifier, tool_identifier  # noqa: E402
+from build_labeling_tool import dataset_identifier, render_html, tool_identifier  # noqa: E402
 
 from derailment.stance_judge import JudgeVerdict  # noqa: E402
 
@@ -112,15 +112,38 @@ class TestExportBinding(unittest.TestCase):
     def test_second_labeler_export_must_come_from_the_sample_tool(self) -> None:
         key = [{"id": "1", "set": "round2", "original_id": "7", "group": "separation"},
                {"id": "2", "set": "round3", "original_id": "3", "group": "separation"}]
+        order = [{"id": "1"}, {"id": "2"}]
+        random.Random(second.content_seed(key)).shuffle(order)
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "labels.json"
-            export = {"schema": "derailment-labels/v2", "tool_id": second.sample_tool_id(key),
+            export = {"schema": "derailment-labels/v2", "tool_id": tool_identifier(order, second.content_seed(key)),
                       "labels": {"1": {"stance": "none"}, "2": {"stance": "withdraw"}}}
             path.write_text(json.dumps(export), encoding="utf-8")
-            self.assertEqual(set(interrater.second_labels(path, key)), {"1", "2"})
-            path.write_text(json.dumps({**export, "tool_id": "unrelated-tool"}), encoding="utf-8")
+            self.assertEqual(set(interrater.second_labels(path, key, self.rows)), {"1", "2"})
+            for wrong in ({"tool_id": "unrelated-tool"}, {"dataset": "0" * 12}):
+                with self.subTest(wrong=wrong):
+                    path.write_text(json.dumps({**export, **wrong}), encoding="utf-8")
+                    with self.assertRaises(SystemExit):
+                        interrater.second_labels(path, key, self.rows)
+
+
+    def test_round2_export_must_belong_to_the_round2_items(self) -> None:
+        export = {"schema": "derailment-labels/v2", "dataset": dataset_identifier(self.rows),
+                  "labels": {"1": {"stance": "none"}, "2": {"stance": "withdraw"}}}
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(human, "BENCH", pathlib.Path(tmp)):
+            (pathlib.Path(tmp) / "human_labels_v2.json").write_text(json.dumps(export), encoding="utf-8")
+            (pathlib.Path(tmp) / "labeling_items_full.json").write_text(json.dumps(self.rows), encoding="utf-8")
+            self.assertEqual(set(human.load_round2()), {"1", "2"})
+            changed = [self.rows[0], item("2", "a different reply")]
+            (pathlib.Path(tmp) / "labeling_items_full.json").write_text(json.dumps(changed), encoding="utf-8")
             with self.assertRaises(SystemExit):
-                interrater.second_labels(path, key)
+                human.load_round2()
+
+    def test_tool_records_and_guards_its_dataset(self) -> None:
+        page = render_html([{"id": "1", "user": "u", "response": "r"}], "tid", "notes", "abc123")
+        self.assertIn('const DATASET = "abc123";', page)
+        self.assertIn("dataset: DATASET", page)
+        self.assertIn("saved.dataset !== DATASET", page)
 
 
 class TestHeldoutScope(unittest.TestCase):
@@ -131,6 +154,10 @@ class TestHeldoutScope(unittest.TestCase):
             with mock.patch.object(calib, "BENCH", pathlib.Path(tmp)):
                 overlap = calib.round2_overlap({"1": item("1", "seen before"), "2": item("2", "new")})
         self.assertEqual(overlap, ["1"])
+
+    def test_round2_overlap_is_unknown_without_the_round2_items(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(calib, "BENCH", pathlib.Path(tmp)):
+            self.assertIsNone(calib.round2_overlap({"1": item("1")}))
 
     def test_score_is_validated_only_for_the_passing_configuration(self) -> None:
         judges = list(calib.JUDGES)
@@ -145,6 +172,8 @@ class TestHeldoutScope(unittest.TestCase):
                 self.assertIsNone(calib.validated_scope({"1": item("1", source="persecutory/p")}, judges, cache))
                 self.assertIsNone(calib.validated_scope({"1": item("1")}, judges[:1], cache))
                 self.assertIsNone(calib.validated_scope({"1": item("1")}, judges, mock.Mock(fingerprint="other")))
+                # an item set from another experiment is provisional, not an error
+                self.assertIsNone(calib.validated_scope({"1": item("1", source="sep/old")}, judges, cache))
 
 
 class TestExtractSources(unittest.TestCase):
