@@ -220,6 +220,13 @@
       false
     ]
   },
+  "command_fingerprints": {
+    "claude": "fef2fd34dba9",
+    "codex": "5285c3a63814",
+    "agy": "09d3e6e735ca",
+    "devin": "4c01de1b76d1"
+  },
+  "legacy_cache_answers": 760,
   "ensemble": {
     "n": 187,
     "kappa": 0.853,

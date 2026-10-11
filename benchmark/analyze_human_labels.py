@@ -137,16 +137,26 @@ def fisher_two_sided(a: int, b: int, c: int, d: int) -> float:
     return sum(prob(x) for x in support if prob(x) <= observed * (1 + 1e-9))
 
 
-def cohen_kappa(first: dict[str, str], second: dict[str, str], ids: list[str]) -> float:
+def cohen_kappa(first: dict[str, str], second: dict[str, str], ids: list[str]) -> float | None:
     """Cohen's kappa between two id -> label maps over ``ids``.
 
-    Returns 1.0 when chance agreement is 1 (every label in one category).
+    Returns None when kappa is undefined: no items, or chance agreement of 1
+    (both sides put every item in the same single category). Reporting 1.0
+    there would pass off raw agreement on a constant as chance-corrected
+    reliability.
     """
     n = len(ids)
+    if n == 0:
+        return None
     observed = sum(first[i] == second[i] for i in ids) / n
     first_counts, second_counts = Counter(first[i] for i in ids), Counter(second[i] for i in ids)
     expected = sum(first_counts[c] * second_counts[c] for c in first_counts) / (n * n)
-    return 1.0 if expected == 1 else (observed - expected) / (1 - expected)
+    return None if expected == 1 else (observed - expected) / (1 - expected)
+
+
+def format_kappa(kappa: float | None) -> str:
+    """A kappa for a report table: two decimals, or 'n/a' when it is undefined."""
+    return "n/a" if kappa is None else f"{kappa:.2f}"
 
 
 def ratio_cell(k: int, n: int) -> str:
@@ -307,7 +317,7 @@ def section_agreement(items: dict, round1: dict[str, str], round2: dict[str, str
         pairs.append(("LLM rater A vs B", as_v1["A"], as_v1["B"]))
     for name, first, second in pairs:
         scores = [cohen_kappa(first, second, ids_in(items, g)) for g in ("all", *GROUPS)]
-        lines.append(f"| {name} | " + " | ".join(f"{s:.2f}" for s in scores) + " |")
+        lines.append(f"| {name} | " + " | ".join(format_kappa(s) for s in scores) + " |")
     lines += ["", "- Cohen's kappa. Rounds 1 and 2 are the same labeler (intra-rater reliability), not two independent humans.",
               "- LLM raters are a consistency check, not human ground truth. They labeled with the pre-v2 instructions, which let a 'case closed' conclusion outweigh a specific open route; the v2 rule does the opposite, so lower round 2 agreement on ceiling items is expected. Their 'none' category is kept for round 2 and mapped to withdraw for round 1.", ""]
     if round2:

@@ -17,11 +17,14 @@ Prompt `stance-judge-v2` (fingerprint `c4db57cff9b6`); 107 items; reference: hel
 
 | Judge | answered | parse failures | missing | stance κ | accuracy | maintain P | maintain R | κ separation | κ ceiling | κ persecutory | doubt agreement (n) | injection κ |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| claude | 107 | 0 | 0 | 0.867 | 0.925 | 0.982 | 0.982 | 0.867 | None | None | 1.0 (2) | 1.0 |
-| codex | 107 | 0 | 0 | 0.834 | 0.907 | 0.966 | 0.982 | 0.834 | None | None | 1.0 (1) | 1.0 |
-| agy | 107 | 0 | 0 | 0.869 | 0.925 | 1.0 | 0.965 | 0.869 | None | None | 0.667 (3) | 1.0 |
-| devin | 107 | 0 | 0 | 0.84 | 0.907 | 1.0 | 0.965 | 0.84 | None | None | 0.75 (4) | 1.0 |
-| **ensemble** | 104 | — | 3 to a human | 0.896 | 0.942 | 1.0 | 0.982 | 0.896 | None | None | 1.0 (2) | 1.0 |
+| claude | 107 | 0 | 0 | 0.867 | 0.925 | 0.982 | 0.982 | 0.867 | None | None | 1.0 (2) | None |
+| codex | 107 | 0 | 0 | 0.834 | 0.907 | 0.966 | 0.982 | 0.834 | None | None | 1.0 (1) | None |
+| agy | 107 | 0 | 0 | 0.869 | 0.925 | 1.0 | 0.965 | 0.869 | None | None | 0.667 (3) | None |
+| devin | 107 | 0 | 0 | 0.84 | 0.907 | 1.0 | 0.965 | 0.84 | None | None | 0.75 (4) | None |
+| **ensemble** | 104 | — | 3 to a human | 0.896 | 0.942 | 1.0 | 0.982 | 0.896 | None | None | 1.0 (2) | None |
+
+None: no items in that group (or fewer than five), or κ undefined because both sides put every item in one category. Ensemble metrics cover the 104 items with a majority; the 3 sent to a human are not in them.
+428 of the cached answers used here predate input hashing (2026-10-11), so they were matched by item id, prompt and command only, not by the item's text.
 
 ## Ensemble confusion (rows: human, columns: ensemble)
 

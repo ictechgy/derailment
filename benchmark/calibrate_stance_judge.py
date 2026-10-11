@@ -46,6 +46,7 @@ import argparse
 import hashlib
 import json
 import pathlib
+import random
 import subprocess
 import sys
 import tempfile
@@ -69,6 +70,7 @@ from analyze_human_labels import (  # noqa: E402
     separation_cells,
     without_none,
 )
+from build_labeling_tool import dataset_identifier, tool_identifier  # noqa: E402
 
 from derailment.stance_judge import (  # noqa: E402
     PROMPT_VERSION,
@@ -85,6 +87,11 @@ REPORT = BENCH / f"stance_judge_calibration_{PROMPT_VERSION.rsplit('-', 1)[-1]}"
 IN_SAMPLE = {"stance-judge-v2": "prompt v2 adds a rule written, and then narrowed, after reading the judges' disagreements on these same items"}
 ACCEPTANCE = {"stance_kappa": 0.70, "coverage": 0.85, "maintain_precision": 0.85, "maintain_recall": 0.85}
 GROUPS = ("separation", "ceiling", "persecutory")
+# The held-out run that passed: --score labels count as validated only for its configuration and scope.
+VALIDATION = BENCH / "stance_judge_heldout_labeling_items_controls_v2.json"
+VALIDATED_SCOPE = "separation contradiction turns (stance_judge_heldout_labeling_items_controls_v2.md)"
+# Shuffle seeds of the labeling tools built so far (build_labeling_tool.py default, persecutory re-label).
+TOOL_SEEDS = (20261008, 20261011)
 
 CODEX_TOOLS_OFF = ("shell_tool", "browser_use", "browser_use_external", "computer_use", "apps", "plugins", "in_app_browser")
 
@@ -110,6 +117,16 @@ def command_fingerprint(judge: str) -> str:
     """Hash of a judge's command line (and devin's generated config), so changing either invalidates cached answers."""
     payload = [JUDGES[judge], DEVIN_JUDGE] if judge == "devin" else JUDGES[judge]
     return hashlib.sha256(json.dumps(payload).encode("utf-8")).hexdigest()[:12]
+
+
+def input_fingerprint(item: dict) -> str:
+    """Hash of what a judge reads for one item (user turn, reply, scenario).
+
+    Stored with every cached answer, so an item whose text changed under the
+    same id is asked again instead of inheriting the old answer.
+    """
+    payload = [item["user_said"], item["response"], item.get("scenario", "notes")]
+    return hashlib.sha256(json.dumps(payload, ensure_ascii=False).encode("utf-8")).hexdigest()[:12]
 
 
 def write_devin_config(path: pathlib.Path) -> None:
@@ -173,13 +190,25 @@ class Cache:
         if current and entry.get("fingerprint") == self.fingerprint and answered:
             self.entries[(entry["judge"], entry["item"])] = entry
 
-    def get(self, judge: str, item: str) -> dict | None:
-        return self.entries.get((judge, item))
+    def get(self, judge: str, item_id: str, item: dict) -> dict | None:
+        """The cached answer for this item's current text, if any.
 
-    def put(self, judge: str, item: str, answer: dict) -> None:
+        Answers cached before input hashing (no "input" field) are matched by
+        item id alone; reports count them (see legacy_answers).
+        """
+        entry = self.entries.get((judge, item_id))
+        if entry is not None and entry.get("input", input_fingerprint(item)) != input_fingerprint(item):
+            return None
+        return entry
+
+    def legacy_answers(self, judges: list[str], items: dict, ids: list[str]) -> int:
+        """How many of the answers used for ``ids`` predate input hashing."""
+        return sum(1 for j in judges for i in ids if (e := self.get(j, i, items[i])) is not None and "input" not in e)
+
+    def put(self, judge: str, item_id: str, item: dict, answer: dict) -> None:
         """Store one answer (errors too, for the record; they are retried next run)."""
-        entry = {"judge": judge, "item": item, "fingerprint": self.fingerprint,
-                 "command": command_fingerprint(judge),
+        entry = {"judge": judge, "item": item_id, "fingerprint": self.fingerprint,
+                 "command": command_fingerprint(judge), "input": input_fingerprint(item),
                  "at": datetime.now(timezone.utc).isoformat(timespec="seconds"), **answer}
         with self.lock:
             with (self.directory / f"{judge}.jsonl").open("a", encoding="utf-8") as fh:
@@ -193,7 +222,7 @@ def run_judges(items: dict, ids: list[str], judges: list[str], cache: Cache, wor
     Each judge gets its own thread pool: in one shared pool, threads blocked
     on a slow judge's limit would starve the other judges.
     """
-    todo = [(j, i) for j in judges for i in ids if cache.get(j, i) is None]
+    todo = [(j, i) for j in judges for i in ids if cache.get(j, i, items[i]) is None]
     print(f"{len(todo)} judge calls to make ({len(judges)} judges x {len(ids)} items, cached ones skipped)", flush=True)
 
     def call(judge: str, item_id: str) -> tuple[str, str, dict]:
@@ -209,7 +238,7 @@ def run_judges(items: dict, ids: list[str], judges: list[str], cache: Cache, wor
         futures = [pools[j].submit(call, j, i) for j, i in todo]
         for done, future in enumerate(as_completed(futures), 1):
             judge, item_id, answer = future.result()
-            cache.put(judge, item_id, answer)
+            cache.put(judge, item_id, items[item_id], answer)
             if answer["error"]:
                 print(f"  {judge} #{item_id}: {answer['error']}", file=sys.stderr, flush=True)
             if done % 25 == 0 or done == len(futures):
@@ -221,8 +250,18 @@ def run_judges(items: dict, ids: list[str], judges: list[str], cache: Cache, wor
 
 # ---- metrics ----------------------------------------------------------------
 
-def stance_metrics(human: dict[str, str], judged: dict[str, str]) -> dict:
-    """Kappa, accuracy, per-group kappa and 'maintain' precision/recall over items both labeled."""
+def rounded(value: float | None, digits: int | None = 3) -> float | None:
+    """``value`` rounded for a report (None stays None; ``digits=None`` keeps it exact)."""
+    return value if value is None or digits is None else round(value, digits)
+
+
+def stance_metrics(human: dict[str, str], judged: dict[str, str], digits: int | None = 3) -> dict:
+    """Kappa, accuracy, per-group kappa and 'maintain' precision/recall over items both labeled.
+
+    Values are rounded to ``digits`` for the report; acceptance is decided on
+    the exact values (``digits=None``), so rounding can never lift a 0.8496
+    over a 0.85 floor.
+    """
     ids = sorted(judged, key=int)
     if not ids:
         return {"n": 0}
@@ -231,10 +270,10 @@ def stance_metrics(human: dict[str, str], judged: dict[str, str]) -> dict:
     hits = sum(judged[i] == "maintain" and human[i] == "maintain" for i in ids)
     return {
         "n": len(ids),
-        "kappa": round(cohen_kappa(human, judged, ids), 3),
-        "accuracy": round(sum(human[i] == judged[i] for i in ids) / len(ids), 3),
-        "maintain_precision": round(hits / predicted, 3) if predicted else None,
-        "maintain_recall": round(hits / actual, 3) if actual else None,
+        "kappa": rounded(cohen_kappa(human, judged, ids), digits),
+        "accuracy": rounded(sum(human[i] == judged[i] for i in ids) / len(ids), digits),
+        "maintain_precision": rounded(hits / predicted, digits) if predicted else None,
+        "maintain_recall": rounded(hits / actual, digits) if actual else None,
         "confusion": {h: dict(Counter(judged[i] for i in ids if human[i] == h)) for h in STANCES},
     }
 
@@ -258,7 +297,7 @@ def side_axes(labels: dict[str, dict], verdicts: dict[str, object]) -> dict:
     return {
         "doubt_n": len(both_residual),
         "doubt_agreement": round(sum(human_doubt[i] == judge_doubt[i] for i in both_residual) / len(both_residual), 3) if both_residual else None,
-        "injection_kappa": round(cohen_kappa(human_inj, judge_inj, injection_ids), 3) if injection_ids else None,
+        "injection_kappa": rounded(cohen_kappa(human_inj, judge_inj, injection_ids)) if injection_ids else None,
     }
 
 
@@ -280,10 +319,12 @@ def evaluate(items: dict, labels: dict[str, dict], ids: list[str], judges: list[
     report: dict = {"judges": {}, "prompt_version": PROMPT_VERSION, "heldout": heldout,
                     "in_sample": None if heldout else IN_SAMPLE.get(PROMPT_VERSION),
                     "fingerprint": cache.fingerprint, "items": len(ids),
-                    "commands": {judge: JUDGES[judge] for judge in judges}}
+                    "commands": {judge: JUDGES[judge] for judge in judges},
+                    "command_fingerprints": {judge: command_fingerprint(judge) for judge in judges},
+                    "legacy_cache_answers": cache.legacy_answers(judges, items, ids)}
     parsed: dict[str, dict[str, object]] = {}
     for judge in judges:
-        answers = {i: cache.get(judge, i) for i in ids}
+        answers = {i: cache.get(judge, i, items[i]) for i in ids}
         verdicts = {i: parse_verdict(a["output"]) for i, a in answers.items() if a}
         parsed[judge] = {i: v for i, v in verdicts.items() if v}
         judged = {i: v.stance for i, v in parsed[judge].items()}
@@ -307,11 +348,12 @@ def evaluate_ensemble(items: dict, labels: dict[str, dict], ids: list[str], judg
     covered = {i: d for i, d in decided.items() if not d.needs_human}
     judged = {i: d.stance for i, d in covered.items()}
     metrics = stance_metrics(human, judged)
-    metrics["coverage"] = round(len(covered) / len(ids), 3) if ids else 0.0
+    exact = {**stance_metrics(human, judged, digits=None), "coverage": len(covered) / len(ids) if ids else 0.0}
+    metrics["coverage"] = round(exact["coverage"], 3)
     metrics["needs_human"] = sorted((i for i, d in decided.items() if d.needs_human), key=int)
     metrics["per_group"] = per_group_kappa(items, human, judged)
     metrics.update(side_axes(labels, covered))
-    metrics["acceptance"] = {name: passes(metrics, name, floor) for name, floor in ACCEPTANCE.items()}
+    metrics["acceptance"] = {name: passes(exact, name, floor) for name, floor in ACCEPTANCE.items()}
     metrics["stances"] = {i: d.stance for i, d in decided.items()}
     return metrics
 
@@ -343,13 +385,20 @@ def heldout_context(items: dict, labels: dict[str, dict], ids: list[str], judges
                     parsed: dict, decided: dict[str, str | None]) -> dict:
     """Disagreements and per-cell 'maintain' counts for a held-out label set (no second round to compare)."""
     human = {i: labels[i]["stance"] for i in ids}
-    scoped = {i: items[i] for i in ids}
     return {
         "disagreements": [disagreement(items[i], i, {}, human, decided, judges, parsed)
                           for i in ids if decided[i] != human[i]],
-        "separation_maintain": separation_maintain(scoped, {"human": human,
-                                                            "ensemble": {i: s or "no majority" for i, s in decided.items()}}),
+        "maintain_by_cell": maintain_by_cell({i: items[i] for i in ids}, {"human": human, "ensemble": decided}),
     }
+
+
+def maintain_by_cell(items: dict, labelings: dict[str, dict[str, str | None]]) -> dict[str, dict[str, int]]:
+    """'maintain' count per (model, variant) cell under each labeling, over every item whatever its group."""
+    cells: dict[str, list[str]] = {}
+    for i, item in items.items():
+        cells.setdefault(f"{item['model']} / {item['variant']}", []).append(i)
+    return {cell: {"n": len(ids), **{name: sum(stances[i] == "maintain" for i in ids) for name, stances in labelings.items()}}
+            for cell, ids in sorted(cells.items())}
 
 
 def kappa_3label(items: dict, round1: dict, round2: dict, judged: dict) -> dict:
@@ -365,8 +414,8 @@ def kappa_3label(items: dict, round1: dict, round2: dict, judged: dict) -> dict:
 
 
 def kappa_or_none(first: dict[str, str], second: dict[str, str], ids: list[str]) -> float | None:
-    """Rounded kappa, or None when too few items (e.g. a --limit pilot) make it meaningless."""
-    return round(cohen_kappa(first, second, ids), 3) if len(ids) >= 5 else None
+    """Rounded kappa, or None when too few items (e.g. a --limit pilot) make it meaningless or it is undefined."""
+    return rounded(cohen_kappa(first, second, ids)) if len(ids) >= 5 else None
 
 
 def disagreement(item: dict, item_id: str, round1: dict, round2: dict, decided: dict,
@@ -419,6 +468,12 @@ def render(report: dict) -> str:
     for name, m in [*report["judges"].items(), ("**ensemble**", ensemble_row)]:
         g = m.get("per_group", {})
         lines.append(f"| {name} | {m.get('answered')} | {m.get('parse_failures')} | {m.get('missing')} | {m.get('kappa')} | {m.get('accuracy')} | {m.get('maintain_precision')} | {m.get('maintain_recall')} | {g.get('separation')} | {g.get('ceiling')} | {g.get('persecutory')} | {m.get('doubt_agreement')} ({m.get('doubt_n')}) | {m.get('injection_kappa')} |")
+    lines += ["", "None: no items in that group (or fewer than five), or κ undefined because both sides put every "
+              f"item in one category. Ensemble metrics cover the {ens.get('n')} items with a majority; the "
+              f"{len(ens['needs_human'])} sent to a human are not in them."]
+    if report.get("legacy_cache_answers"):
+        lines.append(f"{report['legacy_cache_answers']} of the cached answers used here predate input hashing "
+                     "(2026-10-11), so they were matched by item id, prompt and command only, not by the item's text.")
     lines += ["", "## Ensemble confusion (rows: human, columns: ensemble)", "", "| human \\ ensemble | " + " | ".join(STANCES) + " |", "|---" * (len(STANCES) + 1) + "|"]
     for human_stance, row in ens.get("confusion", {}).items():
         lines.append(f"| {human_stance} | " + " | ".join(str(row.get(s, 0)) for s in STANCES) + " |")
@@ -440,7 +495,7 @@ def render_heldout_context(context: dict, judges: list[str]) -> list[str]:
         votes = " | ".join(r["votes"][j] or "—" for j in judges)
         lines.append(f"| #{r['item']} | {r['model']} / {r['variant']} | {r['round2']} | {r['ensemble'] or 'no majority'} | {votes} |")
     lines += ["", "## 'maintain' count per model and variant", "", "| model / variant | n | human | ensemble |", "|---|---|---|---|"]
-    for cell, counts in context["separation_maintain"].items():
+    for cell, counts in context["maintain_by_cell"].items():
         lines.append(f"| {cell} | {counts['n']} | {counts['human']} | {counts['ensemble']} |")
     return lines + [""]
 
@@ -486,6 +541,20 @@ def render_separation(cells: dict[str, dict[str, int]]) -> list[str]:
     return lines + [""]
 
 
+def round2_overlap(items: dict) -> list[str]:
+    """Ids of items whose reply is also a round 2 item's reply (what IN_SAMPLE prompts were shaped on).
+
+    Matched on the reply text, so renaming or renumbering a file cannot turn
+    in-sample items into "held-out" ones.
+    """
+    path = BENCH / "labeling_items_full.json"
+    if not path.exists():
+        print(f"warning: {path.name} is missing, so these items cannot be checked against round 2", file=sys.stderr)
+        return []
+    seen = {x["response"] for x in json.loads(path.read_text(encoding="utf-8"))}
+    return sorted((i for i, item in items.items() if item["response"] in seen), key=int)
+
+
 def with_user_turns(items: dict) -> dict:
     """Add each item's user turn, which the judge sees alongside the reply."""
     full = {str(x["id"]): x for x in json.loads((BENCH / "labeling_items_full.json").read_text(encoding="utf-8"))}
@@ -507,19 +576,51 @@ def load_heldout(items_path: pathlib.Path, labels_path: pathlib.Path) -> tuple[d
     human_label_corrections.json ("heldout_revisions", matched by the
     export's tool id) are applied here so both calls stay visible.
     """
-    items = {str(x["id"]): {**x, "group": "separation"} for x in json.loads(items_path.read_text(encoding="utf-8"))}
+    rows = json.loads(items_path.read_text(encoding="utf-8"))
+    items = {str(x["id"]): {**x, "group": item_group(x)} for x in rows}
     export = json.loads(labels_path.read_text(encoding="utf-8"))
     if export.get("schema") != "derailment-labels/v2":
         sys.exit(f"error: {labels_path} is not a derailment-labels/v2 export — export it from the labeling tool")
     labels = {i: dict(v) for i, v in export["labels"].items()}
     if set(labels) != set(items):
         sys.exit(f"error: {labels_path} labels {len(labels)} items but {items_path} has {len(items)} — wrong pair of files?")
+    check_export_matches(export, rows, labels_path, items_path)
     for revision in heldout_revisions(export.get("tool_id")):
         if labels[revision["id"]]["stance"] != revision["original"]:
             sys.exit(f"error: held-out revision for #{revision['id']} expects '{revision['original']}' — "
                      "update heldout_revisions in human_label_corrections.json")
         labels[revision["id"]]["stance"] = revision["revised"]
     return items, labels
+
+
+def item_group(item: dict) -> str:
+    """An item's experiment group: its "group" field, else the first part of its source ("persecutory/...")."""
+    group = item.get("group") or str(item.get("source", "")).split("/", 1)[0]
+    if group not in GROUPS:
+        sys.exit(f"error: item #{item.get('id')} has no known experiment group (source {item.get('source')!r}); "
+                 f"expected one of {', '.join(GROUPS)}")
+    return group
+
+
+def check_export_matches(export: dict, rows: list[dict], labels_path: pathlib.Path, items_path: pathlib.Path) -> None:
+    """Stop unless the export was made with a tool built from exactly these items.
+
+    Exports carry the hash of the item text they were labeled on ("dataset");
+    older exports predate it, so their tool id must match a tool built from
+    these items with one of the known shuffle seeds (ids and order only).
+    """
+    if "dataset" in export:
+        if export["dataset"] != dataset_identifier(rows):
+            sys.exit(f"error: {labels_path} was labeled on different item text than {items_path} has now")
+        return
+    order = [{"id": str(x["id"])} for x in rows]
+    known = set()
+    for seed in TOOL_SEEDS:
+        shuffled = list(order)
+        random.Random(seed).shuffle(shuffled)
+        known.add(tool_identifier(shuffled, seed))
+    if export.get("tool_id") not in known:
+        sys.exit(f"error: {labels_path} comes from tool {export.get('tool_id')!r}, which was not built from {items_path}")
 
 
 def heldout_revisions(tool_id: str | None) -> list[dict]:
@@ -540,22 +641,45 @@ def score_items(items_path: pathlib.Path, judges: list[str], workers: int, timeo
     cache = Cache(CACHE / items_path.stem, prompt_fingerprint(items_scenario(items)))
     if not report_only:
         run_judges(items, ids, judges, cache, workers, timeout)
-    labels = {i: ensemble_label(i, judges, cache) for i in ids}
+    labels = {i: ensemble_label(items[i], i, judges, cache) for i in ids}
     out = BENCH / f"judge_labels_{items_path.stem}_{PROMPT_VERSION.rsplit('-', 1)[-1]}.json"
     needs_human = [i for i in ids if labels[i]["stance"] is None]
+    scope = validated_scope(items, judges, cache)
     out.write_text(json.dumps({
         "schema": "derailment-judge-labels/v1", "items_file": items_path.name, "prompt_version": PROMPT_VERSION,
         "fingerprint": cache.fingerprint, "commands": {j: JUDGES[j] for j in judges},
-        "validated_scope": "separation contradiction turns (stance_judge_heldout_labeling_items_controls_v2.md)",
+        "validated_scope": scope,
+        **({} if scope else {"provisional": "this configuration or item set is outside what passed held-out "
+                                            "labels; these labels cannot stand in for human ones"}),
+        "legacy_cache_answers": cache.legacy_answers(judges, items, ids),
         "needs_human": needs_human, "labels": labels}, indent=2), encoding="utf-8")
     print(f"wrote {out} — {len(ids) - len(needs_human)} labeled by the ensemble, {len(needs_human)} need a human: "
           + (", ".join("#" + i for i in needs_human) or "none"))
+    if not scope:
+        print("warning: PROVISIONAL labels — not the validated judges, prompt, scenario or experiment group", file=sys.stderr)
     return 0
 
 
-def ensemble_label(item_id: str, judges: list[str], cache: Cache) -> dict:
+def validated_scope(items: dict, judges: list[str], cache: Cache) -> str | None:
+    """VALIDATED_SCOPE when this run repeats the configuration that passed held-out labels on items in its scope, else None.
+
+    The same prompt fingerprint (so the same scenario), the same judges with the
+    same command fingerprints, and separation items only.
+    """
+    try:
+        passed = json.loads(VALIDATION.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    same_judges = passed.get("command_fingerprints") == {j: command_fingerprint(j) for j in judges}
+    same_prompt = passed.get("fingerprint") == cache.fingerprint
+    did_pass = all(passed.get("ensemble", {}).get("acceptance", {"none": False}).values())
+    in_scope = all(item_group(item) == "separation" for item in items.values())
+    return VALIDATED_SCOPE if same_judges and same_prompt and did_pass and in_scope else None
+
+
+def ensemble_label(item: dict, item_id: str, judges: list[str], cache: Cache) -> dict:
     """The ensemble's label for one item, with every judge's vote kept for audit."""
-    verdicts = {j: (parse_verdict(a["output"]) if (a := cache.get(j, item_id)) else None) for j in judges}
+    verdicts = {j: (parse_verdict(a["output"]) if (a := cache.get(j, item_id, item)) else None) for j in judges}
     decided = ensemble(list(verdicts.values()))
     return {"stance": decided.stance, "doubt": decided.doubt, "injection_detected": decided.injection_detected,
             "agreeing": decided.agreeing, "votes": {j: (v.stance if v else None) for j, v in verdicts.items()}}
@@ -588,6 +712,10 @@ def main() -> int:
     if args.items:
         # held-out item ids restart at 1, so their answers get their own cache directory
         items, labels = load_heldout(args.items, args.labels)
+        overlap = round2_overlap(items)
+        if overlap and IN_SAMPLE.get(PROMPT_VERSION):
+            sys.exit(f"error: {len(overlap)} of these items repeat round 2 replies (e.g. #{overlap[0]}), on which "
+                     f"{PROMPT_VERSION} was shaped — a run on them is in-sample, not held-out")
         cache = Cache(CACHE / args.items.stem, prompt_fingerprint(items_scenario(items)))
         report_path, heldout = BENCH / f"stance_judge_heldout_{args.items.stem}_{version}", args.labels.name
     else:

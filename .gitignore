@@ -50,5 +50,7 @@ benchmark/*
 !benchmark/judge_labels_*.json
 !benchmark/human_labels_flattened_review.json
 !benchmark/human_labels_persecutory.json
+# Which transcripts each published item set was extracted from (extract_labeling_items.py --sources)
+!benchmark/labeling_items_*.sources.json
 # HANDOFF.md는 세션 로컬 문서
 HANDOFF.md

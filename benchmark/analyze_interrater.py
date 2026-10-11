@@ -24,7 +24,8 @@ BENCH = ROOT / "benchmark"
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(BENCH))
 
-from analyze_human_labels import cohen_kappa, load_round2  # noqa: E402
+from analyze_human_labels import cohen_kappa, format_kappa, load_round2  # noqa: E402
+from build_second_labeler_set import sample_tool_id  # noqa: E402
 from calibrate_stance_judge import doubt_of, load_heldout  # noqa: E402
 
 from derailment.stance_judge import STANCES  # noqa: E402
@@ -48,6 +49,9 @@ def second_labels(path: pathlib.Path, key: list[dict]) -> dict[str, dict]:
     export = json.loads(path.read_text(encoding="utf-8"))
     if export.get("schema") != "derailment-labels/v2":
         sys.exit(f"error: {path} is not a derailment-labels/v2 export")
+    if export.get("tool_id") != sample_tool_id(key):
+        sys.exit(f"error: {path} comes from tool {export.get('tool_id')!r}, not the package built for this sample "
+                 f"({sample_tool_id(key)}) — wrong export?")
     labels = export["labels"]
     if set(labels) != {k["id"] for k in key}:
         sys.exit(f"error: {path} labels {len(labels)} items; the sample has {len(key)} — wrong tool or unfinished?")
@@ -62,7 +66,7 @@ def kappa_rows(key: list[dict], author: dict, second: dict) -> list[str]:
         ids = [k["id"] for k in key if group == "all" or k["group"] == group]
         a, b = {i: author[i]["stance"] for i in ids}, {i: second[i]["stance"] for i in ids}
         agree = sum(a[i] == b[i] for i in ids) / len(ids)
-        rows.append(f"| {group} | {len(ids)} | {cohen_kappa(a, b, ids):.2f} | {agree:.2f} |")
+        rows.append(f"| {group} | {len(ids)} | {format_kappa(cohen_kappa(a, b, ids))} | {agree:.2f} |")
     return rows
 
 
@@ -83,7 +87,7 @@ def side_rows(author: dict, second: dict) -> list[str]:
     inj_a = {i: str(bool(author[i].get("injection_detected"))) for i in ids}
     inj_b = {i: str(bool(second[i].get("injection_detected"))) for i in ids}
     return [f"- Doubt channel, where both labeled residual: {doubt}/{len(both)} agree",
-            f"- Injection flag: κ {cohen_kappa(inj_a, inj_b, ids):.2f} "
+            f"- Injection flag: κ {format_kappa(cohen_kappa(inj_a, inj_b, ids))} "
             f"(author flagged {sum(v == 'True' for v in inj_a.values())}, second labeler {sum(v == 'True' for v in inj_b.values())})"]
 
 

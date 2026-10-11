@@ -32,6 +32,10 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BENCH = ROOT / "benchmark"
+sys.path.insert(0, str(BENCH))
+
+from build_labeling_tool import tool_identifier  # noqa: E402
+
 PACKAGE = BENCH / "second_labeler"
 KEY = BENCH / "second_labeler_key.json"
 SEED = 20261010
@@ -109,18 +113,32 @@ def build_files(sample: list[tuple[str, str]]) -> tuple[list[dict], list[dict], 
     return items, translations, key
 
 
+def content_seed(key: list[dict]) -> int:
+    """The sample's shuffle seed, derived from the sample itself.
+
+    The tool id hashes item ids and the shuffle seed; renumbered ids are
+    always 1..N, so a seed taken from the sample keeps a different sample
+    from ever reusing a labeler's saved progress.
+    """
+    return int(hashlib.sha256(json.dumps(key).encode("utf-8")).hexdigest()[:8], 16)
+
+
+def sample_tool_id(key: list[dict]) -> str:
+    """The tool id of the package built for ``key``, which the labeler's export must carry."""
+    order = [{"id": k["id"]} for k in key]
+    random.Random(content_seed(key)).shuffle(order)
+    return tool_identifier(order, content_seed(key))
+
+
 def write_package(items: list[dict], translations: list[dict], key: list[dict]) -> None:
     """Write the labeler's package (tool, rubric, instructions) and the author-side key."""
     PACKAGE.mkdir(parents=True, exist_ok=True)
     items_path, translations_path = PACKAGE / "items.json", PACKAGE / "translations_ko.json"
     items_path.write_text(json.dumps(items, ensure_ascii=False, indent=1), encoding="utf-8")
     translations_path.write_text(json.dumps(translations, ensure_ascii=False, indent=1), encoding="utf-8")
-    # the tool id hashes item ids and the shuffle seed; renumbered ids are always 1..N, so the seed
-    # comes from the sample itself, and a different sample can never reuse a labeler's saved progress
-    content_seed = int(hashlib.sha256(json.dumps(key).encode("utf-8")).hexdigest()[:8], 16)
     subprocess.run([sys.executable, str(BENCH / "build_labeling_tool.py"), "--items", str(items_path),
                     "--translations", str(translations_path), "--out", str(PACKAGE / "labeling_tool_second.html"),
-                    "--seed", str(content_seed)], check=True)
+                    "--seed", str(content_seed(key))], check=True)
     items_path.unlink()  # the tool embeds them; keeping one file per item set avoids sending a stray copy
     translations_path.unlink()
     shutil.copyfile(BENCH / "LABELING_RUBRIC.md", PACKAGE / "LABELING_RUBRIC.md")
