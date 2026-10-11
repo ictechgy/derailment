@@ -2,9 +2,14 @@
 
 Usage:
     python benchmark/build_labeling_tool.py \
-        --items benchmark/labeling_items_full.json \
-        --translations benchmark/labeling_translations_ko.json \
-        --out benchmark/labeling_tool_v2.html
+        --items benchmark/labeling_items_controls.json \
+        --translations benchmark/labeling_translations_controls_ko.json \
+        --out benchmark/labeling_tool_controls.html
+
+This always builds the current (v2.1) page. The v2 page used for round 2
+is kept as the local file benchmark/labeling_tool_v2.html; rebuilding the
+190 items with this script gives a v2.1 page with the same tool id (and so
+the same saved progress), not the round 2 tool.
 
 The page implements benchmark/LABELING_RUBRIC.md (v2.1): a stance (axis 1),
 two doubt-channel toggles (axis 2) and an injection toggle (axis 3), all
@@ -88,9 +93,25 @@ def build_payload(items: list[dict], translations: dict[str, dict], seed: int) -
 
 
 def tool_identifier(payload: list[dict], seed: int) -> str:
-    """Stable id for this item set and order, so saved progress never mixes tools."""
+    """Stable id for this item set and order, so saved progress never mixes tools.
+
+    It hashes ids and the seed only, so rebuilding a tool (say, after a
+    template fix) keeps a labeler's saved progress; the content is bound
+    separately by dataset_identifier.
+    """
     digest = hashlib.sha256((",".join(e["id"] for e in payload) + f"|{seed}").encode()).hexdigest()
     return digest[:12]
+
+
+def dataset_identifier(items: list[dict]) -> str:
+    """Hash of what each item shows (id, user turn, reply), written into every export.
+
+    Analysis scripts recompute it from the items file they are given, so a
+    label export can never be applied to an items file whose text changed
+    under the same ids.
+    """
+    rows = [[str(item["id"]), item["user_said"], item["response"]] for item in items]
+    return hashlib.sha256(json.dumps(rows, ensure_ascii=False).encode("utf-8")).hexdigest()[:12]
 
 
 # The rubric summary's scenario-specific words (benchmark/LABELING_RUBRIC.md, "Other scenarios").
@@ -109,13 +130,13 @@ SUMMARY_KO = {
 }
 
 
-def render_html(payload: list[dict], tool_id: str, scenario: str = "notes") -> str:
+def render_html(payload: list[dict], tool_id: str, scenario: str = "notes", dataset: str = "") -> str:
     """Fill the page template; the data is JSON with '</' escaped for the script tag."""
     data = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/").replace("<!--", "<\\!--")
     page = PAGE
     for token, words in SUMMARY_KO[scenario].items():
         page = page.replace(token, words)
-    return page.replace("__TOOL_ID__", tool_id).replace("__DATA__", data)
+    return page.replace("__TOOL_ID__", tool_id).replace("__DATASET__", dataset).replace("__DATA__", data)
 
 
 def main() -> None:
@@ -128,9 +149,10 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20261008, help="shuffle seed (default: 20261008)")
     parser.add_argument("--scenario", default="notes", choices=list(SUMMARY_KO), help="whose rubric summary to show (default notes)")
     args = parser.parse_args()
-    payload = build_payload(load_json_list(args.items), load_translations(args.translations), args.seed)
+    items = load_json_list(args.items)
+    payload = build_payload(items, load_translations(args.translations), args.seed)
     tool_id = tool_identifier(payload, args.seed)
-    args.out.write_text(render_html(payload, tool_id, args.scenario), encoding="utf-8")
+    args.out.write_text(render_html(payload, tool_id, args.scenario, dataset_identifier(items)), encoding="utf-8")
     translated = sum(bool(e.get("response_ko")) for e in payload)
     print(f"wrote {args.out} — {len(payload)} items, {translated} translated, tool id {tool_id}")
 
@@ -341,6 +363,7 @@ dialog::backdrop { background: rgba(10, 14, 16, .55); }
 "use strict";
 const DATA = __DATA__;
 const TOOL_ID = "__TOOL_ID__";
+const DATASET = "__DATASET__";
 const STORE_KEY = "derailment-labels-v2:" + TOOL_ID;
 const STANCES = [
   { key: "none", name: "언급 없음", sub: "none", shortcut: "1" },
@@ -570,7 +593,7 @@ function nextUnlabeled() {
 function exportLabels() {
   const labels = Object.fromEntries(Object.entries(state.labels).filter(([, e]) => e.stance));
   const payload = {
-    schema: "derailment-labels/v2", rubric: "benchmark/LABELING_RUBRIC.md (v2.1)", tool_id: TOOL_ID,
+    schema: "derailment-labels/v2", rubric: "benchmark/LABELING_RUBRIC.md (v2.1)", tool_id: TOOL_ID, dataset: DATASET,
     labeler: state.labeler, exported_at: new Date().toISOString(),
     items_total: DATA.length, items_labeled: Object.keys(labels).length, labels,
   };

@@ -69,6 +69,7 @@
     ]
   },
   "validated_scope": "separation contradiction turns (stance_judge_heldout_labeling_items_controls_v2.md)",
+  "legacy_cache_answers": 288,
   "needs_human": [
     "43",
     "66"

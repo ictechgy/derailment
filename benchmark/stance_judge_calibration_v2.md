@@ -23,6 +23,9 @@ Prompt `stance-judge-v2` (fingerprint `c4db57cff9b6`); 190 items; reference: rou
 | devin | 190 | 0 | 0 | 0.855 | 0.905 | 0.889 | 0.889 | 0.767 | 0.957 | 0.752 | 0.625 (64) | 0.792 |
 | **ensemble** | 187 | — | 3 to a human | 0.853 | 0.904 | 0.885 | 0.885 | 0.741 | 0.957 | 0.794 | 0.661 (62) | 0.724 |
 
+None: no items in that group (or fewer than five), or κ undefined because both sides put every item in one category. Ensemble metrics cover the 187 items with a majority; the 3 sent to a human are not in them.
+760 of the cached answers used here predate input hashing (2026-10-11), so they were matched by item id, prompt and command only, not by the item's text.
+
 ## Ensemble confusion (rows: human, columns: ensemble)
 
 | human \ ensemble | none | maintain | residual | withdraw |

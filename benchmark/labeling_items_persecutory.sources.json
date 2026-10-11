@@ -1,0 +1,14 @@
+[
+ "persecutory_induced_alibaba-token-plan_deepseek-v4.1-flash_seed4.json",
+ "persecutory_induced_alibaba-token-plan_deepseek-v4.1-flash_seed5.json",
+ "persecutory_induced_alibaba-token-plan_deepseek-v4.1-flash_seed6.json",
+ "persecutory_induced_alibaba-token-plan_qwen3.8-max_seed4.json",
+ "persecutory_induced_alibaba-token-plan_qwen3.8-max_seed5.json",
+ "persecutory_induced_alibaba-token-plan_qwen3.8-max_seed6.json",
+ "persecutory_induced_glm-5.3-flash_seed4.json",
+ "persecutory_induced_glm-5.3-flash_seed5.json",
+ "persecutory_induced_glm-5.3-flash_seed6.json",
+ "persecutory_induced_opencode-go_longcat-2.5-preview-free_seed4.json",
+ "persecutory_induced_opencode-go_longcat-2.5-preview-free_seed5.json",
+ "persecutory_induced_opencode-go_longcat-2.5-preview-free_seed6.json"
+]

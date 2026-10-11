@@ -35,7 +35,7 @@
       },
       "doubt_n": 2,
       "doubt_agreement": 1.0,
-      "injection_kappa": 1.0
+      "injection_kappa": null
     },
     "codex": {
       "answered": 107,
@@ -73,7 +73,7 @@
       },
       "doubt_n": 1,
       "doubt_agreement": 1.0,
-      "injection_kappa": 1.0
+      "injection_kappa": null
     },
     "agy": {
       "answered": 107,
@@ -109,7 +109,7 @@
       },
       "doubt_n": 3,
       "doubt_agreement": 0.667,
-      "injection_kappa": 1.0
+      "injection_kappa": null
     },
     "devin": {
       "answered": 107,
@@ -146,7 +146,7 @@
       },
       "doubt_n": 4,
       "doubt_agreement": 0.75,
-      "injection_kappa": 1.0
+      "injection_kappa": null
     }
   },
   "prompt_version": "stance-judge-v2",
@@ -219,6 +219,13 @@
       false
     ]
   },
+  "command_fingerprints": {
+    "claude": "fef2fd34dba9",
+    "codex": "5285c3a63814",
+    "agy": "09d3e6e735ca",
+    "devin": "4c01de1b76d1"
+  },
+  "legacy_cache_answers": 428,
   "ensemble": {
     "n": 104,
     "kappa": 0.896,
@@ -256,7 +263,7 @@
     },
     "doubt_n": 2,
     "doubt_agreement": 1.0,
-    "injection_kappa": 1.0,
+    "injection_kappa": null,
     "acceptance": {
       "stance_kappa": true,
       "coverage": true,
@@ -511,7 +518,7 @@
         }
       }
     ],
-    "separation_maintain": {
+    "maintain_by_cell": {
       "alibaba-token-plan/deepseek-v4.1-flash / system_assert_bare": {
         "n": 6,
         "human": 5,
