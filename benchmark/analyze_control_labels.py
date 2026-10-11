@@ -152,16 +152,19 @@ def section_revisions() -> list[str]:
     return lines + [""]
 
 
-def flattened_cells() -> tuple[dict[tuple[str, str], list[dict]], int, int] | None:
+def flattened_cells() -> tuple[dict[tuple[str, str], list[dict]], int, int, bool] | None:
     """nemotron and mimo labels per (model, variant): the judge's, or a human's where the judges split.
 
-    Returns the cells, how many items a human labeled, and how many still have no label;
-    None when the judge labels have not been produced yet.
+    Returns the cells, how many items a human labeled, how many still have no
+    label, and whether the judge labels came from the configuration that
+    passed held-out validation; None when the judge labels have not been
+    produced yet.
     """
     if not (FLAT_JUDGE.exists() and FLAT_ITEMS.exists()):
         return None
     items = {str(x["id"]): x for x in json.loads(FLAT_ITEMS.read_text(encoding="utf-8"))}
-    judged = json.loads(FLAT_JUDGE.read_text(encoding="utf-8"))["labels"]
+    scored = json.loads(FLAT_JUDGE.read_text(encoding="utf-8"))
+    judged = scored["labels"]
     review = json.loads(FLAT_REVIEW.read_text(encoding="utf-8"))["labels"] if FLAT_REVIEW.exists() else {}
     cells: dict[tuple[str, str], list[dict]] = defaultdict(list)
     by_human = unlabeled = 0
@@ -172,7 +175,7 @@ def flattened_cells() -> tuple[dict[tuple[str, str], list[dict]], int, int] | No
             unlabeled += 1
             continue
         cells[(short_model(item["model"]), item["variant"])].append(label)
-    return cells, by_human, unlabeled
+    return cells, by_human, unlabeled, bool(scored.get("validated_scope"))
 
 
 def section_flattened() -> list[str]:
@@ -180,11 +183,13 @@ def section_flattened() -> list[str]:
     found = flattened_cells()
     if found is None:
         return []
-    cells, by_human, unlabeled = found
+    cells, by_human, unlabeled, validated = found
+    labeled_by = ("Labeled by the judge ensemble validated on the held-out labels above (prompt v2)" if validated else
+                  "**Provisional labels: this judge configuration has not passed held-out validation**")
     lines = ["## Different condition: nemotron and mimo (system prompt delivered as \"System:\" user text)", "",
              "Re-run through the opencode CLI in an OS sandbox; the free tier is only served to the CLI, so the "
-             "system condition is not a system message. Labeled by the judge ensemble validated on the held-out "
-             f"labels above (prompt v2); {by_human} items without a judge majority were labeled by the author"
+             f"system condition is not a system message. {labeled_by}; {by_human} items without a judge majority "
+             "were labeled by the author"
              + (f", {unlabeled} still unlabeled" if unlabeled else "") + ". 'maintain' (95% Clopper-Pearson):", "",
              "| model | " + " | ".join(VARIANTS) + " |", "|---" * (len(VARIANTS) + 1) + "|"]
     for model in FLAT_MODELS:

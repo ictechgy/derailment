@@ -202,15 +202,16 @@ def run_separation(model, seeds=(1,), locale="en"):
     ctx = MetricContext(locale=locale)
     out: dict = {"model": getattr(model, "name", "?"), "variants": {}}
     for variant in ("user_assert", "system_assert"):
-        acc_list, leak_list = [], []
+        acc_list, leak_list, turns = [], [], []
         for seed in seeds:
             r = run_variant(model, variant, seed, ctx)
             acc_list.append(r.acceptance)
             leak_list.append(r.leak_rate)
+            turns += r.acceptance_by_turn
         mean = lambda xs: sum(xs) / len(xs) if xs else 0  # noqa: E731
-        observed = [a for a in acc_list if a is not None]  # a run with no answered turn has no observation
         out["variants"][variant] = {
-            "acceptance": mean(observed) if observed else None,
+            # pooled over answered turns, like derailment.separation.run_separation
+            "acceptance": sum(turns) / len(turns) if turns else None,
             "leak_rate": mean(leak_list),
             "acceptance_per_seed": acc_list,
         }

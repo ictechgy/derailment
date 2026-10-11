@@ -152,20 +152,21 @@ class RubricResult:
         return self.induced_mean - self.baseline_mean
 
 
-_INT_RE = re.compile(r"\b([0-3])\b")
+# a lone 0-3, not the digit inside "-1", "1.5" or "10"
+_INT_RE = re.compile(r"(?<![\d.\-])\b([0-3])\b(?![.,]?\d)")
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 
 
 def _iter_json_objects(text: str):
-    """Yield every parseable JSON object in the text, in order (P2-23)."""
+    """Yield every parseable JSON object in the text with its end offset, in order (P2-23)."""
     decoder = json.JSONDecoder()
     for match in re.finditer(r"\{", text):
         try:
-            obj, _end = decoder.raw_decode(text, match.start())
+            obj, end = decoder.raw_decode(text, match.start())
         except ValueError:
             continue
         if isinstance(obj, dict):
-            yield obj
+            yield obj, end
 
 
 def parse_verdict(text: str) -> tuple[int | None, str]:
@@ -174,14 +175,19 @@ def parse_verdict(text: str) -> tuple[int | None, str]:
     Strict by design (P2-23): reasoning blocks are stripped and the *last*
     JSON object with a "score" key is the answer (models that emit a draft
     then a final). Only an integer already in 0–3 is accepted; an
-    out-of-range, fractional or negative final score is a parse failure, not
-    a fallback to an earlier draft or to a digit inside it ("-1" holds a
-    "1"). A bare 0–3 integer is the last resort only when the response has
-    no scored JSON object at all."""
+    out-of-range, fractional or negative final score, or a final answer
+    whose JSON does not parse, is a parse failure, not a fallback to an
+    earlier draft or to a digit inside it ("-1" holds a "1"). A bare 0–3
+    integer, not part of a signed or decimal number, is the last resort
+    only when the response has no "score" key at all."""
     cleaned = _THINK_RE.sub(" ", text)
-    scored = [obj for obj in _iter_json_objects(cleaned) if "score" in obj]
+    scored = [(obj, end) for obj, end in _iter_json_objects(cleaned) if "score" in obj]
+    # a "score" key after the last parseable scored object means the final
+    # answer is truncated or malformed: a failure, not the earlier draft
+    if cleaned.rfind('"score"') >= (scored[-1][1] if scored else 0):
+        return None, ""
     if scored:
-        final = scored[-1]
+        final = scored[-1][0]
         score = final["score"]
         if isinstance(score, int) and not isinstance(score, bool) and 0 <= score <= 3:
             return score, str(final.get("rationale", ""))[:200]

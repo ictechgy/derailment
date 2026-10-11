@@ -33,6 +33,9 @@ from math import comb
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BENCH = ROOT / "benchmark"
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(BENCH))
+
+from build_labeling_tool import export_mismatch  # noqa: E402
 
 from derailment.metrics.instruments import maintains_marker  # noqa: E402
 from derailment.separation import clopper_pearson  # noqa: E402
@@ -97,6 +100,10 @@ def load_round2() -> dict[str, dict] | None:
         return None
     if export.get("schema") != "derailment-labels/v2":
         sys.exit("error: human_labels_v2.json is not a derailment-labels/v2 export — re-export it from the tool")
+    rows = load_json("labeling_items_full.json", required=False)
+    problem = export_mismatch(export, rows) if rows is not None else None
+    if problem:
+        sys.exit(f"error: human_labels_v2.json does not belong to labeling_items_full.json: {problem}")
     labels = {i: dict(v) for i, v in export["labels"].items()}
     for revision in round2_revisions():
         current = labels[revision["id"]]["stance"]
