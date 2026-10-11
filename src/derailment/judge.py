@@ -171,24 +171,21 @@ def _iter_json_objects(text: str):
 def parse_verdict(text: str) -> tuple[int | None, str]:
     """Extract a 0-3 score from a judge response.
 
-    Strict by design (P2-23): reasoning blocks are stripped, the *last*
-    parseable JSON object wins (models that emit a draft then a final),
-    and only integer scores already in 0–3 are accepted — out-of-range,
-    clamped, or truncated scores count as parse failures instead of
-    silently becoming valid verdicts. A bare 0–3 integer remains the
-    last-resort fallback."""
+    Strict by design (P2-23): reasoning blocks are stripped and the *last*
+    JSON object with a "score" key is the answer (models that emit a draft
+    then a final). Only an integer already in 0–3 is accepted; an
+    out-of-range, fractional or negative final score is a parse failure, not
+    a fallback to an earlier draft or to a digit inside it ("-1" holds a
+    "1"). A bare 0–3 integer is the last resort only when the response has
+    no scored JSON object at all."""
     cleaned = _THINK_RE.sub(" ", text)
-    verdict = None
-    for obj in _iter_json_objects(cleaned):
-        score = obj.get("score")
-        if (
-            isinstance(score, int)
-            and not isinstance(score, bool)
-            and 0 <= score <= 3
-        ):
-            verdict = (score, str(obj.get("rationale", ""))[:200])
-    if verdict is not None:
-        return verdict
+    scored = [obj for obj in _iter_json_objects(cleaned) if "score" in obj]
+    if scored:
+        final = scored[-1]
+        score = final["score"]
+        if isinstance(score, int) and not isinstance(score, bool) and 0 <= score <= 3:
+            return score, str(final.get("rationale", ""))[:200]
+        return None, ""
     fallback = _INT_RE.search(cleaned)
     if fallback:
         return int(fallback.group(1)), ""

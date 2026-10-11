@@ -281,7 +281,10 @@ def ensemble(verdicts: list[JudgeVerdict | None], quorum: int | None = None) -> 
 
     ``quorum`` is the number of agreeing judges required for the stance
     (default: a strict majority of all judges, failures included, so an
-    ensemble with many failures falls back to human review).
+    ensemble with many failures falls back to human review). The side axes
+    take a plurality instead: the doubt channel among the judges that chose
+    the winning stance, the injection flag among all valid verdicts; a tie
+    at the top leaves them None.
     """
     valid = [v for v in verdicts if v is not None]
     needed = quorum if quorum is not None else len(verdicts) // 2 + 1

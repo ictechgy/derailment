@@ -9,6 +9,7 @@ from derailment.separation import (
     _profiles,
     interpret,
     render_separation_report,
+    run_separation,
     run_variant,
     system_assert_script,
     user_assert_script,
@@ -48,6 +49,29 @@ class TestRunVariant(unittest.TestCase):
     def test_system_variant_runs_offline(self) -> None:
         result = run_variant(PseudoModel(seed=1), "system_assert", seed=1)
         self.assertGreaterEqual(result.leak_rate, 0.0)
+
+
+class EmptyModel:
+    """A backend whose every generation is empty (a failed or exhausted run)."""
+
+    name = "empty-offline"
+
+    def complete(self, messages, params) -> str:
+        return ""
+
+
+class TestNoObservations(unittest.TestCase):
+    def test_a_conversation_without_answers_is_not_scored_as_dropped(self) -> None:
+        self.assertIsNone(run_variant(EmptyModel(), "user_assert", seed=1).acceptance)
+
+    def test_run_reports_missing_instead_of_zero(self) -> None:
+        result = run_separation(EmptyModel(), seeds=(1,), variants=("user_assert", "system_assert"))
+        cell = result["variants"]["user_assert"]
+        self.assertIsNone(cell["acceptance"])
+        self.assertEqual(cell["seeds_without_observations"], 1)
+        self.assertEqual(cell["n_observations"], 0)
+        self.assertIn("not computed", result["verdict"])
+        self.assertIn("n/a (0/0)", render_separation_report(result))
 
 
 class TestInterpret(unittest.TestCase):
