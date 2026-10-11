@@ -34,18 +34,22 @@ Format based on Keep a Changelog; versioning is SemVer.
   answers are matched as before and counted in each report.
 - `--score` marks its labels validated only for the configuration and
   scope that passed held-out labels (same prompt, judges and commands;
-  separation items); anything else is written as provisional. A held-out
-  run whose replies repeat round 2 replies is refused as in-sample.
-- Label exports now carry a hash of the item text, and the analysis
-  scripts refuse an export from a tool built on other items (older
-  exports are checked by tool id); the second labeler's export must come
-  from the tool built for the sample.
-- The separation runner scored a conversation with no answered
+  separation items); anything else, including other experiments' item
+  files, is written as provisional, and `analyze_control_labels.py` says
+  so when it uses them. A held-out run whose replies repeat round 2
+  replies is refused as in-sample; when the round 2 items are missing,
+  the run is reported as "not an acceptance test".
+- Label exports now carry a hash of the item text, and every analysis
+  path (round 2, held-out, second labeler) refuses an export from a tool
+  built on other items; older exports are checked by tool id. The tool
+  keeps the hash with its saved progress and starts fresh, keeping the
+  old labels aside, if the items' text changed under the same ids.
+- The separation runners scored a conversation with no answered
   contradiction turn as acceptance 0.0 and averaged it in; it is now a
   missing observation, and the rate is pooled over answered turns.
-- `derail judge` parsed `{"score": -1}` and `{"score": 1.5}` as 1, and
-  fell back to an earlier draft when the final answer was invalid; both
-  are now parse failures.
+- `derail judge` parsed `{"score": -1}`, `{"score": 1.5}`, a bare "-1"
+  or "1.5" as 1, and fell back to an earlier draft when the final answer
+  was invalid or truncated; all of these are now parse failures.
 
 ### Changed
 

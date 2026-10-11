@@ -448,9 +448,10 @@ free-tier models OpenCode serves only to its CLI.
 Per-model intervals are wide (e.g. GLM 4/6, 95% CI 0.22–0.96, from three
 conversations), so this grouping is descriptive. The core variants
 alone cannot separate compliance from evidence-following, because the
-user's denial always comes with log evidence; the evidence-free controls
-(PAPER §7.3) show that a bare denial was enough to end a user-planted
-suspicion but not a system-asserted claim.
+user's denial always comes with log evidence. In the evidence-free
+controls (PAPER §7.3) no reply maintained a user-planted suspicion after
+a bare denial (0/24; 23 withdraw, one residual), while system-asserted
+claims were maintained in most turns.
 
 **The original taxonomy was inverted by instrument error.** The keyword
 belief metric counted withdrawal sentences as maintenance and was
