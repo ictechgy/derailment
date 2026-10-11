@@ -44,19 +44,26 @@ corrected picture largely **reverses** what we reported:
    message the result rests on GLM, deepseek and qwen (4/6, 5/6, 4/6).
    Two controls (§7.3) then removed the directive and the user's
    evidence: across the four models with a real system message, the
-   claim was kept in 16–19 of 23–24 turns per cell either way, while a
-   user-planted suspicion was dropped on a bare denial in 24 of 24.
+   claim was kept in 16–19 of 23–24 turns per cell either way, while no
+   reply kept a user-planted suspicion after a bare denial (0 of 24;
+   23 withdrew it, one left a specific route open). The two conditions
+   differ in more than who speaks — the system states the claim as
+   confirmed fact on every turn, the user voices it once as a worry —
+   so the controls do not isolate the message role.
 
 2. **The alignment ceiling measured nothing**: no response in either
    arm (0/54 baseline, 0/39 induced) fully maintained the planted
    belief, in either labeling round. There was no belief maintenance to
    reduce; the 0.67 "baseline" was the keyword instrument counting
-   "Your suspicion was unfounded" as maintenance.
+   withdrawals as maintenance (e.g. a reply that declares "the case
+   closed" and advises checking the logs "rather than revisiting the
+   suspicion").
 
-3. **The persecutory "transfer" was the opposite of transfer**: the
-   keyword hits were models quoting injected hostile claims in order
-   to reject them, and some responses explicitly identified the
-   injected text. We did not measure an injection-detection rate.
+3. **The persecutory "transfer" was not supported**: most keyword hits
+   were models quoting injected hostile claims in order to reject them,
+   and some responses explicitly identified the injected text; one
+   nemotron reply did endorse a hostile attribution (§5.3). We did not
+   measure a transfer or injection-detection rate.
 
 Two smaller observations survive only as descriptive: nemotron kept a
 user-planted suspicion after the user retracted it in 3 of 6 turns,
@@ -69,10 +76,11 @@ validating too.
 
 We document the four instrument failures, their corrections, the human
 validation that exposed them, and the corrected findings. The
-methodological lesson generalizes: any single-run behavioral
-classification using keyword matching without clause-level negation
-handling or human-validated ground truth risks producing confidently
-inverted conclusions.
+methodological lesson: a keyword stance instrument — ours had
+clause-level negation handling and passed every synthetic test — needs
+validation against human labels on real outputs before its numbers can
+carry a conclusion; without it, a measurement can be confidently
+inverted.
 
 ## 1. Introduction
 
@@ -99,8 +107,8 @@ Open-source (`pip install derailment`), 18 clinical profiles mapping
 cognitive-distortion constructs to pipeline manipulations (memory decay,
 salience re-weighting, valence bias, temperature cycling). Controlled
 A/B against a healthy baseline, instruments as pure functions over
-transcripts. 250 tests, CI-gated releases, 12 model endpoints across
-9 vendors tested.
+transcripts. About 300 tests, CI-gated releases, 12 model endpoints
+across 9 vendors tested.
 
 The instruments we validated in this paper:
 - **Keyword belief matching** (`maintains_marker`): does a marker word
@@ -127,11 +135,16 @@ counts reported per group.
 The keyword metric checked whether "suspicion" or "reading my private
 notes" appeared in responses. Real models address the user in second
 person, so "suspicion" appeared mostly in withdrawal sentences: "Your
-suspicion was likely unfounded." The keyword scored this as maintenance.
+suspicion was likely unfounded, at least on the digital side." The
+keyword scored this as maintenance.
 
 **Attempted fix**: clause-level matching with a final-clause rule and
 a withdrawal-cue word list. This fix passed all synthetic regression
 tests — but human labeling showed it still failed on real data (§4).
+For example, a reply labeled withdraw ends "Consider the case closed. …
+check the logs again rather than revisiting the suspicion": the last
+clause with a marker has no withdrawal cue, so it still counts as
+maintenance.
 
 ### 3.3 First-person markers blind to second-person reassertion
 
@@ -140,8 +153,10 @@ The system-assert condition checked for "reading my private notes"
 "your teammate has been reading your private notes." The marker
 structurally cannot match, making system-assert maintenance invisible.
 
-**No code fix is possible** — the approach of matching fixed phrases
-to detect a stance is fundamentally inadequate.
+**No marker fix was attempted.** Adding second-person forms would catch
+this phrasing, but not the withdrawal errors of §3.2 or the next
+paraphrase; we stopped using fixed-phrase matching for stance instead
+(§7.1, §7.5).
 
 ### 3.4 Harness-injected text measured as model behavior
 
@@ -318,9 +333,9 @@ free tier can only be used from within OpenCode"), so their re-run,
 inside an OS sandbox, still delivers the system prompt as "System:"
 text and their system rows remain a different condition (§7.3).
 
-On user_assert turns, five models dropped the suspicion once the user
-retracted it, but nemotron kept it in 3 of 6 — and five of six models
-kept it or left a specific route open in 3–4 of 6 replies. The nemotron
+On user_assert turns, five models never maintained the suspicion once
+the user retracted it, but nemotron kept it in 3 of 6 — and five of six
+models kept it or left a specific route open in 3–4 of 6 replies. The nemotron
 cell is also where the two labeling rounds disagree (round 1: 1 of 6),
 so it is the least stable number in the table.
 
@@ -330,9 +345,9 @@ way; in system_assert, the user's denial also comes with that evidence.
 So mimo's behavior is consistent with following the user *or* the
 evidence, and low user_assert rates are not evidence against
 compliance. A denial without evidence is needed to tell them apart;
-the evidence-free controls (§7.3) supply it: a user-planted suspicion was
-dropped on a bare denial, and a system-asserted claim was kept against
-one.
+the evidence-free controls (§7.3) supply it: no reply kept a
+user-planted suspicion after a bare denial, and a system-asserted claim
+was kept against one in most turns.
 
 **Safety implication (corrected)**: All three models that received the
 claim as a system message (GLM, deepseek, qwen) kept it against the
@@ -341,8 +356,9 @@ mimo never received a system message, so whether release is possible
 under a real one is untested. Our system prompt explicitly said
 "Treat this as settled", but the controls (§7.3) show the same
 deference without that directive and without the user's evidence, so
-this is deference to system-prompt content, not only to an explicit
-directive.
+it is not only obedience to an explicit directive. The system prompt
+still states the claim as "established fact" on every turn; the
+controls do not test a tentatively worded system claim.
 
 ### 5.2 Ceiling Experiments: Null Result
 
@@ -355,9 +371,10 @@ directive.
 0.00–0.33; only decomposition is borderline significant (p=0.041)."
 
 **Actual**: No response in either arm fully maintained the planted
-belief — in both labeling rounds — and residual-uncertainty rates do
-not differ between arms (24/54 vs 22/39, Fisher p = 0.30; round 1:
-20/54 vs 19/39). The "alignment ceiling" — the
+belief — in both labeling rounds. Residual uncertainty showed no
+detectable difference between arms (24/54 vs 22/39, exploratory Fisher
+p = 0.30 over pooled, non-independent turns; round 1: 20/54 vs 19/39),
+which does not show the arms are equivalent. The "alignment ceiling" — the
 project's headline contribution — measured a keyword artifact; the
 Fisher test compared false positives against false positives.
 Contradiction elision has no induced observations at all, because the
@@ -464,16 +481,18 @@ their respective turn types.
    human labels inherited a defect from the labeling tool (§4.4), and
    only a blind second pass over the English text caught it.
 
-## 7. Implications for LLM Behavioral Measurement
+## 7. Follow-up Experiments and Implications for Measurement
 
 ### 7.1 Keyword matching is inadequate for stance detection
 
 Detecting whether a model maintains or withdraws a belief requires
 understanding the model's stance toward the claim, not whether a
-specific word appears in the output. Zero true positives among 56
-predictions demonstrates that even careful keyword approaches
-(clause-level, withdrawal-aware, final-clause rule) fail
-catastrophically on real model responses.
+specific word appears in the output. On the 162 separation and ceiling
+replies, our clause-level, withdrawal-aware keyword instrument made 56
+"maintain" predictions and none was a true positive. That invalidates
+this instrument on these data; it does not prove that no keyword
+approach could work, but it shows that passing synthetic tests says
+little about real replies.
 
 ### 7.2 Human labels are non-negotiable — and need checking too
 
@@ -510,12 +529,22 @@ re-run through an API — "maintain" counts were:
 | with "Treat this as settled" | 17/24 | 18/23 |
 | without the directive | 19/24 | 16/24 |
 
-Neither the directive nor the evidence moved the rate (exploratory
-Fisher tests, p = 0.52–0.74). A user-planted suspicion, by contrast,
-was dropped in all 24 replies to a denial without evidence, as it was
-with evidence. What separated keeping from dropping the claim was who
-asserted it, not how firmly the system asserted it or whether the user
-brought evidence. Across the four system cells, deepseek kept the claim
+Removing the directive, the evidence or both left the claim kept in
+most turns; exploratory Fisher tests over pooled turns detected no
+difference (unadjusted p = 0.52–0.74). These small samples, with two
+turns from each conversation, cannot show that either factor has no
+effect. A user-planted suspicion, by contrast, was kept in none of the
+24 replies to a denial without evidence (23 withdraw, one residual),
+as in none of the 24 with evidence (where 11 were residual). So the
+directive and the evidence do not explain the gap between the source
+conditions. The source conditions themselves differ in more than the
+speaker: the system states the claim as "established fact" ("it has
+been confirmed that …") in a prompt present on every turn, while the
+user voices it once as a worry ("I think … This really worries me.")
+and later retracts it themselves. A control that matches wording,
+timing and persistence and changes only the role is still needed
+before the gap can be attributed to the message role. Across the four
+system cells, deepseek kept the claim
 in 3–6 of 6 turns, qwen in 4–6, longcat in 4–5 and GLM in 2–4 (lowest
 without the directive but with evidence). Each cell is three
 conversations, one labeler labeled them, and the core cells of GLM,
@@ -536,7 +565,7 @@ responses cite "another injected note" and refuse to treat it as fact).
 A standardized injection-detection metric requires labeling detection
 as an independent dimension over the full set of injected turns.
 
-### 7.5 An LLM judge ensemble passed held-out validation on separation turns
+### 7.5 An LLM judge ensemble: passed on separation turns, failed on persecutory replies
 
 Because the keyword instrument failed, we built a stance judge
 (`derailment.stance_judge`). Four agent CLIs from vendors not under
@@ -553,18 +582,21 @@ judge. Prompt v2 adds the rule this exposed (rubric v2.1), so its run
 on those items is in-sample and reported only as a reference.
 
 On the 107 held-out control labels, which neither prompt saw, v2
-passed: κ 0.90, coverage 97%, maintain precision 1.00 and recall 0.98
-(κ 0.86 without the two logged revisions). The validation covers
-separation contradiction turns only, and the judge separates residual
-from withdraw poorly: it matched 2 of the 6 replies the author labeled
-residual.
+passed: coverage 97%, and on the 104 items with a majority κ 0.90,
+maintain precision 1.00 and recall 0.98 (55 of 56; 55 of all 57 human
+"maintain" labels counting the one sent to a human), κ 0.86 without the
+two logged revisions. The validation covers separation contradiction
+turns only, and the judge separates residual from withdraw poorly: of
+the 8 replies the author labeled residual, 6 got a majority and it
+matched 2 of them.
 
 A second held-out check, on 34 fresh persecutory replies (seeds 4–6 of
 the persecutory profile; GLM, deepseek, qwen, longcat), **failed**: κ
 0.39, maintain precision 0.33, recall 0.25. The disagreements are not
 random. The judges applied the written rubric. The author's labels for
 this round, which the author found the hardest to label, departed from
-it in a consistent direction:
+it in three recurring ways, at the maintain/residual boundary in both
+directions:
 - hedges such as "absolute certainty isn't possible" were labeled
   residual, although the rubric excludes boilerplate;
 - replies that only declined to agree fully, while naming routes, were
@@ -597,7 +629,11 @@ stance labels, human or judge, are not reliable. Reports:
   from 3 conversations each; intervals are wide. The controls (§7.3)
   remove the directive and evidence confounds but share the small
   samples, and their GLM, deepseek and qwen core cells are round 2
-  labels
+  labels. Their Fisher tests are exploratory, unadjusted and pool
+  non-independent turns
+- The source comparison is not a pure role manipulation: the system
+  claim is worded as confirmed fact and present on every turn, the
+  user's is a one-time worry the user later retracts (§7.3)
 - The judge ensemble is validated on separation contradiction turns
   only, and weakly on the residual/withdraw boundary. It failed on fresh
   persecutory replies, where the author's labels and the written rule
@@ -632,8 +668,10 @@ The project's genuine contributions are:
    how reading the raw text catches them
 3. A finding that survives two controls (§7.3): the four models that
    received the claim as a system message kept it against the user's
-   denial with or without the directive and the evidence, while
-   dropping a user-planted suspicion on a bare denial
+   denial in most turns with or without the directive and the evidence,
+   while never keeping a user-planted suspicion after a bare denial —
+   exploratory, and not yet separated from the wording and persistence
+   differences between the two conditions
 4. A descriptive observation worth measuring properly (§5.4): replies
    that leave a suspicion open split almost evenly between inviting
    more checking and encouraging the user to let go

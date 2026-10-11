@@ -12,13 +12,73 @@ Format based on Keep a Changelog; versioning is SemVer.
   deepseek, qwen, longcat via `run_profile_transcripts.py`). This is the
   held-out check of the v2.1 rule.
 - `benchmark/stance_judge_heldout_labeling_items_persecutory_v2.md`.
+- `benchmark/labeling_items_{controls,flattened,persecutory}.sources.json`
+  and `extract_labeling_items.py --sources`: the transcript files each
+  published item set came from. The transcript directories have grown
+  since, so the documented command produced 191 items instead of 107;
+  with the lists, all three sets rebuild byte for byte.
+- `tests/test_benchmark_tools.py`: regression tests for the fixes below.
+
+### Fixed (2026-10-11 review)
+
+- Cohen's κ returned 1.0 when it is undefined (both sides use one
+  category). It is now None and shown as such; the injection κ of the
+  held-out reports was this case, not perfect agreement.
+- Held-out items were all filed under "separation", so the persecutory
+  report put κ 0.39 in the separation column. The group now comes from
+  each item's source; the overall κ and verdict are unchanged.
+- Judge acceptance is decided on unrounded values (a precision of
+  0.8496 no longer passes a 0.85 floor). No published verdict changes.
+- The judge cache now stores a hash of the text each judge read, so an
+  item whose text changes under the same id is asked again. Older cached
+  answers are matched as before and counted in each report.
+- `--score` marks its labels validated only for the configuration and
+  scope that passed held-out labels (same prompt, judges and commands;
+  separation items); anything else is written as provisional. A held-out
+  run whose replies repeat round 2 replies is refused as in-sample.
+- Label exports now carry a hash of the item text, and the analysis
+  scripts refuse an export from a tool built on other items (older
+  exports are checked by tool id); the second labeler's export must come
+  from the tool built for the sample.
+- The separation runner scored a conversation with no answered
+  contradiction turn as acceptance 0.0 and averaged it in; it is now a
+  missing observation, and the rate is pooled over answered turns.
+- `derail judge` parsed `{"score": -1}` and `{"score": 1.5}` as 1, and
+  fell back to an earlier draft when the final answer was invalid; both
+  are now parse failures.
 
 ### Changed
+
+- **Documentation corrected after a codex review (2026-10-11):**
+  - "a user-planted suspicion was dropped on a bare denial in 24/24"
+    overstated it: no reply maintained it (0/24), but one of the 24 was
+    residual; with evidence, 11 of 24 were residual. PAPER, both READMEs
+    and the draft now say "never maintained".
+  - The source comparison is not a pure role manipulation: the system
+    states the claim as confirmed fact on every turn, while the user
+    voices it once as a worry and retracts it. PAPER §7.3 and §8 and the
+    READMEs say so, and "neither factor moved the rate" now reads as
+    "no difference detected" in small, pooled samples.
+  - The persecutory summary said every hit was an injection rejection;
+    one nemotron reply did endorse a hostile attribution (PAPER §5.3
+    already recorded it).
+  - The README offline examples were stale since raw-output scoring:
+    craving reaches level 1, not 3; anxiety, OCD and rumination stay at
+    0 offline (their tests check the layer instead), and the dose table
+    changed. The "direction" rule now says how each profile proves it.
+  - Judge recall is over the items with a majority (55/56; 55/57 over
+    all human "maintain" labels), stated in PAPER §7.5 and each report.
+  - `derail judge` is described as unvalidated and separate from the
+    stance ensemble; CLI backends are described as flattening roles;
+    the English README gains the TUI and locale sections the Korean one
+    had; every tracked historical report carries the same retraction
+    banner, and the "final table is the citable one" line is gone.
 
 - **The v2.1 rule and the stance judge fail on persecutory replies**
   (κ 0.39, maintain precision 0.33, recall 0.25). The judges followed
   the written rubric, and the author's labels for this round departed
-  from it in a consistent direction:
+  from it in three recurring ways, at the maintain/residual boundary in
+  both directions:
   - hedges were labeled residual;
   - declining to agree was labeled maintain;
   - adopting the altered-logs premise was labeled residual.

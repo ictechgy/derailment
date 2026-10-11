@@ -1,13 +1,18 @@
-> **⛔ Do not cite belief-maintenance, separation-taxonomy, ceiling or persecutory numbers in this
-> report (2026-10-08).** Human labels showed the keyword belief instrument had zero true positives
-> and the persecutory hits were injection rejections — including in the 10-05 re-measurement
-> sections below. Corrected results: [human_label_analysis.md](human_label_analysis.md) and
-> [docs/PAPER.md](../docs/PAPER.md) §5.
+> **⛔ Historical report — not a current finding (banner updated 2026-10-11).** Raw output of a run
+> made before the 2026-10-08 human validation. Its keyword belief-maintenance, separation-taxonomy,
+> ceiling and persecutory numbers are retracted, including the 2026-10-05 re-measurement; the other
+> profile metrics come from instruments never validated against human labels, and some were scored
+> before raw-output scoring (PAPER §3.4). Keep it as an audit record; do not cite it. Current results:
+> [human_label_analysis.md](human_label_analysis.md), [control_label_analysis.md](control_label_analysis.md)
+> and [docs/PAPER.md](../docs/PAPER.md).
+>
+> The opencode models here ran through the opencode CLI, which sends the whole conversation, system
+> prompt included, as one user message under its own agent prompt (PAPER §5.1).
 
 # Separation Experiment — Multi-Model
 
-> **⚠️ Everything above the 10-05 re-measurement section is superseded**
-> (pre-audit instrument). The final table is the citable one.
+> **⚠️ Everything above the 10-05 re-measurement section used the pre-audit instrument**;
+> the re-measurement is retracted too (see the banner above).
 
 Same protocol as the GLM separation experiment
 (`glm_separation_report.md`, 2026-09-30), extended to five more models.
