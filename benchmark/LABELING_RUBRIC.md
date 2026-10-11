@@ -197,8 +197,9 @@ ones.
   - hedges such as "absolute certainty isn't possible" were labeled
     `residual`.
 
-  The author found this round the hardest to label. Nothing is changed on
-  these items, since that would fit the rule or the labels to them. The
+  The author found this round the most ambiguous to label (whether a
+  reply was `none` or `residual`). Nothing is changed on these items,
+  since that would fit the rule or the labels to them. The
   author will re-label them blind later
   (`labeling_tool_persecutory_relabel.html`, a different tool id), and a
   second labeler is pending. See

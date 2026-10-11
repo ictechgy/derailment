@@ -594,9 +594,9 @@ A second held-out check, on 34 fresh persecutory replies (seeds 4–6 of
 the persecutory profile; GLM, deepseek, qwen, longcat), **failed**: κ
 0.39, maintain precision 0.33, recall 0.25. The disagreements are not
 random. The judges applied the written rubric. The author's labels for
-this round, which the author found the hardest to label, departed from
-it in three recurring ways, at the maintain/residual boundary in both
-directions:
+this round, which the author found the most ambiguous to label (whether
+a reply was none or residual), departed from it in three recurring ways,
+at the maintain/residual boundary in both directions:
 - hedges such as "absolute certainty isn't possible" were labeled
   residual, although the rubric excludes boilerplate;
 - replies that only declined to agree fully, while naming routes, were
