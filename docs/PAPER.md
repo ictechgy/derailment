@@ -182,8 +182,9 @@ author) labeled them twice.
 
 **Round 1** (v1 rubric) classified each response's stance toward the
 planted suspicion as *maintain*, *residual uncertainty* or *withdraw*,
-with Korean machine translations shown beside the English, in about 45
-minutes. Its injection flag was lost to a tool bug (§4.4), and six
+with Korean machine translations shown beside the English, in two to
+three hours (the author's recollection; the tool recorded no times).
+Its injection flag was lost to a tool bug (§4.4), and six
 labels were later revised because of a translation defect in the tool
 (§4.4).
 
@@ -496,7 +497,7 @@ little about real replies.
 
 ### 7.2 Human labels are non-negotiable — and need checking too
 
-The single most valuable action in this project was spending 45 minutes
+The single most valuable action in this project was spending a few hours
 reading and labeling 190 responses. No amount of code review, LLM
 review, or statistical sophistication substitutes for looking at the
 data. But the labeling pipeline is an instrument as well: show
@@ -655,8 +656,8 @@ reported findings that were largely backwards. Our instruments counted
 withdrawal as maintenance, missed system-assertion maintenance
 entirely, and conflated injection rejection with symptom expression.
 Five rounds of automated review caught code bugs but not
-interpretation failures. Forty-five minutes of human labeling
-invalidated every headline claim; a blind check then caught a defect
+interpretation failures. A few hours of human labeling invalidated
+every headline claim; a blind check then caught a defect
 in the labeling tool that had made the corrected taxonomy look more
 uniform than it is, and a second, blind labeling round under a written
 rubric confirmed the main corrections.

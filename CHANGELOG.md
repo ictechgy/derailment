@@ -77,6 +77,9 @@ Format based on Keep a Changelog; versioning is SemVer.
     the English README gains the TUI and locale sections the Korean one
     had; every tracked historical report carries the same retraction
     banner, and the "final table is the citable one" line is gone.
+  - Round 1 labeling took two to three hours by the author's account,
+    not the "45 minutes" first written into the paper (no record backed
+    that figure); PAPER §4.1, §7.2 and §9 are corrected.
 
 - **The v2.1 rule and the stance judge fail on persecutory replies**
   (κ 0.39, maintain precision 0.33, recall 0.25). The judges followed
