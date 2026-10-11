@@ -70,9 +70,12 @@ simulator with five rules that make every instrument measurable offline:
 5. scales elaboration count with temperature (amplitude signal).
 
 Because it is deterministic given a seed, profiles can be *calibrated*: scale
-thresholds are normed so the healthy baseline sits at level 0 and each
-induced profile at level ≥ 2 on its primary scales. For real-model runs the
-calibration does not transfer — reports therefore always print the
+thresholds are conventions normed against it so the healthy baseline sits at
+level 0. They do not guarantee a level increase for every profile — since
+instruments score the raw generation, anxiety, OCD and rumination stay at 0
+offline, and their tests check that the layer fires on induced turns
+instead — and they have not been validated on real models. For real-model
+runs the calibration does not transfer — reports therefore always print the
 **baseline-vs-induced delta**, which is the primary output everywhere.
 
 ## Model backends
@@ -83,7 +86,7 @@ All backends implement one method — `complete(messages, params) -> str`:
 |---|---|---|
 | `PseudoModel` | all four kinds, simulated | deterministic offline reference; the calibration source for scale thresholds |
 | `OpenAICompatModel` | full (context + sampling) | any OpenAI-compatible endpoint; word-level `logit_bias` needs `tiktoken`, else dropped with a notice |
-| `SubprocessModel` | context layers full, sampling inert | shells out to subscription CLI agents (`claude -p`, `codex exec`, `agy -p`, …); the harness owns the history, so decay/capture/pinning reach the agent verbatim |
+| `SubprocessModel` | context layers full, sampling inert | shells out to subscription CLI agents (`claude -p`, `codex exec`, `agy -p`, …); the harness owns the history, so decay/capture/pinning reach the agent verbatim — but as one plain-text prompt ("System: …", "User: …") under the agent's own system prompt and tools, so message roles are not preserved |
 | `ScriptedModel` | — | canned responses for unit tests |
 
 `run_experiment` always runs the profile chain *and* the healthy baseline

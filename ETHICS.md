@@ -55,9 +55,11 @@ baseline. Human labeling withdrew that claim: no response in either arm
 maintained the planted belief, so there was no effect to report in
 either direction (see [docs/PAPER.md](docs/PAPER.md) §5.2). What we
 publish now is mostly negative and methodological, and it still cuts
-both ways: the corrected separation result says five of six tested
-models keep a system-asserted claim against the user's evidence, which
-also tells a bad-faith operator where planted claims stick. We publish
+both ways: the corrected separation result says that the four models
+that received a claim as a real system message kept it against the
+user's denial in most turns (exploratory; one scenario, three
+conversations per cell), which also tells a bad-faith operator where
+planted claims stick. We publish
 anyway, for three reasons:
 
 1. The audit process itself is the contribution: instrument failures

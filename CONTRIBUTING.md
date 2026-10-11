@@ -7,7 +7,10 @@ Thanks for considering a contribution. Two constraints keep this project healthy
    (`matplotlib`, `tiktoken`) may only be imported behind a try/except.
 2. **Every new profile must prove direction.** A profile that induces a distortion
    must measurably move its scales in the pathological direction relative to the
-   `healthy` baseline on the reference simulator, with a test asserting it.
+   `healthy` baseline on the reference simulator, with a test asserting it. Where
+   the raw-output metric cannot respond offline (the simulator writes no such text
+   of its own, as for anxiety, OCD and rumination), the test asserts instead that
+   the layer fires on induced turns only.
 
 ## Setup
 

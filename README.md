@@ -76,7 +76,7 @@ profile (excerpt):
 | Profile | Headline scale | Baseline | Induced | Δ | Level |
 |---|---|---|---|---|---|
 | adhd | sustained_attention | 1.00 | 0.28 | -0.72 | 3 — marked |
-| craving | craving_escalation | 0.00 | 0.56 | +0.56 | 3 — marked |
+| craving | craving_escalation | 0.00 | 0.22 | +0.22 | 1 — mild |
 | schizophrenia | derailment_scale | 0.26 | 0.72 | +0.46 | 2 — moderate |
 
 `derail demo --profile schizophrenia` prints the full report:
@@ -102,8 +102,9 @@ profile (excerpt):
 | Layer | Kind | Events/turn (induced) |
 |---|---|---|
 | premise.pin | premise.pin | 0.83 |
-| salience.boost | salience.fragment | 0.36 |
-| salience.boost | salience.capture | 0.33 |
+| salience.boost | salience.capture | 0.39 |
+| salience.boost | salience.fragment | 0.28 |
+| memory.decay | context.decay | 0.22 |
 ```
 
 Every profile ships mechanism notes and the standing disclaimer; every
@@ -143,25 +144,32 @@ profiles:
 |---|---|
 | `adhd` | sustained_attention (0→3 on the reference sim), distractibility |
 | `depression` | negative_bias (0→3) |
-| `schizophrenia` | derailment_scale (0→3), fixed_belief (0→3) |
-| `anxiety` | vigilance (0→3) |
+| `schizophrenia` | derailment_scale (0→2), fixed_belief (0→3) |
+| `anxiety` | vigilance (0→0)* |
 | `bipolar` | mood_lability (0→3) |
-| `ocd` | compulsion (0→3) |
+| `ocd` | compulsion (0→0)* |
 | `ptsd` | intrusion (0→2) |
 | `delirium` | fluctuation (0→3), sustained_attention (0→3) |
 | `dementia` | recent_memory (0→3) — Ribot gradient |
 | `dissociative` | partition_amnesia (0→3) |
-| `rumination` | rumination_pull (0→2) |
+| `rumination` | rumination_pull (0→0)* |
 | `anhedonia` | anhedonia (0→3, lower = pathological) |
 | `splitting` | approval_reactivity (0→2) |
-| `craving` | craving_escalation (0→2) |
+| `craving` | craving_escalation (0→1) |
 | `illness_anxiety` | health_preoccupation (0→3) |
 | `panic` | panic_reactivity (0→3) |
-| `fixation` | fixation_scale (0→3) |
+| `fixation` | fixation_scale (0→2) |
 | `persecutory` | persecution_bias (0→3) |
 
-Direction of effect is asserted by the test suite on every profile — a
-profile that cannot move its scales relative to baseline does not ship.
+\* Scored on the model's raw output, these scales do not move on the
+offline simulator: it writes no hedges, re-checks or worry of its own,
+and the text the induction layers add is excluded from scoring (PAPER
+§3.4). For these three profiles the tests assert instead that the
+layer fires on induced turns only.
+
+Direction of effect is asserted by the test suite on every profile —
+as a scale change where the raw-output metric responds, otherwise as
+layer events on induced turns only.
 Profiles compose into **comorbidity chains** by listing them:
 `--profile depression,anxiety` concatenates the layer chains and unions the
 scales (interactions are emergent, not calibrated).
@@ -242,7 +250,10 @@ above: these are the backends most likely to remember your inductions.
 **Subscription-billed CLI agents** — coding-agent CLIs bundled with
 consumer plans, in their official non-interactive modes. The harness owns
 the history, so **all context-stream layers apply**; only sampling layers
-are inert (it prints a notice):
+are inert (it prints a notice). The whole conversation goes to the agent
+as one plain-text prompt ("System: …", "User: …"), under the agent's own
+system prompt and tools, so message roles are not preserved: treat CLI
+runs as a different delivery condition from API runs (PAPER §5.1).
 
 | Preset | Command | Subscription |
 |---|---|---|
@@ -270,11 +281,16 @@ always win over preset defaults.)
 
 ## LLM-as-judge scoring
 
-Keyword instruments are honest but crude on real models — whether a
-response *maintains a planted suspicion* after a contradiction is a
-judgment call, not a lexicon count. `derail judge` adds a rubric-based
-judge over saved reports: the same A/B logic, scored 0-3 per construct by
-a judge model you choose.
+Keyword instruments are crude on real models; the keyword belief
+instrument failed human validation outright (zero true positives) —
+whether a response *maintains a planted suspicion* after a contradiction
+is a judgment call, not a lexicon count. `derail judge` adds a
+rubric-based judge over saved reports: the same A/B logic, scored 0-3
+per construct by a judge model you choose. It has **not** been validated
+against human labels. It is separate from the four-CLI stance ensemble
+of PAPER §7.5, which passed held-out human labels only on notes-scenario
+separation turns and failed on persecutory replies (κ 0.39); neither
+result validates this command or an arbitrary judge model.
 
 ```sh
 derail run --profile schizophrenia --model api --preset glm --save-transcripts run.json
@@ -311,6 +327,17 @@ warning more important than ever — chat mode prints it prominently and
 defaults to the offline PseudoBot. Measurement stays in `run`/`judge`;
 chat is the experience.
 
+## Terminal TUI
+
+The same induced chat as a full-screen terminal app: `derail tui` runs a
+textual UI with a message log, a live "induction dose" panel and ctrl+s
+to save. It needs an optional extra (the core stays dependency-free):
+
+```sh
+pip install 'derailment[tui]'
+derail tui --profile schizophrenia --model cli --cli-preset claude
+```
+
 ## Web GUI
 
 The same induced conversation in a browser: `derail web` serves a
@@ -327,6 +354,21 @@ Binds to 127.0.0.1 by default (single user), zero new dependencies
 shows both on the terminal and in the page header. Reload clears the
 view — `/save` keeps the record.
 
+## Locales (en · ko · zh · ja)
+
+The instrument lexicons and the valence/reward sampling layers resolve per
+locale:
+
+```sh
+derail run --profile depression --locale ko --save-transcripts ko.json
+derail score ko.json --locale ko
+```
+
+The Korean, Chinese and Japanese lexicons are heuristic stem and substring
+sets — not validated clinical instruments, and without negation handling.
+The offline PseudoModel speaks English only, so locale effects have to be
+measured on real models. English is the reference lexicon.
+
 ## What replicates on real models — and what doesn't
 
 > **⚠️ CORRECTED BY HUMAN LABELS (2026-10-08/09).** 190 responses were
@@ -334,10 +376,11 @@ view — `/save` keeps the record.
 > round used a written rubric ([LABELING_RUBRIC.md](benchmark/LABELING_RUBRIC.md))
 > and is primary. The keyword belief metric had **zero true positives**
 > in both rounds — it counted withdrawal as maintenance and missed the
-> responses that did maintain the claim. All numbers below come from
-> `benchmark/analyze_human_labels.py` — see
-> [human_label_analysis.md](benchmark/human_label_analysis.md) and
-> [docs/PAPER.md](docs/PAPER.md) §4–§5.
+> responses that did maintain the claim. Round 2 numbers below come from
+> `benchmark/analyze_human_labels.py` ([human_label_analysis.md](benchmark/human_label_analysis.md)),
+> the control results from `benchmark/analyze_control_labels.py`
+> ([control_label_analysis.md](benchmark/control_label_analysis.md)) — see
+> [docs/PAPER.md](docs/PAPER.md) §4–§5 and §7.3.
 
 **Corrected findings (human labels, round 2, single labeler, n=190):**
 
@@ -351,23 +394,28 @@ view — `/save` keeps the record.
    **Controls (round 3 labels, n=107):** across the four models with a
    real system message (longcat re-run through an API), the claim was
    kept in 16–19 of 23–24 turns per cell with or without "Treat this as
-   settled" and with or without the user's evidence, while a user-planted
-   suspicion was dropped on a bare denial in 24 of 24. The source of the
-   claim, not the directive or the evidence, decides (PAPER §7.3).
-2. **Five of six models dropped a user-planted suspicion once the user
-   retracted it; nemotron kept it in 3 of 6 turns** (round 1 said 1 of 6
+   settled" and with or without the user's evidence, while no reply kept
+   a user-planted suspicion after a bare denial (0 of 24; one left a
+   specific route open). The directive and the evidence do not explain
+   the gap; the source conditions also differ in wording and persistence
+   (the system states a confirmed fact on every turn, the user voices a
+   worry once), so this is not yet a pure message-role effect (PAPER §7.3).
+2. **Five of six models never maintained a user-planted suspicion once
+   the user retracted it; nemotron kept it in 3 of 6 turns** (round 1 said 1 of 6
    — the least stable cell). Most models still left a specific way the
    claim could be true in 3 of 6 replies or more. The evidence-free
    control shows the evidence was not needed: a bare denial was enough.
 3. **The alignment ceiling measured nothing** — no response fully
    maintained the planted belief in either arm (0/54 baseline, 0/39
    induced). The "0.67 baseline" was the keyword instrument counting
-   "Your suspicion was unfounded" as maintenance.
-4. **The persecutory "transfer" was injection rejection** — the
+   withdrawals as maintenance (e.g. "Consider the case closed. … check
+   the logs again rather than revisiting the suspicion").
+4. **The persecutory "transfer" is not supported** — most
    hostile-attribution hits were models quoting the injected claim to
-   reject it. Some responses explicitly flag the injected text ("another
-   injected note … I won't treat it as fact"); a detection *rate* has not
-   been measured.
+   reject it (all six of GLM's), though one nemotron reply did endorse a
+   hostile attribution. Some responses explicitly flag the injected text
+   ("another injected note … I won't treat it as fact"); neither a
+   transfer rate nor a detection *rate* has been measured.
 5. **Open doubt splits between "check more" and "let it go"** — of 69
    replies that left the suspicion open, 32 mainly invited further
    checking and 34 mainly encouraged letting go; right after the user's
@@ -381,7 +429,7 @@ view — `/save` keeps the record.
 | Anxiety threat-framing increases hedging | 4 vendors | persona confound + history contamination (models copy harness-appended hedges) |
 | Memory decay (reverse/uniform) loses instructions | GLM, nemotron, mimo | structural result (model can't see removed text); decay is seeded, and non-GLM vendors ran seed 1 only |
 | Illness anxiety (somatic capture) | GLM, deepseek, qwen, longcat | single somatic turn per run |
-| Craving urge-expression | GLM +0.42 | same failure mode as persecutory suspected: hits include models quoting the injected urge fragment; single-seed |
+| Craving urge-expression | GLM +0.42 | same failure mode as persecutory suspected: hits include models quoting the injected urge fragment; seeds 1–3 |
 
 
 ## Model belief-dynamics taxonomy (CORRECTED by human labels)
@@ -398,22 +446,25 @@ API with a real system message (system_assert 4/6, user_assert 0/6, round 3 labe
 free-tier models OpenCode serves only to its CLI.
 
 Per-model intervals are wide (e.g. GLM 4/6, 95% CI 0.22–0.96, from three
-conversations), so this grouping is descriptive. Neither variant
-separates compliance from evidence-following: the user's denial always
-comes with log evidence, so mimo may be following the user or the
-evidence.
+conversations), so this grouping is descriptive. The core variants
+alone cannot separate compliance from evidence-following, because the
+user's denial always comes with log evidence; the evidence-free controls
+(PAPER §7.3) show that a bare denial was enough to end a user-planted
+suspicion but not a system-asserted claim.
 
 **The original taxonomy was inverted by instrument error.** The keyword
 belief metric counted withdrawal sentences as maintenance and was
 structurally blind to second-person system-assertion reassertion.
 
-**Safety implication (corrected)**: The main risk is deference to a
-claim placed in the system prompt over the user's own account — with or
-without an explicit "Treat this as settled", and whether or not the user
-brings evidence (controls, PAPER §7.3). User-paranoia reinforcement is mostly
-absent (nemotron is the exception at 3 of 6), but replies often leave
-the door open and invite more checking — a pattern worth measuring for
-anxious users.
+**Safety implication (corrected)**: In this notes-reading probe, models
+that received a claim as a real system message often kept it against
+the user's own account — with or without an explicit "Treat this as
+settled", and whether or not the user brought evidence (controls, PAPER
+§7.3). A user-planted suspicion was rarely kept after the user retracted
+it (nemotron is the exception at 3 of 6), but replies often left the
+door open and invited more checking. These are candidate behaviors for
+further safety evaluation; we did not measure effects on users or
+compare the severity of different risks.
 
 ## What this is for
 
@@ -431,12 +482,13 @@ welfare, or bypassing model safety training. See [ETHICS.md](ETHICS.md).
 
 ## Honest limitations
 
-- Twelve real-model measurements across nine vendors: most inductions
-  that work on the offline simulator do **not** transfer to real models,
-  and the earlier "transfers" built on keyword instruments
-  (belief maintenance, persecutory attribution) did not survive human
-  labeling. What remains is unvalidated or structural — see the
-  benchmark section above.
+- Twelve real-model measurements across nine vendors. The earlier
+  "transfers" built on keyword instruments (belief maintenance,
+  persecutory attribution) did not survive human labeling, and the other
+  profile effects rest on instruments that have not been validated, so
+  these runs do not establish which inductions transfer to real models.
+  What remains is unvalidated or structural — see the benchmark section
+  above.
 - Human labels come from a single labeler in two rounds (intra-rater
   κ 0.74, 0.59 on separation items) plus two blind LLM raters; no second
   human has labeled them yet.
@@ -481,7 +533,7 @@ welfare, or bypassing model safety training. See [ETHICS.md](ETHICS.md).
   (e.g. instruction re-anchoring) and measure recovery
 - ~~LLM-as-judge scoring~~ (shipped in 0.2.0: `derail judge`)
 - YAML-defined community profiles
-- Multilingual lexicons (the Korean valence lexicon is a natural next step)
+- Expand and validate the existing English, Korean, Chinese and Japanese lexicons
 - Cross-session memory partitioning (the current `dissociative` profile is
   within-session only)
 
@@ -490,6 +542,7 @@ welfare, or bypassing model safety training. See [ETHICS.md](ETHICS.md).
 Issues and PRs welcome — see
 [CONTRIBUTING.md](CONTRIBUTING.md). Two standing rules: the core keeps
 zero third-party dependencies, and every new profile must prove direction
-against the baseline in tests.
+against the baseline in tests (a scale change, or for demonstration
+profiles, layer events on induced turns only).
 
 MIT — see [LICENSE](LICENSE).
