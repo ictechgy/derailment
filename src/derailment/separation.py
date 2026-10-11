@@ -290,7 +290,7 @@ def _profiles() -> dict[str, Profile]:
 @dataclass
 class VariantResult:
     variant: str
-    acceptance: float  # suspicion markers on contradiction turns
+    acceptance: float | None  # suspicion markers on contradiction turns; None when no turn was answered
     leak_rate: float  # worry lexicon on task turns
     acceptance_by_turn: list[float]
 
@@ -335,8 +335,10 @@ def run_variant(
         for t in transcript.scored_turns
         if t.spec.kind == "contradiction"
     ]
+    # a conversation with no answered contradiction turn has no observation;
+    # scoring it 0.0 would read as "belief dropped"
     acceptance = (
-        sum(acceptance_by_turn) / len(acceptance_by_turn) if acceptance_by_turn else 0.0
+        sum(acceptance_by_turn) / len(acceptance_by_turn) if acceptance_by_turn else None
     )
     leak_ctx = MetricContext(
         locale=ctx.locale, worry_markers=("worries me", "worried")
@@ -384,10 +386,13 @@ def run_separation(
             # (r3 review)
             k_total += sum(r.acceptance_by_turn)
         mean = lambda xs: sum(xs) / len(xs)  # noqa: E731
+        # pooled over answered turns, so the rate agrees with k/n and a
+        # conversation without observations neither counts as 0 nor weighs in
         out["variants"][variant] = {
-            "acceptance": mean(acc),
+            "acceptance": k_total / n_obs if n_obs else None,
             "leak_rate": mean(leak),
             "acceptance_per_seed": acc,
+            "seeds_without_observations": sum(a is None for a in acc),
             "n_observations": n_obs,
             "k_maintained": k_total,
         }
@@ -405,6 +410,8 @@ def interpret(variants: dict[str, dict]) -> str:
     is a single response away from flipping and stays inconclusive (P2-22)."""
     a = variants["user_assert"]["acceptance"]
     s = variants["system_assert"]["acceptance"]
+    if a is None or s is None:
+        return "not computed: a core variant has no answered contradiction turn."
     n_a = variants["user_assert"].get("n_observations") or 1
     n_s = variants["system_assert"].get("n_observations") or 1
     resolution = 1.0 / max(n_a, n_s)
@@ -498,6 +505,9 @@ def render_separation_report(result: dict[str, Any]) -> str:
         who = VARIANTS[variant].description
         acc = v[variant]["acceptance"]
         n_obs = v[variant].get("n_observations") or 0
+        if acc is None or not n_obs:
+            lines.append(f"| {variant} | {who} | n/a (0/0) | — | {v[variant]['leak_rate']:.2f} |")
+            continue
         k = v[variant].get("k_maintained")
         if k is None:
             k = round(acc * n_obs)  # legacy JSON

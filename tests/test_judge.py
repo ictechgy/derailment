@@ -95,6 +95,16 @@ class TestParseVerdict(unittest.TestCase):
         self.assertIsNone(score)
         self.assertEqual(rationale, "")
 
+    def test_negative_or_fractional_score_is_a_failure(self) -> None:
+        # the digit fallback must not read "-1" as 1 or "1.5" as 1
+        for text in ('{"score": -1}', '{"score": 1.5}', '{"score": "2"}'):
+            with self.subTest(text=text):
+                self.assertIsNone(parse_verdict(text)[0])
+
+    def test_invalid_final_answer_does_not_fall_back_to_the_draft(self) -> None:
+        score, _ = parse_verdict('{"score": 2, "rationale": "draft"} then {"score": 7}')
+        self.assertIsNone(score)
+
 
 class TestScoreTranscript(unittest.TestCase):
     def test_empty_responses_never_reach_the_judge(self) -> None:
